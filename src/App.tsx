@@ -3,7 +3,7 @@ import { BrowserRouter, NavLink, Route, Routes } from 'react-router'
 import '@mantine/core/styles.css'
 import './App.css'
 import { loadStartupData, type RaceEvent } from './utils/loadStartupData'
-import { AppShell, Burger, MantineProvider } from '@mantine/core'
+import {AppShell, Burger, LoadingOverlay, MantineProvider} from '@mantine/core'
 import { Events } from './Events/Events'
 import { useDisclosure } from '@mantine/hooks'
 import { Event } from './Event/Event'
@@ -68,10 +68,13 @@ function App() {
             </AppShell.Navbar>
 
             <AppShell.Main>
+              <LoadingOverlay visible={loading} loaderProps={{ children: 'Loading events...' }} />
+
               {!loading && (
                 <Routes>
                   <Route path="/" element={<Events/>}/>
                   <Route path="/event/:year/:organizer/:eventName" element={<Event/>}/>
+                  <Route path="/event/:year/:organizer/:eventName/:selectedCategory" element={<Event/>}/>
                 </Routes>
               )}
             </AppShell.Main>
