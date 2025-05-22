@@ -1,6 +1,9 @@
 import { S3Client, ListObjectsCommand, type ListObjectsCommandOutput, GetObjectCommand } from '@aws-sdk/client-s3'
 import { fromCognitoIdentityPool } from '@aws-sdk/credential-providers'
 import _ from 'lodash'
+import shortHash from 'short-hash'
+import type { BaseEvent } from './loadStartupData'
+import type { CrossMgrEventSourceFiles } from '../types/CrossMgr'
 
 const S3_BUCKET = 'wimseyraceresults'
 const AWS_REGION = 'us-west-2'
@@ -125,6 +128,7 @@ function parseDotFiles(files: AwsFiles) {
   const series: string[] = []
   const docs: string[] = []
   const startlists: string[] = []
+  const excludes: string[] = []
 
   files!.forEach(({ Key: filename }) => {
     const basename = filename!.split('/').pop()!
@@ -142,17 +146,21 @@ function parseDotFiles(files: AwsFiles) {
     if (basename.startsWith('.SERIES-')) series.push(basename.match(/^\.SERIES-(.+)/)![1])
     if (basename.startsWith('.DOC-')) docs.push(basename.match(/^\.DOC-(.+)/)![1])
     if (basename.startsWith('.START-')) startlists.push(basename.match(/^\.START-(.+)/)![1])
+    if (basename.startsWith('.EXCLUDEDIR-')) excludes.push(basename.match(/^\.EXCLUDEDIR-(.+)/)![1])
   })
+
 
   return {
     series,
     docs,
     startlists,
+    excludes,
   }
 }
 
 export type EventFile = {
   key: string
+  hash: string
   filename: string
   type: 'event' | 'series' | 'doc' | 'startlist'
   name: string | null
@@ -178,7 +186,7 @@ function parseFiles(files: AwsFiles): Partial<EventFile>[] {
       date: null,
     }
 
-    if (fileFilteringParams.series?.length && fileFilteringParams.series.some(keyword => basename.includes(keyword))) {
+    if (fileFilteringParams.series?.length && fileFilteringParams.series.some(keyword => basename.includes(keyword)) || basename.includes('-series')) {
       return {
         ...shapedFile,
         type: 'series' as const,
@@ -190,7 +198,7 @@ function parseFiles(files: AwsFiles): Partial<EventFile>[] {
         type: 'doc' as const,
         name: basename.split('.').shift()?.replace(/[-_+]/g, ' ') || null
       }
-    } else if (fileFilteringParams.startlists.some(keyword => basename.includes(keyword))) {
+    } else if (fileFilteringParams.startlists.some(keyword => basename.includes(keyword)) || basename.endsWith('-startlist.html')) {
       return {
         ...shapedFile,
         type: 'startlist' as const,
@@ -218,10 +226,18 @@ export async function fetchFilesForYear(year: number): Promise<GroupedEventFile[
 
     const { files, subdirectories } = await fetchDirectoryFiles(basePrefix)
 
+    if (organizer === 'Concord2024') console.log(files, subdirectories)
+
     let parsedFiles = parseFiles(files)
+
+    const { excludes } = parseDotFiles(files)
 
     if (subdirectories?.length) {
       const subdirFiles = await Promise.all(subdirectories.map(async (subdir) => {
+        const subdirName = subdir.slice(0, -1).split('/').pop()!
+
+        if (excludes?.includes(subdirName)) return []
+
         const { files } = await fetchDirectoryFiles(subdir)
 
         if (!files?.length) return []
@@ -230,7 +246,7 @@ export async function fetchFilesForYear(year: number): Promise<GroupedEventFile[
 
         return parsedFiles.map((file) => ( {
           ...file,
-          series: subdir.slice(0, -1).split('/').pop()
+          series: subdirName
         } ))
       }))
 
@@ -249,7 +265,7 @@ export async function fetchFilesForYear(year: number): Promise<GroupedEventFile[
   const allOrganizerFiles = _.flatten(files) as Partial<EventFile>[]
 
   const groupedFiles = allOrganizerFiles.reduce((acc, file) => {
-    const fileKey = `${file.year}/${file.organizer}/${file.type}/${file.name}/${file.date || ''}`
+    const fileKey = `${file.year}/${file.organizer}/${file.type}/${file.date || ''}`
 
     const matchingFile = acc.find(({ key }) => key === fileKey)
 
@@ -258,6 +274,7 @@ export async function fetchFilesForYear(year: number): Promise<GroupedEventFile[
     } else {
       acc.push({
         key: fileKey,
+        hash: shortHash(fileKey),
         ..._.omit(file, 'filename'),
         files: [file.filename!],
       } as GroupedEventFile)
@@ -267,4 +284,48 @@ export async function fetchFilesForYear(year: number): Promise<GroupedEventFile[
   }, [] as GroupedEventFile[])
 
   return groupedFiles
+}
+
+export async function fetchCrossMgrEventsAndSeriesForYear(year: number) {
+  const files = await fetchFilesForYear(year)
+
+  const events: BaseEvent[] = files
+    .filter((file) => file.type === 'event')
+    .map((file) => ( {
+      hash: file.hash,
+      year: file.year,
+      date: file.date,
+      organizer: file.organizer,
+      name: file.name,
+      series: file.series,
+    } ))
+
+  const series = files.filter((file) => file.type === 'series').map((file) => ( {
+    hash: file.hash,
+    year: file.year,
+    date: file.date,
+    organizer: file.organizer,
+    name: file.name,
+  } ))
+
+  const sourceFiles: CrossMgrEventSourceFiles = files.reduce((acc, file) => {
+    acc[file.hash] = file.files
+    return acc
+  }, {} as CrossMgrEventSourceFiles)
+
+  return {
+    events,
+    series,
+    sourceFiles,
+  }
+}
+
+export async function fetchEventsAndSeriesForYear(year: number) {
+  const { events, series, sourceFiles } = await fetchCrossMgrEventsAndSeriesForYear(year)
+
+  return {
+    events,
+    series,
+    sourceFiles,
+  }
 }

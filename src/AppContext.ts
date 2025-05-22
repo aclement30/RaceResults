@@ -1,10 +1,41 @@
 import { createContext } from 'react'
-import type { RaceEvent } from './utils/loadStartupData'
-import type { GroupedEventFile } from './utils/aws-s3'
+import type { BaseEvent } from './utils/loadStartupData'
+import type { CrossMgrEventSourceFiles } from './types/CrossMgr'
 
 export const AppContext = createContext({
   years: [] as number[],
-  events: [] as RaceEvent[],
-  files: [] as GroupedEventFile[],
+  setYears: (_: number[]) => {
+  },
+  events: new Map<number, BaseEvent[]>(),
+  setEventsForYear: (_: BaseEvent[], __: number) => {
+  },
+  sourceFiles: new Map<number, CrossMgrEventSourceFiles>(),
+  setSourceFilesForYear: (_: CrossMgrEventSourceFiles, __: number) => {
+  },
   loading: true,
+  setLoading: (_: boolean) => {
+  },
 })
+
+// type AppContextProviderProps = {
+//   children: ReactNode
+// }
+//
+// export const AppContextProvider: React.FC<AppContextProviderProps> = ({ children }) => {
+//   const [years, setYears] = useState<number[]>([])
+//   const [events, setEvents] = useState<Map<number, BaseEvent[]>>({} as Map<number, BaseEvent[]>)
+//   const [files, setFiles] = useState<GroupedEventFile[]>([])
+//   const [loading, setLoading] = useState<boolean>(true)
+//
+//   const setEventsForYear = async (events: BaseEvent[], year: number) => {
+//     setEvents((prevState) => ( { ...prevState, [year]: events } ))
+//   }
+//
+//   const value = { years, setYears, events, setEventsForYear, files, setFiles, loading, setLoading }
+//
+//   return (
+//     <AppContext.Provider value={value}>
+//       {children}
+//     </AppContext.Provider>
+//   )
+// }

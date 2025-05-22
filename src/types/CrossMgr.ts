@@ -1,3 +1,5 @@
+export type CrossMgrEventSourceFiles = Record<string, string[]>
+
 export type CrossMgrEventResultPayload = {
   raceName: string
   infoFields: string[]

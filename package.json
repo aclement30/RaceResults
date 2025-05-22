@@ -14,10 +14,12 @@
     "@aws-sdk/credential-providers": "^3.804.0",
     "@mantine/core": "^8.0.0",
     "@mantine/hooks": "^8.0.0",
+    "@tabler/icons-react": "^3.33.0",
     "lodash": "^4.17.21",
     "react": "^19.1.0",
     "react-dom": "^19.1.0",
-    "react-router": "^7.6.0"
+    "react-router": "^7.6.0",
+    "short-hash": "^1.0.0"
   },
   "devDependencies": {
     "@eslint/js": "^9.25.0",

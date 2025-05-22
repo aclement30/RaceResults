@@ -1,28 +1,35 @@
-export type EventResult = {
-  raceName: string
-  raceNameText: string
-  raceAddress: string
-  raceDate: string
-  raceNotes: string
-  organizer: string
-  organizerEmail: string        // email
-  // raceStartTime: number
-  // scheduledStartTime: string    // raceScheduledStart
-  // timezone: string              // raceTimeZone
-  flags: Record<string, string>
+import type { BaseEvent } from '../utils/loadStartupData'
 
+export type EventInfo = BaseEvent & {
+  // raceName: string
+  // raceNameText: string
+  // raceAddress: string
+  // raceDate: string
+  // raceNotes: string
+  // organizer: string
+  organizerEmail: string            // email
+  // timezone: string               // raceTimeZone
+  flags?: Record<string, string>
+  isTimeTrial: boolean
+}
+
+export type EventStats = {
+  athletes: Record<string, Athlete>
+  categories: BaseEventCategory[]
+  results: Record<string, EventCategory>
+  // raceStartTime: number
+  // scheduledStartTime: string     // raceScheduledStart
   // raceIsRunning: boolean
   // raceIsUnstarted: boolean
   // raceIsFinished: boolean
-
-  fieldLabels: string[]         // infoFields
-  data: RacerResult[]
+  // fieldLabels: string[]           // infoFields
+  // data: AthleteRaceResult[]
   // reverseDirection: boolean
   // finishTop: boolean
-  isTimeTrial: boolean
+  // isTimeTrial: boolean
   // winAndOut: boolean
   // rfid: boolean
-  primes: PrimeResultRow[]
+  // primes: PrimeResult[]
   // lapDetails: any
   // hideDetails: boolean
   // showCourseAnimation: boolean
@@ -31,7 +38,7 @@ export type EventResult = {
   // estimateLapsDownFinishTime: boolean
   // version: string
   // timestamp: [string, number]
-  categories: RaceCategory[]
+  // categories: EventCategory[]
   // gpsPoints: number[][]
   // courseCoordinates: number[]
   // riderDashboard: string
@@ -40,23 +47,24 @@ export type EventResult = {
   // lengthKm: number
 }
 
-export type PrimeResultRow = {
-  effortType: string
-  // effortCustom: string
+export type PrimeResult = {
+  number: number
   position: number
-  lapsToGo: number
+  bibNumber: number
+  // effortType: string
+  // effortCustom: string
+  // lapsToGo: number
   // sponsor: string
   // cash: number
   // merchandise: string
-  points: number
-  timeBonus: number
-  winnerBib: number
-  winnerInfo: string
+  // points: number
+  // timeBonus: number
+  // winnerBib: number
+  // winnerInfo: string
 }
 
-export type RacerResult = {
+export type Athlete = {
   bibNumber: number
-  category: string        // Category / raceCat
   firstName: string       // FirstName
   lastName: string        // LastName
   age: number             // Age
@@ -67,31 +75,41 @@ export type RacerResult = {
   uciId: string           // UCIID
   // natCode: string      // NatCode
   team: string            // Team
+}
 
+export type AthleteRaceResult = {
   position: number
+  bibNumber: number
   // flr: number
   // interp: number[]
   // lastInterp: boolean
   lapSpeeds: number[]
+  lapDurations: number[]   // (raceTimes)
+  lapTimes: number[]       // raceTimes
   finishTime: number
-  gapValue: number
+  finishGap: number        // gapValue
   // raceSpeeds: number[]
   // raceTimes: number[]
   avgSpeed: number        // speed
-  status: 'FINISHER' | 'DNF' | 'DNS'
+  status: 'FINISHER' | 'DNF' | 'DNS' | 'OTL'
   relegated: boolean
 }
 
-export type RaceCategory = {
+export type BaseEventCategory = {
   alias: string           // name
   label: string
-  startOffset: number
   gender: 'M' | 'F' | 'X'
-  // catType: string
   laps: number
+  // catType: string
+}
+
+export type EventCategory = BaseEventCategory & {
+  startOffset: number
   // pos: number[]
   // gapValue: number[]
   // iSort: number
+  results: AthleteRaceResult[]
+  primes: PrimeResult[]
   starters?: number
   finishers?: number
   distanceUnit?: string
