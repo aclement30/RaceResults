@@ -1,100 +1,104 @@
-import { AppShell, Button, Card, Divider, Group } from '@mantine/core'
-import { type BaseEvent } from '../utils/loadStartupData'
+import { AppShell, Divider, LoadingOverlay, Stack, Text } from '@mantine/core'
+import { notifications } from '@mantine/notifications'
 import { sortBy } from 'lodash'
-import { useNavigate, useSearchParams } from 'react-router'
-import { useContext, useEffect } from 'react'
+import { useSearchParams } from 'react-router'
+import { useContext, useEffect, useMemo } from 'react'
 import { AppContext } from '../AppContext'
-import { EventHeader } from '../Event/EventHeader/EventHeader'
-import { fetchEventsAndSeriesForYear } from '../utils/aws-s3'
+import { fetchEventsAndSeries, validateYear } from '../utils/aws-s3'
+import { Navbar } from './Navbar/Navbar'
+import { EventCard } from './EventCard/EventCard'
+import { SerieCard } from './SerieCard/SerieCard'
 
-const today = new Date().toISOString().slice(0, 10)
-const currentYear = new Date().getFullYear()
-
-const EventCard = ({ event }: { event: BaseEvent }) => {
-  let navigate = useNavigate()
-
-  return (
-    <Card
-      shadow="sm"
-      padding="lg"
-      radius="md"
-      withBorder
-      style={{ cursor: 'pointer', marginBottom: '1rem' }}
-      onClick={() => navigate(`/events/${event.year}/${event.hash}`)}
-    >
-      <EventHeader event={event}/>
-    </Card>
-  )
-}
-
-const YearButtons = ({ selectedYear }: { selectedYear: number }) => {
-  const navigate = useNavigate()
-
-  const years = []
-
-  for (let y = currentYear; y > currentYear - 10; y--) {
-    years.push(y)
-  }
-
-  return (
-    <Group style={{ marginTop: 20 }}>
-      {years.map((year) => (
-        <Button key={year} variant={year === selectedYear ? 'filled' : 'default'}
-                onClick={() => navigate(`/events?year=${year}`)}>{year}</Button> ))}
-    </Group>
-  )
-}
+const today = new Date().toLocaleString('sv').slice(0, 10)
 
 export const Events: React.FC = () => {
   const [searchParams] = useSearchParams()
-  const year = +( searchParams.get('year') || new Date().getFullYear() )
-  const { events, setLoading, setEventsForYear, setSourceFilesForYear } = useContext(AppContext)
+  const filters = {
+    year: +( searchParams.get('year') || new Date().getFullYear() ),
+    serie: searchParams.get('series') || null,
+  }
+
+  const { events, series, loading, setLoading, setEvents, setSeries } = useContext(AppContext)
 
   useEffect(() => {
     const fetchData = async () => {
       try {
         setLoading(true)
 
-        const { events, sourceFiles } = await fetchEventsAndSeriesForYear(year)
+        if (!validateYear(filters.year)) throw new Error('Invalid year:' + filters.year)
 
-        setEventsForYear(events, year)
+        const { events, series } = await fetchEventsAndSeries(filters.year)
+
+        setEvents(events, filters.year)
+        setSeries(series, filters.year)
         // setSeriesForYear(series, year)
-        setSourceFilesForYear(sourceFiles, year)
-        setLoading(false)
       } catch (error) {
-        console.error(error)
+        notifications.show({
+          title: 'Error',
+          // @ts-ignore
+          message: `An error occurred while fetching events: ${error.message}`,
+        })
+      } finally {
+        setLoading(false)
       }
     }
 
-    if (!events.get(year)) {
+    if (!events.get(filters.year)) {
       fetchData()
     }
-  }, [year, setLoading, setEventsForYear])
+  }, [filters.year])
 
-  const todayEvents = events.get(year)?.filter(({ date }) => date === today) || []
-  const pastEvents = sortBy(events.get(year)?.filter(({ date }) => date !== today && date! < today), 'date').reverse() || []
+  const filteredEvents = useMemo(() => {
+    const yearEvents = events.get(filters.year) || []
+
+    let filteredEvents = yearEvents
+
+    if (filters.serie) {
+      filteredEvents = filteredEvents.filter((event) => event.series === filters.serie)
+    }
+
+    return filteredEvents
+  }, [filters.year, filters.serie, events])
+
+  const todayEvents = filteredEvents.filter(({ date }) => date === today)
+  const pastEvents = sortBy(filteredEvents.filter(({ date }) => date !== today && date! < today), 'date').reverse()
+  const emptyEvents = !events.get(filters.year)?.length
+
+  const matchingSerie = filters.serie && series.get(filters.year)?.find((serieSummary) => serieSummary.alias === filters.serie)
 
   return (
-    <AppShell.Main>
-      {!!todayEvents.length && (
-        <>
-          <h2>Today</h2>
-          {todayEvents.map((event) => (
-            <EventCard key={`${event.hash}`} event={event}/> ))}
-        </>
-      )}
+    <>
+      <Navbar filters={filters}/>
 
-      {!!pastEvents.length && (
-        <>
-          <h2>Past Events</h2>
-          {pastEvents.map((event) => (
-            <EventCard key={`${event.hash}`} event={event}/> ))}
-        </>
-      )}
+      <AppShell.Main>
+        <LoadingOverlay visible={loading} loaderProps={{ children: 'Loading events...' }}/>
 
-      <Divider/>
+        {matchingSerie && <SerieCard serie={matchingSerie}/>}
 
-      <YearButtons selectedYear={+year}/>
-    </AppShell.Main>
+        {!!todayEvents.length && (
+          <div style={{ marginBottom: 20 }}>
+            <h2>Today</h2>
+            {todayEvents.map((event) => (
+              <EventCard key={`${event.hash}`} event={event}/> ))}
+          </div>
+        )}
+
+        {!!pastEvents.length && (
+          <>
+            <h2 style={{ marginTop: 0 }}>Past Events</h2>
+            {pastEvents.map((event) => (
+              <EventCard key={`${event.hash}`} event={event}/> ))}
+          </>
+        )}
+
+        {emptyEvents && (
+          <Stack align="center" gap="xs" style={{ marginTop: '1rem', marginBottom: '2rem' }}>
+            <Text c="dimmed" size="sm">
+              No event found...
+            </Text>
+          </Stack>
+        )}
+      </AppShell.Main>
+    </>
   )
 }

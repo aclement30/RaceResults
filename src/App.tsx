@@ -1,41 +1,41 @@
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { BrowserRouter, Route, Routes } from 'react-router'
 import '@mantine/core/styles.css'
 import './App.css'
-import { loadStartupData, type BaseEvent } from './utils/loadStartupData'
-import { AppShell, Burger, LoadingOverlay, MantineProvider } from '@mantine/core'
+import { loadStartupData } from './utils/loadStartupData'
+import { AppShell, Burger, Group, LoadingOverlay, MantineProvider } from '@mantine/core'
 import { Events } from './Events/Events'
 import { useDisclosure } from '@mantine/hooks'
 import { Event } from './Event/Event'
 import { AppContext } from './AppContext'
-import type { CrossMgrEventSourceFiles } from './types/CrossMgr'
+import type { EventSummary, SerieSummary } from './types/results'
+import { Serie } from './Serie/Serie'
 
 function App() {
   const [opened, { toggle }] = useDisclosure()
   const [years, setYears] = useState<number[]>([])
-  const [events, setEvents] = useState<Map<number, BaseEvent[]>>(new Map<number, BaseEvent[]>())
-  const [sourceFiles, setSourceFiles] = useState<Map<number, CrossMgrEventSourceFiles>>(new Map<number, CrossMgrEventSourceFiles>())
+  const [events, setAllEvents] = useState<Map<number, EventSummary[]>>(new Map<number, EventSummary[]>())
+  const [series, setAllSeries] = useState<Map<number, SerieSummary[]>>(new Map<number, SerieSummary[]>())
   const [loading, setLoading] = useState<boolean>(true)
+  const [loadingStartupData, setLoadingStartupData] = useState<boolean>(true)
 
-  const setEventsForYear = async (events: BaseEvent[], year: number) => {
-    setEvents((prevState) => ( new Map(prevState).set(year, events) ))
-  }
+  const setEvents = useCallback(async (events: EventSummary[], year: number) => {
+    setAllEvents((prevState) => ( new Map(prevState).set(year, events) ))
+  }, [setAllEvents])
 
-  const setSourceFilesForYear = async (sourceFiles: CrossMgrEventSourceFiles, year: number) => {
-    setSourceFiles((prevState) => ( new Map(prevState).set(year, sourceFiles) ))
-  }
-
-  console.log({ events })
+  const setSeries = useCallback(async (series: SerieSummary[], year: number) => {
+    setAllSeries((prevState) => ( new Map(prevState).set(year, series) ))
+  }, [setAllSeries])
 
   useEffect(() => {
     const fetchData = async () => {
       try {
-        setLoading(true)
+        setLoadingStartupData(true)
 
         const { years } = await loadStartupData()
 
         setYears(years)
-        setLoading(false)
+        setLoadingStartupData(false)
       } catch (error) {
         console.error(error)
       }
@@ -47,7 +47,7 @@ function App() {
   return (
     <BrowserRouter>
       <AppContext.Provider
-        value={{ years, setYears, events, setEventsForYear, sourceFiles, setSourceFilesForYear, loading, setLoading }}>
+        value={{ years, setYears, events, setEvents, series, setSeries, loading, setLoading }}>
         <MantineProvider>
           <AppShell
             header={{ height: 60 }}
@@ -59,23 +59,26 @@ function App() {
             padding="md"
           >
             <AppShell.Header>
-              <Burger
-                opened={opened}
-                onClick={toggle}
-                hiddenFrom="sm"
-                size="sm"
-              />
-              <h1 style={{ margin: '5px 20px 0' }}>Race Results</h1>
+              <Group h="100%" px="md">
+                <Burger
+                  opened={opened}
+                  onClick={toggle}
+                  hiddenFrom="sm"
+                  size="sm"
+                />
+
+                <h1 style={{ margin: 0 }}>BC Race Results</h1>
+              </Group>
             </AppShell.Header>
 
-            <LoadingOverlay visible={loading} loaderProps={{ children: 'Loading events...' }}/>
+            <LoadingOverlay visible={loadingStartupData} loaderProps={{ children: 'Loading events...' }}/>
 
-            {!loading && (
+            {!loadingStartupData && (
               <Routes>
                 <Route path="/" element={<Events/>}/>
                 <Route path="/events" element={<Events/>}/>
                 <Route path="/events/:year/:hash" element={<Event/>}/>
-                <Route path="/events/:year/:hash/:selectedCategory" element={<Event/>}/>
+                <Route path="/series/:year/:hash/:resultType" element={<Serie/>}/>
               </Routes>
             )}
           </AppShell>

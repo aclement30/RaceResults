@@ -1,0 +1,508 @@
+{"level":"INFO","time":"2025-05-29T19:47:27.362Z","provider":"cross-mgr","msg":"Parsing events for years: 2025"}
+{"level":"INFO","time":"2025-05-29T19:47:27.556Z","provider":"cross-mgr","msg":"2025: 12 events found"}
+{"level":"INFO","time":"2025-05-29T19:47:27.556Z","provider":"cross-mgr","msg":"2025: 2 series found"}
+{"level":"INFO","time":"2025-05-29T19:47:27.807Z","provider":"cross-mgr","msg":"Parsing team results from 2025/EscapeVelocity/WTNC2025/2025-WTNC-Series.html"}
+{"level":"INFO","time":"2025-05-29T19:47:28.195Z","provider":"cross-mgr","msg":"Parsing team results from 2025/Thrashers/SpringSeries/2025_Series.html"}
+{"level":"INFO","time":"2025-05-29T19:47:28.264Z","provider":"cross-mgr","msg":"Parsing team results from 2025/Thrashers/SpringSeries/2025_Teams.html"}
+{"level":"INFO","time":"2025-05-29T19:47:28.291Z","provider":"cross-mgr","msg":"Parsing team results from 2025/Thrashers/SpringSeries/2025_Teams.html"}
+{"level":"INFO","time":"2025-05-29T19:47:28.301Z","msg":"Writing 12 events for 2025"}
+{"level":"INFO","time":"2025-05-29T19:47:28.402Z","msg":"12 existing events found in events/2025.json"}
+{"level":"INFO","time":"2025-05-29T19:47:28.402Z","msg":"Updating events 6e5d61d3 in 2025 list"}
+{"level":"INFO","time":"2025-05-29T19:47:28.402Z","msg":"Updating events ef3a0b70 in 2025 list"}
+{"level":"INFO","time":"2025-05-29T19:47:28.402Z","msg":"Updating events 5d9e7a70 in 2025 list"}
+{"level":"INFO","time":"2025-05-29T19:47:28.402Z","msg":"Updating events f5368bd0 in 2025 list"}
+{"level":"INFO","time":"2025-05-29T19:47:28.402Z","msg":"Updating events ca77039b in 2025 list"}
+{"level":"INFO","time":"2025-05-29T19:47:28.402Z","msg":"Updating events b372c4f1 in 2025 list"}
+{"level":"INFO","time":"2025-05-29T19:47:28.402Z","msg":"Updating events b64dd5d1 in 2025 list"}
+{"level":"INFO","time":"2025-05-29T19:47:28.402Z","msg":"Updating events 6b16dff5 in 2025 list"}
+{"level":"INFO","time":"2025-05-29T19:47:28.402Z","msg":"Updating events 98422731 in 2025 list"}
+{"level":"INFO","time":"2025-05-29T19:47:28.402Z","msg":"Updating events 5c8cc87a in 2025 list"}
+{"level":"INFO","time":"2025-05-29T19:47:28.402Z","msg":"Updating events b6df8996 in 2025 list"}
+{"level":"INFO","time":"2025-05-29T19:47:28.402Z","msg":"Updating events b360cfb5 in 2025 list"}
+{"level":"INFO","time":"2025-05-29T19:47:28.402Z","msg":"Uploading 12 events to events/2025.json"}
+{"level":"INFO","time":"2025-05-29T19:47:28.458Z","msg":"Writing 12 events for 2025"}
+{"level":"INFO","time":"2025-05-29T19:47:28.458Z","msg":"Uploading events results for 98422731 to events-results/2025/98422731.json"}
+{"level":"INFO","time":"2025-05-29T19:47:28.569Z","msg":"Uploading events results for 6e5d61d3 to events-results/2025/6e5d61d3.json"}
+{"level":"INFO","time":"2025-05-29T19:47:28.688Z","msg":"Uploading events results for ef3a0b70 to events-results/2025/ef3a0b70.json"}
+{"level":"INFO","time":"2025-05-29T19:47:28.814Z","msg":"Uploading events results for 5d9e7a70 to events-results/2025/5d9e7a70.json"}
+{"level":"INFO","time":"2025-05-29T19:47:28.914Z","msg":"Uploading events results for f5368bd0 to events-results/2025/f5368bd0.json"}
+{"level":"INFO","time":"2025-05-29T19:47:29.005Z","msg":"Uploading events results for ca77039b to events-results/2025/ca77039b.json"}
+{"level":"INFO","time":"2025-05-29T19:47:29.125Z","msg":"Uploading events results for b372c4f1 to events-results/2025/b372c4f1.json"}
+{"level":"INFO","time":"2025-05-29T19:47:29.269Z","msg":"Uploading events results for b64dd5d1 to events-results/2025/b64dd5d1.json"}
+{"level":"INFO","time":"2025-05-29T19:47:29.401Z","msg":"Uploading events results for 6b16dff5 to events-results/2025/6b16dff5.json"}
+{"level":"INFO","time":"2025-05-29T19:47:29.540Z","msg":"Uploading events results for 5c8cc87a to events-results/2025/5c8cc87a.json"}
+{"level":"INFO","time":"2025-05-29T19:47:29.632Z","msg":"Uploading events results for b6df8996 to events-results/2025/b6df8996.json"}
+{"level":"INFO","time":"2025-05-29T19:47:29.726Z","msg":"Uploading events results for b360cfb5 to events-results/2025/b360cfb5.json"}
+{"level":"INFO","time":"2025-05-29T19:47:29.819Z","msg":"Writing 2 series for 2025"}
+{"level":"INFO","time":"2025-05-29T19:47:29.913Z","msg":"3 existing series found in series/2025.json"}
+{"level":"INFO","time":"2025-05-29T19:47:29.913Z","msg":"Updating series 2a0fcd99 in 2025 list"}
+{"level":"INFO","time":"2025-05-29T19:47:29.913Z","msg":"Updating series d4112aff in 2025 list"}
+{"level":"INFO","time":"2025-05-29T19:47:29.913Z","msg":"Uploading 3 series to series/2025.json"}
+{"level":"INFO","time":"2025-05-29T19:47:29.972Z","msg":"Writing 2 series for 2025"}
+{"level":"INFO","time":"2025-05-29T19:47:29.972Z","msg":"Uploading series results for 2a0fcd99 to series-results/2025/2a0fcd99.json"}
+{"level":"INFO","time":"2025-05-29T19:47:30.031Z","msg":"Uploading series results for d4112aff to series-results/2025/d4112aff.json"}
+{"level":"INFO","time":"2025-05-29T19:47:30.213Z","provider":"manual-import","msg":"Analyzing manual import files for CRC-Results..."}
+{"level":"INFO","time":"2025-05-29T19:47:30.285Z","provider":"manual-import","msg":"0 events found"}
+{"level":"INFO","time":"2025-05-29T19:47:30.285Z","provider":"manual-import","msg":"1 series found"}
+{"level":"INFO","time":"2025-05-29T19:47:30.286Z","provider":"manual-import","msg":"Importing series results for Thursday Challenge Series..."}
+{"level":"INFO","time":"2025-05-29T19:47:30.770Z","provider":"manual-import","msg":"Parsing serie individual results for Expert (M)..."}
+{"level":"INFO","time":"2025-05-29T19:47:30.775Z","provider":"manual-import","msg":"Parsing serie individual results for Advanced (M)..."}
+{"level":"INFO","time":"2025-05-29T19:47:30.776Z","provider":"manual-import","msg":"Parsing serie individual results for Expert (W)..."}
+{"level":"INFO","time":"2025-05-29T19:47:30.777Z","provider":"manual-import","msg":"Parsing serie individual results for Novice (M)..."}
+{"level":"INFO","time":"2025-05-29T19:47:30.777Z","provider":"manual-import","msg":"Parsing serie individual results for Sport (M)..."}
+{"level":"INFO","time":"2025-05-29T19:47:30.779Z","provider":"manual-import","msg":"Parsing serie individual results for Sport (W)..."}
+{"level":"INFO","time":"2025-05-29T19:47:30.780Z","provider":"manual-import","msg":"Parsing serie individual results for Master of Leisure (M)..."}
+{"level":"INFO","time":"2025-05-29T19:47:30.781Z","msg":"Writing 1 series for 2025"}
+{"level":"INFO","time":"2025-05-29T19:47:30.825Z","msg":"3 existing series found in series/2025.json"}
+{"level":"INFO","time":"2025-05-29T19:47:30.826Z","msg":"Updating series fe5c295c in 2025 list"}
+{"level":"INFO","time":"2025-05-29T19:47:30.826Z","msg":"Uploading 3 series to series/2025.json"}
+{"level":"INFO","time":"2025-05-29T19:47:30.926Z","msg":"Writing 1 series for 2025"}
+{"level":"INFO","time":"2025-05-29T19:47:30.926Z","msg":"Uploading series results for fe5c295c to series-results/2025/fe5c295c.json"}
+{"level":"INFO","time":"2025-05-29T19:53:16.932Z","provider":"cross-mgr","msg":"2 updated events found"}
+{"level":"INFO","time":"2025-05-29T19:53:16.933Z","provider":"cross-mgr","msg":"1 updated series found"}
+{"level":"INFO","time":"2025-05-29T19:53:17.142Z","provider":"cross-mgr","msg":"Parsing team results from 2025/EscapeVelocity/WTNC2025/2025-WTNC-Series.html"}
+{"level":"INFO","time":"2025-05-29T19:53:17.204Z","msg":"Writing 2 events for 2025"}
+{"level":"INFO","time":"2025-05-29T19:53:17.241Z","msg":"12 existing events found in events/2025.json"}
+{"level":"INFO","time":"2025-05-29T19:53:17.241Z","msg":"Updating event 6e5d61d3"}
+{"level":"INFO","time":"2025-05-29T19:53:17.241Z","msg":"Updating event ef3a0b70"}
+{"level":"INFO","time":"2025-05-29T19:53:17.241Z","msg":"Uploading 12 events to events/2025.json"}
+{"level":"INFO","time":"2025-05-29T19:53:17.305Z","msg":"Writing 2 events results for 2025"}
+{"level":"INFO","time":"2025-05-29T19:53:17.305Z","msg":"Uploading events results for 6e5d61d3 to events-results/2025/6e5d61d3.json"}
+{"level":"INFO","time":"2025-05-29T19:53:17.469Z","msg":"Uploading events results for ef3a0b70 to events-results/2025/ef3a0b70.json"}
+{"level":"INFO","time":"2025-05-29T19:53:17.657Z","msg":"Writing 1 series for 2025"}
+{"level":"INFO","time":"2025-05-29T19:53:17.699Z","msg":"3 existing series found in series/2025.json"}
+{"level":"INFO","time":"2025-05-29T19:53:17.699Z","msg":"Updating serie 2a0fcd99"}
+{"level":"INFO","time":"2025-05-29T19:53:17.699Z","msg":"Uploading 3 series to series/2025.json"}
+{"level":"INFO","time":"2025-05-29T19:53:17.759Z","msg":"Writing 1 series results for 2025"}
+{"level":"INFO","time":"2025-05-29T19:53:17.759Z","msg":"Uploading series results for 2a0fcd99 to series-results/2025/2a0fcd99.json"}
+{"level":"INFO","time":"2025-05-29T20:45:05.363Z","provider":"cross-mgr","msg":"2 updated events found"}
+{"level":"INFO","time":"2025-05-29T20:45:05.364Z","provider":"cross-mgr","msg":"1 updated series found"}
+{"level":"INFO","time":"2025-05-29T20:45:05.602Z","provider":"cross-mgr","msg":"Parsing team results from 2025/EscapeVelocity/WTNC2025/2025-WTNC-Series.html"}
+{"level":"INFO","time":"2025-05-29T20:45:05.667Z","msg":"Writing 2 events for 2025"}
+{"level":"INFO","time":"2025-05-29T20:45:05.713Z","msg":"12 existing events found in events/2025.json"}
+{"level":"INFO","time":"2025-05-29T20:45:05.714Z","msg":"Updating event 6e5d61d3"}
+{"level":"INFO","time":"2025-05-29T20:45:05.714Z","msg":"Updating event ef3a0b70"}
+{"level":"INFO","time":"2025-05-29T20:45:05.714Z","msg":"Uploading 12 events to events/2025.json"}
+{"level":"INFO","time":"2025-05-29T20:45:05.776Z","msg":"Writing 2 events results for 2025"}
+{"level":"INFO","time":"2025-05-29T20:45:05.777Z","msg":"Uploading events results for 6e5d61d3 to events-results/2025/6e5d61d3.json"}
+{"level":"INFO","time":"2025-05-29T20:45:05.948Z","msg":"Uploading events results for ef3a0b70 to events-results/2025/ef3a0b70.json"}
+{"level":"INFO","time":"2025-05-29T20:45:06.091Z","msg":"Writing 1 series for 2025"}
+{"level":"INFO","time":"2025-05-29T20:45:06.140Z","msg":"3 existing series found in series/2025.json"}
+{"level":"INFO","time":"2025-05-29T20:45:06.140Z","msg":"Updating serie 2a0fcd99"}
+{"level":"INFO","time":"2025-05-29T20:45:06.140Z","msg":"Uploading 3 series to series/2025.json"}
+{"level":"INFO","time":"2025-05-29T20:45:06.199Z","msg":"Writing 1 series results for 2025"}
+{"level":"INFO","time":"2025-05-29T20:45:06.199Z","msg":"Uploading series results for 2a0fcd99 to series-results/2025/2a0fcd99.json"}
+{"level":"INFO","time":"2025-05-29T21:23:36.356Z","provider":"cross-mgr","msg":"2 updated events found"}
+{"level":"INFO","time":"2025-05-29T21:23:36.357Z","provider":"cross-mgr","msg":"1 updated series found"}
+{"level":"INFO","time":"2025-05-29T21:23:36.584Z","provider":"cross-mgr","msg":"Parsing team results from 2025/EscapeVelocity/WTNC2025/2025-WTNC-Series.html"}
+{"level":"INFO","time":"2025-05-29T21:23:36.639Z","msg":"Writing 2 events for 2025"}
+{"level":"INFO","time":"2025-05-29T21:23:36.700Z","msg":"12 existing events found in events/2025.json"}
+{"level":"INFO","time":"2025-05-29T21:23:36.700Z","msg":"Updating event 6e5d61d3"}
+{"level":"INFO","time":"2025-05-29T21:23:36.700Z","msg":"Updating event ef3a0b70"}
+{"level":"INFO","time":"2025-05-29T21:23:36.700Z","msg":"Uploading 12 events to events/2025.json"}
+{"level":"INFO","time":"2025-05-29T21:23:36.815Z","msg":"Writing 2 events results for 2025"}
+{"level":"INFO","time":"2025-05-29T21:23:36.816Z","msg":"Uploading events results for 6e5d61d3 to events-results/2025/6e5d61d3.json"}
+{"level":"INFO","time":"2025-05-29T21:23:36.969Z","msg":"Uploading events results for ef3a0b70 to events-results/2025/ef3a0b70.json"}
+{"level":"INFO","time":"2025-05-29T21:23:37.165Z","msg":"Writing 1 series for 2025"}
+{"level":"INFO","time":"2025-05-29T21:23:37.250Z","msg":"3 existing series found in series/2025.json"}
+{"level":"INFO","time":"2025-05-29T21:23:37.250Z","msg":"Updating serie 2a0fcd99"}
+{"level":"INFO","time":"2025-05-29T21:23:37.250Z","msg":"Uploading 3 series to series/2025.json"}
+{"level":"INFO","time":"2025-05-29T21:23:37.309Z","msg":"Writing 1 series results for 2025"}
+{"level":"INFO","time":"2025-05-29T21:23:37.309Z","msg":"Uploading series results for 2a0fcd99 to series-results/2025/2a0fcd99.json"}
+{"level":"INFO","time":"2025-05-29T22:10:14.983Z","provider":"cross-mgr","msg":"2 updated events found"}
+{"level":"INFO","time":"2025-05-29T22:10:14.984Z","provider":"cross-mgr","msg":"1 updated series found"}
+{"level":"ERROR","time":"2025-05-29T22:10:15.362Z","provider":"cross-mgr","err":{"type":"TypeError","message":"Cannot read properties of undefined (reading '_client')","stack":"TypeError: Cannot read properties of undefined (reading '_client')\n    at fetchFile (file:///Users/alexandre/Projets/RaceResults/scripts/parsers/utils/aws-s3.ts:52:33)\n    at file:///Users/alexandre/Projets/RaceResults/scripts/parsers/cross-mgr/series-results.ts:24:86\n    at Array.map (<anonymous>)\n    at getFullSeriesWithResults (file:///Users/alexandre/Projets/RaceResults/scripts/parsers/cross-mgr/series-results.ts:24:54)\n    at file:///Users/alexandre/Projets/RaceResults/scripts/parsers/cross-mgr/hourly-watcher.ts:59:14\n    at Array.map (<anonymous>)\n    at processEvents (file:///Users/alexandre/Projets/RaceResults/scripts/parsers/cross-mgr/hourly-watcher.ts:53:63)\n    at watch (file:///Users/alexandre/Projets/RaceResults/scripts/parsers/cross-mgr/hourly-watcher.ts:109:9)\n    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)\n    at async file:///Users/alexandre/Projets/RaceResults/scripts/watcher/hourly-watcher.ts:10:3"},"msg":"Cannot read properties of undefined (reading '_client')"}
+{"level":"INFO","time":"2025-05-29T22:10:15.363Z","msg":"Writing 2 events for 2025"}
+{"level":"INFO","time":"2025-05-29T22:10:15.421Z","msg":"12 existing events found in events/2025.json"}
+{"level":"INFO","time":"2025-05-29T22:10:15.421Z","msg":"Updating event 6e5d61d3"}
+{"level":"INFO","time":"2025-05-29T22:10:15.421Z","msg":"Updating event ef3a0b70"}
+{"level":"INFO","time":"2025-05-29T22:10:15.421Z","msg":"Uploading 12 events to events/2025.json"}
+{"level":"INFO","time":"2025-05-29T22:10:15.495Z","msg":"Writing 2 events results for 2025"}
+{"level":"INFO","time":"2025-05-29T22:10:15.495Z","msg":"Uploading events results for 6e5d61d3 to events-results/2025/6e5d61d3.json"}
+{"level":"INFO","time":"2025-05-29T22:10:15.727Z","msg":"Uploading events results for ef3a0b70 to events-results/2025/ef3a0b70.json"}
+{"level":"INFO","time":"2025-05-29T22:12:00.014Z","provider":"cross-mgr","msg":"2 updated events found"}
+{"level":"INFO","time":"2025-05-29T22:12:00.014Z","provider":"cross-mgr","msg":"1 updated series found"}
+{"level":"INFO","time":"2025-05-29T22:12:00.249Z","provider":"cross-mgr","msg":"Parsing team results from 2025/EscapeVelocity/WTNC2025/2025-WTNC-Series.html"}
+{"level":"INFO","time":"2025-05-29T22:12:00.297Z","msg":"Writing 2 events for 2025"}
+{"level":"INFO","time":"2025-05-29T22:12:00.348Z","msg":"12 existing events found in events/2025.json"}
+{"level":"INFO","time":"2025-05-29T22:12:00.348Z","msg":"Updating event 6e5d61d3"}
+{"level":"INFO","time":"2025-05-29T22:12:00.348Z","msg":"Updating event ef3a0b70"}
+{"level":"INFO","time":"2025-05-29T22:12:00.348Z","msg":"Uploading 12 events to events/2025.json"}
+{"level":"INFO","time":"2025-05-29T22:12:00.407Z","msg":"Writing 2 events results for 2025"}
+{"level":"INFO","time":"2025-05-29T22:12:00.407Z","msg":"Uploading events results for 6e5d61d3 to events-results/2025/6e5d61d3.json"}
+{"level":"INFO","time":"2025-05-29T22:12:00.573Z","msg":"Uploading events results for ef3a0b70 to events-results/2025/ef3a0b70.json"}
+{"level":"INFO","time":"2025-05-29T22:12:00.734Z","msg":"Writing 1 series for 2025"}
+{"level":"INFO","time":"2025-05-29T22:12:00.791Z","msg":"3 existing series found in series/2025.json"}
+{"level":"INFO","time":"2025-05-29T22:12:00.791Z","msg":"Updating serie 2a0fcd99"}
+{"level":"INFO","time":"2025-05-29T22:12:00.791Z","msg":"Uploading 3 series to series/2025.json"}
+{"level":"INFO","time":"2025-05-29T22:12:00.850Z","msg":"Writing 1 series results for 2025"}
+{"level":"INFO","time":"2025-05-29T22:12:00.850Z","msg":"Uploading series results for 2a0fcd99 to series-results/2025/2a0fcd99.json"}
+{"level":"INFO","time":"2025-05-29T22:26:13.220Z","provider":"cross-mgr","msg":"Parsing events for years: 2025"}
+{"level":"INFO","time":"2025-05-29T22:26:13.425Z","provider":"cross-mgr","msg":"2025: 12 events found"}
+{"level":"INFO","time":"2025-05-29T22:26:13.425Z","provider":"cross-mgr","msg":"2025: 2 series found"}
+{"level":"INFO","time":"2025-05-29T22:26:13.667Z","provider":"cross-mgr","msg":"Parsing team results from 2025/EscapeVelocity/WTNC2025/2025-WTNC-Series.html"}
+{"level":"INFO","time":"2025-05-29T22:26:13.759Z","provider":"cross-mgr","msg":"Parsing team results from 2025/Thrashers/SpringSeries/2025_Series.html"}
+{"level":"INFO","time":"2025-05-29T22:26:13.790Z","provider":"cross-mgr","msg":"Parsing team results from 2025/Thrashers/SpringSeries/2025_Teams.html"}
+{"level":"INFO","time":"2025-05-29T22:26:13.813Z","provider":"cross-mgr","msg":"Parsing team results from 2025/Thrashers/SpringSeries/2025_Teams.html"}
+{"level":"INFO","time":"2025-05-29T22:26:13.929Z","msg":"Writing 12 events for 2025"}
+{"level":"INFO","time":"2025-05-29T22:26:14.039Z","msg":"12 existing events found in events/2025.json"}
+{"level":"INFO","time":"2025-05-29T22:26:14.039Z","msg":"Updating event 6e5d61d3"}
+{"level":"INFO","time":"2025-05-29T22:26:14.039Z","msg":"Updating event ef3a0b70"}
+{"level":"INFO","time":"2025-05-29T22:26:14.039Z","msg":"Updating event 5d9e7a70"}
+{"level":"INFO","time":"2025-05-29T22:26:14.040Z","msg":"Updating event f5368bd0"}
+{"level":"INFO","time":"2025-05-29T22:26:14.040Z","msg":"Updating event ca77039b"}
+{"level":"INFO","time":"2025-05-29T22:26:14.040Z","msg":"Updating event b372c4f1"}
+{"level":"INFO","time":"2025-05-29T22:26:14.040Z","msg":"Updating event b64dd5d1"}
+{"level":"INFO","time":"2025-05-29T22:26:14.040Z","msg":"Updating event 6b16dff5"}
+{"level":"INFO","time":"2025-05-29T22:26:14.040Z","msg":"Updating event 98422731"}
+{"level":"INFO","time":"2025-05-29T22:26:14.040Z","msg":"Updating event 5c8cc87a"}
+{"level":"INFO","time":"2025-05-29T22:26:14.040Z","msg":"Updating event b6df8996"}
+{"level":"INFO","time":"2025-05-29T22:26:14.040Z","msg":"Updating event b360cfb5"}
+{"level":"INFO","time":"2025-05-29T22:26:14.040Z","msg":"Uploading 12 events to events/2025.json"}
+{"level":"INFO","time":"2025-05-29T22:26:14.105Z","msg":"Writing 12 events results for 2025"}
+{"level":"INFO","time":"2025-05-29T22:26:14.105Z","msg":"Uploading events results for 98422731 to events-results/2025/98422731.json"}
+{"level":"INFO","time":"2025-05-29T22:26:14.210Z","msg":"Uploading events results for 6e5d61d3 to events-results/2025/6e5d61d3.json"}
+{"level":"INFO","time":"2025-05-29T22:26:14.358Z","msg":"Uploading events results for ef3a0b70 to events-results/2025/ef3a0b70.json"}
+{"level":"INFO","time":"2025-05-29T22:26:14.446Z","msg":"Uploading events results for 5d9e7a70 to events-results/2025/5d9e7a70.json"}
+{"level":"INFO","time":"2025-05-29T22:26:14.528Z","msg":"Uploading events results for f5368bd0 to events-results/2025/f5368bd0.json"}
+{"level":"INFO","time":"2025-05-29T22:26:14.737Z","msg":"Uploading events results for ca77039b to events-results/2025/ca77039b.json"}
+{"level":"INFO","time":"2025-05-29T22:26:14.817Z","msg":"Uploading events results for b372c4f1 to events-results/2025/b372c4f1.json"}
+{"level":"INFO","time":"2025-05-29T22:26:14.890Z","msg":"Uploading events results for b64dd5d1 to events-results/2025/b64dd5d1.json"}
+{"level":"INFO","time":"2025-05-29T22:26:14.969Z","msg":"Uploading events results for 6b16dff5 to events-results/2025/6b16dff5.json"}
+{"level":"INFO","time":"2025-05-29T22:26:15.124Z","msg":"Uploading events results for 5c8cc87a to events-results/2025/5c8cc87a.json"}
+{"level":"INFO","time":"2025-05-29T22:26:15.231Z","msg":"Uploading events results for b6df8996 to events-results/2025/b6df8996.json"}
+{"level":"INFO","time":"2025-05-29T22:26:15.306Z","msg":"Uploading events results for b360cfb5 to events-results/2025/b360cfb5.json"}
+{"level":"INFO","time":"2025-05-29T22:26:15.381Z","msg":"Writing 2 series for 2025"}
+{"level":"INFO","time":"2025-05-29T22:26:15.435Z","msg":"3 existing series found in series/2025.json"}
+{"level":"INFO","time":"2025-05-29T22:26:15.435Z","msg":"Updating serie 2a0fcd99"}
+{"level":"INFO","time":"2025-05-29T22:26:15.435Z","msg":"Updating serie d4112aff"}
+{"level":"INFO","time":"2025-05-29T22:26:15.435Z","msg":"Uploading 3 series to series/2025.json"}
+{"level":"INFO","time":"2025-05-29T22:26:15.497Z","msg":"Writing 2 series results for 2025"}
+{"level":"INFO","time":"2025-05-29T22:26:15.497Z","msg":"Uploading series results for 2a0fcd99 to series-results/2025/2a0fcd99.json"}
+{"level":"INFO","time":"2025-05-29T22:26:15.580Z","msg":"Uploading series results for d4112aff to series-results/2025/d4112aff.json"}
+{"level":"ERROR","time":"2025-05-29T22:26:15.709Z","provider":"manual-import","err":{"type":"ReferenceError","message":"fetchDirectoryFiles is not defined","stack":"ReferenceError: fetchDirectoryFiles is not defined\n    at fetchManualImportFiles (file:///Users/alexandre/Projets/RaceResults/scripts/parsers/manual-import/hourly-watcher.ts:112:37)\n    at main (file:///Users/alexandre/Projets/RaceResults/scripts/parsers/manual-import/hourly-watcher.ts:21:28)\n    at file:///Users/alexandre/Projets/RaceResults/scripts/parsers/hourly-watcher.ts:16:9\n    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)"},"msg":"fetchDirectoryFiles is not defined"}
+{"level":"INFO","time":"2025-05-29T22:27:47.391Z","provider":"cross-mgr","msg":"Parsing events for years: 2025"}
+{"level":"INFO","time":"2025-05-29T22:27:47.579Z","provider":"cross-mgr","msg":"2025: 12 events found"}
+{"level":"INFO","time":"2025-05-29T22:27:47.579Z","provider":"cross-mgr","msg":"2025: 2 series found"}
+{"level":"INFO","time":"2025-05-29T22:27:47.943Z","provider":"cross-mgr","msg":"Parsing team results from 2025/EscapeVelocity/WTNC2025/2025-WTNC-Series.html"}
+{"level":"INFO","time":"2025-05-29T22:27:47.978Z","provider":"cross-mgr","msg":"Parsing team results from 2025/Thrashers/SpringSeries/2025_Series.html"}
+{"level":"INFO","time":"2025-05-29T22:27:48.010Z","provider":"cross-mgr","msg":"Parsing team results from 2025/Thrashers/SpringSeries/2025_Teams.html"}
+{"level":"INFO","time":"2025-05-29T22:27:48.035Z","provider":"cross-mgr","msg":"Parsing team results from 2025/Thrashers/SpringSeries/2025_Teams.html"}
+{"level":"INFO","time":"2025-05-29T22:27:48.047Z","msg":"Writing 12 events for 2025"}
+{"level":"INFO","time":"2025-05-29T22:27:48.144Z","msg":"12 existing events found in events/2025.json"}
+{"level":"INFO","time":"2025-05-29T22:27:48.144Z","msg":"Updating event 6e5d61d3"}
+{"level":"INFO","time":"2025-05-29T22:27:48.144Z","msg":"Updating event ef3a0b70"}
+{"level":"INFO","time":"2025-05-29T22:27:48.144Z","msg":"Updating event 5d9e7a70"}
+{"level":"INFO","time":"2025-05-29T22:27:48.144Z","msg":"Updating event f5368bd0"}
+{"level":"INFO","time":"2025-05-29T22:27:48.144Z","msg":"Updating event ca77039b"}
+{"level":"INFO","time":"2025-05-29T22:27:48.144Z","msg":"Updating event b372c4f1"}
+{"level":"INFO","time":"2025-05-29T22:27:48.144Z","msg":"Updating event b64dd5d1"}
+{"level":"INFO","time":"2025-05-29T22:27:48.144Z","msg":"Updating event 6b16dff5"}
+{"level":"INFO","time":"2025-05-29T22:27:48.144Z","msg":"Updating event 98422731"}
+{"level":"INFO","time":"2025-05-29T22:27:48.144Z","msg":"Updating event 5c8cc87a"}
+{"level":"INFO","time":"2025-05-29T22:27:48.144Z","msg":"Updating event b6df8996"}
+{"level":"INFO","time":"2025-05-29T22:27:48.144Z","msg":"Updating event b360cfb5"}
+{"level":"INFO","time":"2025-05-29T22:27:48.144Z","msg":"Uploading 12 events to events/2025.json"}
+{"level":"INFO","time":"2025-05-29T22:27:48.263Z","msg":"Writing 12 events results for 2025"}
+{"level":"INFO","time":"2025-05-29T22:27:48.263Z","msg":"Uploading events results for 98422731 to events-results/2025/98422731.json"}
+{"level":"INFO","time":"2025-05-29T22:27:48.365Z","msg":"Uploading events results for 6e5d61d3 to events-results/2025/6e5d61d3.json"}
+{"level":"INFO","time":"2025-05-29T22:27:48.536Z","msg":"Uploading events results for ef3a0b70 to events-results/2025/ef3a0b70.json"}
+{"level":"INFO","time":"2025-05-29T22:27:48.806Z","msg":"Uploading events results for 5d9e7a70 to events-results/2025/5d9e7a70.json"}
+{"level":"INFO","time":"2025-05-29T22:27:48.882Z","msg":"Uploading events results for f5368bd0 to events-results/2025/f5368bd0.json"}
+{"level":"INFO","time":"2025-05-29T22:27:49.088Z","msg":"Uploading events results for ca77039b to events-results/2025/ca77039b.json"}
+{"level":"INFO","time":"2025-05-29T22:27:49.162Z","msg":"Uploading events results for b372c4f1 to events-results/2025/b372c4f1.json"}
+{"level":"INFO","time":"2025-05-29T22:27:49.234Z","msg":"Uploading events results for b64dd5d1 to events-results/2025/b64dd5d1.json"}
+{"level":"INFO","time":"2025-05-29T22:27:49.324Z","msg":"Uploading events results for 6b16dff5 to events-results/2025/6b16dff5.json"}
+{"level":"INFO","time":"2025-05-29T22:27:49.479Z","msg":"Uploading events results for 5c8cc87a to events-results/2025/5c8cc87a.json"}
+{"level":"INFO","time":"2025-05-29T22:27:49.614Z","msg":"Uploading events results for b6df8996 to events-results/2025/b6df8996.json"}
+{"level":"INFO","time":"2025-05-29T22:27:49.712Z","msg":"Uploading events results for b360cfb5 to events-results/2025/b360cfb5.json"}
+{"level":"INFO","time":"2025-05-29T22:27:49.793Z","msg":"Writing 2 series for 2025"}
+{"level":"INFO","time":"2025-05-29T22:27:49.835Z","msg":"3 existing series found in series/2025.json"}
+{"level":"INFO","time":"2025-05-29T22:27:49.835Z","msg":"Updating serie 2a0fcd99"}
+{"level":"INFO","time":"2025-05-29T22:27:49.835Z","msg":"Updating serie d4112aff"}
+{"level":"INFO","time":"2025-05-29T22:27:49.835Z","msg":"Uploading 3 series to series/2025.json"}
+{"level":"INFO","time":"2025-05-29T22:27:49.892Z","msg":"Writing 2 series results for 2025"}
+{"level":"INFO","time":"2025-05-29T22:27:49.892Z","msg":"Uploading series results for 2a0fcd99 to series-results/2025/2a0fcd99.json"}
+{"level":"INFO","time":"2025-05-29T22:27:49.954Z","msg":"Uploading series results for d4112aff to series-results/2025/d4112aff.json"}
+{"level":"INFO","time":"2025-05-29T22:27:50.257Z","provider":"manual-import","msg":"Analyzing manual import files for CRC-Results..."}
+{"level":"INFO","time":"2025-05-29T22:27:50.398Z","provider":"manual-import","msg":"0 events found"}
+{"level":"INFO","time":"2025-05-29T22:27:50.398Z","provider":"manual-import","msg":"1 series found"}
+{"level":"INFO","time":"2025-05-29T22:27:50.399Z","provider":"manual-import","msg":"Importing series results for Thursday Challenge Series..."}
+{"level":"INFO","time":"2025-05-29T22:27:50.768Z","provider":"manual-import","msg":"Parsing serie individual results for Expert (M)..."}
+{"level":"INFO","time":"2025-05-29T22:27:50.781Z","provider":"manual-import","msg":"Parsing serie individual results for Advanced (M)..."}
+{"level":"INFO","time":"2025-05-29T22:27:50.783Z","provider":"manual-import","msg":"Parsing serie individual results for Expert (W)..."}
+{"level":"INFO","time":"2025-05-29T22:27:50.784Z","provider":"manual-import","msg":"Parsing serie individual results for Novice (M)..."}
+{"level":"INFO","time":"2025-05-29T22:27:50.786Z","provider":"manual-import","msg":"Parsing serie individual results for Sport (M)..."}
+{"level":"INFO","time":"2025-05-29T22:27:50.787Z","provider":"manual-import","msg":"Parsing serie individual results for Sport (W)..."}
+{"level":"INFO","time":"2025-05-29T22:27:50.788Z","provider":"manual-import","msg":"Parsing serie individual results for Master of Leisure (M)..."}
+{"level":"INFO","time":"2025-05-29T22:27:50.789Z","msg":"Writing 1 series for 2025"}
+{"level":"INFO","time":"2025-05-29T22:27:50.826Z","msg":"3 existing series found in series/2025.json"}
+{"level":"INFO","time":"2025-05-29T22:27:50.826Z","msg":"Updating serie fe5c295c"}
+{"level":"INFO","time":"2025-05-29T22:27:50.826Z","msg":"Uploading 3 series to series/2025.json"}
+{"level":"INFO","time":"2025-05-29T22:27:50.884Z","msg":"Writing 1 series results for 2025"}
+{"level":"INFO","time":"2025-05-29T22:27:50.884Z","msg":"Uploading series results for fe5c295c to series-results/2025/fe5c295c.json"}
+{"level":"INFO","time":"2025-05-29T22:30:01.564Z","provider":"cross-mgr","msg":"Parsing events for years: 2025"}
+{"level":"INFO","time":"2025-05-29T22:30:01.752Z","provider":"cross-mgr","msg":"2025: 12 events found"}
+{"level":"INFO","time":"2025-05-29T22:30:01.752Z","provider":"cross-mgr","msg":"2025: 2 series found"}
+{"level":"INFO","time":"2025-05-29T22:30:01.979Z","provider":"cross-mgr","msg":"Parsing team results from 2025/EscapeVelocity/WTNC2025/2025-WTNC-Series.html"}
+{"level":"INFO","time":"2025-05-29T22:30:02.186Z","provider":"cross-mgr","msg":"Parsing team results from 2025/Thrashers/SpringSeries/2025_Series.html"}
+{"level":"INFO","time":"2025-05-29T22:30:02.220Z","provider":"cross-mgr","msg":"Parsing team results from 2025/Thrashers/SpringSeries/2025_Teams.html"}
+{"level":"INFO","time":"2025-05-29T22:30:02.245Z","provider":"cross-mgr","msg":"Parsing team results from 2025/Thrashers/SpringSeries/2025_Teams.html"}
+{"level":"INFO","time":"2025-05-29T22:30:02.258Z","msg":"Writing 12 events for 2025"}
+{"level":"INFO","time":"2025-05-29T22:30:02.362Z","msg":"12 existing events found in events/2025.json"}
+{"level":"INFO","time":"2025-05-29T22:30:02.362Z","msg":"Updating event 6e5d61d3"}
+{"level":"INFO","time":"2025-05-29T22:30:02.362Z","msg":"Updating event ef3a0b70"}
+{"level":"INFO","time":"2025-05-29T22:30:02.362Z","msg":"Updating event 5d9e7a70"}
+{"level":"INFO","time":"2025-05-29T22:30:02.362Z","msg":"Updating event f5368bd0"}
+{"level":"INFO","time":"2025-05-29T22:30:02.362Z","msg":"Updating event ca77039b"}
+{"level":"INFO","time":"2025-05-29T22:30:02.362Z","msg":"Updating event b372c4f1"}
+{"level":"INFO","time":"2025-05-29T22:30:02.362Z","msg":"Updating event b64dd5d1"}
+{"level":"INFO","time":"2025-05-29T22:30:02.362Z","msg":"Updating event 6b16dff5"}
+{"level":"INFO","time":"2025-05-29T22:30:02.362Z","msg":"Updating event 98422731"}
+{"level":"INFO","time":"2025-05-29T22:30:02.362Z","msg":"Updating event 5c8cc87a"}
+{"level":"INFO","time":"2025-05-29T22:30:02.362Z","msg":"Updating event b6df8996"}
+{"level":"INFO","time":"2025-05-29T22:30:02.362Z","msg":"Updating event b360cfb5"}
+{"level":"INFO","time":"2025-05-29T22:30:02.362Z","msg":"Uploading 12 events to events/2025.json"}
+{"level":"INFO","time":"2025-05-29T22:30:02.417Z","msg":"Writing 12 events results for 2025"}
+{"level":"INFO","time":"2025-05-29T22:30:02.417Z","msg":"Uploading events results for 98422731 to events-results/2025/98422731.json"}
+{"level":"INFO","time":"2025-05-29T22:30:02.597Z","msg":"Uploading events results for 6e5d61d3 to events-results/2025/6e5d61d3.json"}
+{"level":"INFO","time":"2025-05-29T22:30:02.754Z","msg":"Uploading events results for ef3a0b70 to events-results/2025/ef3a0b70.json"}
+{"level":"INFO","time":"2025-05-29T22:30:02.978Z","msg":"Uploading events results for 5d9e7a70 to events-results/2025/5d9e7a70.json"}
+{"level":"INFO","time":"2025-05-29T22:30:03.065Z","msg":"Uploading events results for f5368bd0 to events-results/2025/f5368bd0.json"}
+{"level":"INFO","time":"2025-05-29T22:30:03.287Z","msg":"Uploading events results for ca77039b to events-results/2025/ca77039b.json"}
+{"level":"INFO","time":"2025-05-29T22:30:03.390Z","msg":"Uploading events results for b372c4f1 to events-results/2025/b372c4f1.json"}
+{"level":"INFO","time":"2025-05-29T22:30:03.486Z","msg":"Uploading events results for b64dd5d1 to events-results/2025/b64dd5d1.json"}
+{"level":"INFO","time":"2025-05-29T22:30:03.574Z","msg":"Uploading events results for 6b16dff5 to events-results/2025/6b16dff5.json"}
+{"level":"INFO","time":"2025-05-29T22:30:03.756Z","msg":"Uploading events results for 5c8cc87a to events-results/2025/5c8cc87a.json"}
+{"level":"INFO","time":"2025-05-29T22:30:03.834Z","msg":"Uploading events results for b6df8996 to events-results/2025/b6df8996.json"}
+{"level":"INFO","time":"2025-05-29T22:30:03.907Z","msg":"Uploading events results for b360cfb5 to events-results/2025/b360cfb5.json"}
+{"level":"INFO","time":"2025-05-29T22:30:03.985Z","msg":"Writing 2 series for 2025"}
+{"level":"INFO","time":"2025-05-29T22:30:04.023Z","msg":"3 existing series found in series/2025.json"}
+{"level":"INFO","time":"2025-05-29T22:30:04.023Z","msg":"Updating serie 2a0fcd99"}
+{"level":"INFO","time":"2025-05-29T22:30:04.023Z","msg":"Updating serie d4112aff"}
+{"level":"INFO","time":"2025-05-29T22:30:04.023Z","msg":"Uploading 3 series to series/2025.json"}
+{"level":"INFO","time":"2025-05-29T22:30:04.085Z","msg":"Writing 2 series results for 2025"}
+{"level":"INFO","time":"2025-05-29T22:30:04.085Z","msg":"Uploading series results for 2a0fcd99 to series-results/2025/2a0fcd99.json"}
+{"level":"INFO","time":"2025-05-29T22:30:04.147Z","msg":"Uploading series results for d4112aff to series-results/2025/d4112aff.json"}
+{"level":"INFO","time":"2025-05-29T22:30:04.389Z","provider":"manual-import","msg":"Analyzing manual import files for CRC-Results..."}
+{"level":"INFO","time":"2025-05-29T22:30:04.471Z","provider":"manual-import","msg":"0 events found"}
+{"level":"INFO","time":"2025-05-29T22:30:04.471Z","provider":"manual-import","msg":"1 series found"}
+{"level":"INFO","time":"2025-05-29T22:30:04.472Z","provider":"manual-import","msg":"Importing series results for Thursday Challenge Series..."}
+{"level":"INFO","time":"2025-05-29T22:30:04.873Z","provider":"manual-import","msg":"Parsing serie individual results for Expert (M)..."}
+{"level":"INFO","time":"2025-05-29T22:30:04.884Z","provider":"manual-import","msg":"Parsing serie individual results for Advanced (M)..."}
+{"level":"INFO","time":"2025-05-29T22:30:04.886Z","provider":"manual-import","msg":"Parsing serie individual results for Expert (W)..."}
+{"level":"INFO","time":"2025-05-29T22:30:04.887Z","provider":"manual-import","msg":"Parsing serie individual results for Novice (M)..."}
+{"level":"INFO","time":"2025-05-29T22:30:04.889Z","provider":"manual-import","msg":"Parsing serie individual results for Sport (M)..."}
+{"level":"INFO","time":"2025-05-29T22:30:04.891Z","provider":"manual-import","msg":"Parsing serie individual results for Sport (W)..."}
+{"level":"INFO","time":"2025-05-29T22:30:04.892Z","provider":"manual-import","msg":"Parsing serie individual results for Master of Leisure (M)..."}
+{"level":"INFO","time":"2025-05-29T22:30:04.894Z","msg":"Writing 1 series for 2025"}
+{"level":"INFO","time":"2025-05-29T22:30:04.956Z","msg":"3 existing series found in series/2025.json"}
+{"level":"INFO","time":"2025-05-29T22:30:04.956Z","msg":"Updating serie fe5c295c"}
+{"level":"INFO","time":"2025-05-29T22:30:04.956Z","msg":"Uploading 3 series to series/2025.json"}
+{"level":"INFO","time":"2025-05-29T22:30:05.019Z","msg":"Writing 1 series results for 2025"}
+{"level":"INFO","time":"2025-05-29T22:30:05.019Z","msg":"Uploading series results for fe5c295c to series-results/2025/fe5c295c.json"}
+{"level":"INFO","time":"2025-05-29T22:30:30.353Z","provider":"cross-mgr","msg":"Parsing events for years: 2025"}
+{"level":"INFO","time":"2025-05-29T22:30:30.674Z","provider":"cross-mgr","msg":"2025: 12 events found"}
+{"level":"INFO","time":"2025-05-29T22:30:30.674Z","provider":"cross-mgr","msg":"2025: 2 series found"}
+{"level":"INFO","time":"2025-05-29T22:30:30.881Z","provider":"cross-mgr","msg":"Parsing team results from 2025/EscapeVelocity/WTNC2025/2025-WTNC-Series.html"}
+{"level":"INFO","time":"2025-05-29T22:30:31.446Z","provider":"cross-mgr","msg":"Parsing team results from 2025/Thrashers/SpringSeries/2025_Series.html"}
+{"level":"INFO","time":"2025-05-29T22:30:31.499Z","provider":"cross-mgr","msg":"Parsing team results from 2025/Thrashers/SpringSeries/2025_Teams.html"}
+{"level":"INFO","time":"2025-05-29T22:30:31.525Z","provider":"cross-mgr","msg":"Parsing team results from 2025/Thrashers/SpringSeries/2025_Teams.html"}
+{"level":"INFO","time":"2025-05-29T22:30:31.538Z","msg":"Writing 12 events for 2025"}
+{"level":"INFO","time":"2025-05-29T22:30:31.733Z","msg":"12 existing events found in events/2025.json"}
+{"level":"INFO","time":"2025-05-29T22:30:31.733Z","msg":"Updating event 6e5d61d3"}
+{"level":"INFO","time":"2025-05-29T22:30:31.733Z","msg":"Updating event ef3a0b70"}
+{"level":"INFO","time":"2025-05-29T22:30:31.733Z","msg":"Updating event 5d9e7a70"}
+{"level":"INFO","time":"2025-05-29T22:30:31.733Z","msg":"Updating event f5368bd0"}
+{"level":"INFO","time":"2025-05-29T22:30:31.733Z","msg":"Updating event ca77039b"}
+{"level":"INFO","time":"2025-05-29T22:30:31.733Z","msg":"Updating event b372c4f1"}
+{"level":"INFO","time":"2025-05-29T22:30:31.733Z","msg":"Updating event b64dd5d1"}
+{"level":"INFO","time":"2025-05-29T22:30:31.733Z","msg":"Updating event 6b16dff5"}
+{"level":"INFO","time":"2025-05-29T22:30:31.733Z","msg":"Updating event 98422731"}
+{"level":"INFO","time":"2025-05-29T22:30:31.733Z","msg":"Updating event 5c8cc87a"}
+{"level":"INFO","time":"2025-05-29T22:30:31.733Z","msg":"Updating event b6df8996"}
+{"level":"INFO","time":"2025-05-29T22:30:31.733Z","msg":"Updating event b360cfb5"}
+{"level":"INFO","time":"2025-05-29T22:30:31.733Z","msg":"Uploading 12 events to events/2025.json"}
+{"level":"INFO","time":"2025-05-29T22:30:31.794Z","msg":"Writing 12 events results for 2025"}
+{"level":"INFO","time":"2025-05-29T22:30:31.794Z","msg":"Uploading events results for 98422731 to events-results/2025/98422731.json"}
+{"level":"INFO","time":"2025-05-29T22:30:31.903Z","msg":"Uploading events results for 6e5d61d3 to events-results/2025/6e5d61d3.json"}
+{"level":"INFO","time":"2025-05-29T22:30:32.005Z","msg":"Uploading events results for ef3a0b70 to events-results/2025/ef3a0b70.json"}
+{"level":"INFO","time":"2025-05-29T22:30:32.164Z","msg":"Uploading events results for 5d9e7a70 to events-results/2025/5d9e7a70.json"}
+{"level":"INFO","time":"2025-05-29T22:30:32.237Z","msg":"Uploading events results for f5368bd0 to events-results/2025/f5368bd0.json"}
+{"level":"INFO","time":"2025-05-29T22:30:32.452Z","msg":"Uploading events results for ca77039b to events-results/2025/ca77039b.json"}
+{"level":"INFO","time":"2025-05-29T22:30:32.522Z","msg":"Uploading events results for b372c4f1 to events-results/2025/b372c4f1.json"}
+{"level":"INFO","time":"2025-05-29T22:30:32.684Z","msg":"Uploading events results for b64dd5d1 to events-results/2025/b64dd5d1.json"}
+{"level":"INFO","time":"2025-05-29T22:30:32.779Z","msg":"Uploading events results for 6b16dff5 to events-results/2025/6b16dff5.json"}
+{"level":"INFO","time":"2025-05-29T22:30:32.922Z","msg":"Uploading events results for 5c8cc87a to events-results/2025/5c8cc87a.json"}
+{"level":"INFO","time":"2025-05-29T22:30:33.009Z","msg":"Uploading events results for b6df8996 to events-results/2025/b6df8996.json"}
+{"level":"INFO","time":"2025-05-29T22:30:33.115Z","msg":"Uploading events results for b360cfb5 to events-results/2025/b360cfb5.json"}
+{"level":"INFO","time":"2025-05-29T22:30:33.295Z","msg":"Writing 2 series for 2025"}
+{"level":"INFO","time":"2025-05-29T22:30:33.344Z","msg":"3 existing series found in series/2025.json"}
+{"level":"INFO","time":"2025-05-29T22:30:33.344Z","msg":"Updating serie 2a0fcd99"}
+{"level":"INFO","time":"2025-05-29T22:30:33.344Z","msg":"Updating serie d4112aff"}
+{"level":"INFO","time":"2025-05-29T22:30:33.344Z","msg":"Uploading 3 series to series/2025.json"}
+{"level":"INFO","time":"2025-05-29T22:30:33.399Z","msg":"Writing 2 series results for 2025"}
+{"level":"INFO","time":"2025-05-29T22:30:33.399Z","msg":"Uploading series results for 2a0fcd99 to series-results/2025/2a0fcd99.json"}
+{"level":"INFO","time":"2025-05-29T22:30:33.461Z","msg":"Uploading series results for d4112aff to series-results/2025/d4112aff.json"}
+{"level":"INFO","time":"2025-05-29T22:30:33.734Z","provider":"manual-import","msg":"Analyzing manual import files for CRC-Results..."}
+{"level":"INFO","time":"2025-05-29T22:30:33.819Z","provider":"manual-import","msg":"0 events found"}
+{"level":"INFO","time":"2025-05-29T22:30:33.819Z","provider":"manual-import","msg":"1 series found"}
+{"level":"INFO","time":"2025-05-29T22:30:33.820Z","provider":"manual-import","msg":"Importing series results for Thursday Challenge Series..."}
+{"level":"INFO","time":"2025-05-29T22:30:34.121Z","provider":"manual-import","msg":"Parsing serie individual results for Expert (M)..."}
+{"level":"INFO","time":"2025-05-29T22:30:34.127Z","provider":"manual-import","msg":"Parsing serie individual results for Advanced (M)..."}
+{"level":"INFO","time":"2025-05-29T22:30:34.128Z","provider":"manual-import","msg":"Parsing serie individual results for Expert (W)..."}
+{"level":"INFO","time":"2025-05-29T22:30:34.129Z","provider":"manual-import","msg":"Parsing serie individual results for Novice (M)..."}
+{"level":"INFO","time":"2025-05-29T22:30:34.131Z","provider":"manual-import","msg":"Parsing serie individual results for Sport (M)..."}
+{"level":"INFO","time":"2025-05-29T22:30:34.133Z","provider":"manual-import","msg":"Parsing serie individual results for Sport (W)..."}
+{"level":"INFO","time":"2025-05-29T22:30:34.134Z","provider":"manual-import","msg":"Parsing serie individual results for Master of Leisure (M)..."}
+{"level":"INFO","time":"2025-05-29T22:30:34.135Z","msg":"Writing 1 series for 2025"}
+{"level":"INFO","time":"2025-05-29T22:30:34.255Z","msg":"3 existing series found in series/2025.json"}
+{"level":"INFO","time":"2025-05-29T22:30:34.255Z","msg":"Updating serie fe5c295c"}
+{"level":"INFO","time":"2025-05-29T22:30:34.255Z","msg":"Uploading 3 series to series/2025.json"}
+{"level":"INFO","time":"2025-05-29T22:30:34.318Z","msg":"Writing 1 series results for 2025"}
+{"level":"INFO","time":"2025-05-29T22:30:34.318Z","msg":"Uploading series results for fe5c295c to series-results/2025/fe5c295c.json"}
+{"level":"INFO","time":"2025-05-29T22:44:55.162Z","provider":"cross-mgr","msg":"Parsing events for year: 2025"}
+{"level":"INFO","time":"2025-05-29T22:44:55.338Z","provider":"cross-mgr","msg":"2025: 12 events found"}
+{"level":"INFO","time":"2025-05-29T22:44:55.338Z","provider":"cross-mgr","msg":"2025: 2 series found"}
+{"level":"INFO","time":"2025-05-29T22:44:55.549Z","provider":"cross-mgr","msg":"Parsing team results from 2025/EscapeVelocity/WTNC2025/2025-WTNC-Series.html"}
+{"level":"INFO","time":"2025-05-29T22:44:55.655Z","provider":"cross-mgr","msg":"Parsing team results from 2025/Thrashers/SpringSeries/2025_Series.html"}
+{"level":"INFO","time":"2025-05-29T22:44:55.686Z","provider":"cross-mgr","msg":"Parsing team results from 2025/Thrashers/SpringSeries/2025_Teams.html"}
+{"level":"INFO","time":"2025-05-29T22:44:55.710Z","provider":"cross-mgr","msg":"Parsing team results from 2025/Thrashers/SpringSeries/2025_Teams.html"}
+{"level":"INFO","time":"2025-05-29T22:44:55.722Z","msg":"Writing 12 events for 2025"}
+{"level":"INFO","time":"2025-05-29T22:44:55.831Z","msg":"12 existing events found in events/2025.json"}
+{"level":"INFO","time":"2025-05-29T22:44:55.831Z","msg":"Updating event 6e5d61d3"}
+{"level":"INFO","time":"2025-05-29T22:44:55.831Z","msg":"Updating event ef3a0b70"}
+{"level":"INFO","time":"2025-05-29T22:44:55.831Z","msg":"Updating event 5d9e7a70"}
+{"level":"INFO","time":"2025-05-29T22:44:55.831Z","msg":"Updating event f5368bd0"}
+{"level":"INFO","time":"2025-05-29T22:44:55.831Z","msg":"Updating event ca77039b"}
+{"level":"INFO","time":"2025-05-29T22:44:55.831Z","msg":"Updating event b372c4f1"}
+{"level":"INFO","time":"2025-05-29T22:44:55.831Z","msg":"Updating event b64dd5d1"}
+{"level":"INFO","time":"2025-05-29T22:44:55.831Z","msg":"Updating event 6b16dff5"}
+{"level":"INFO","time":"2025-05-29T22:44:55.831Z","msg":"Updating event 98422731"}
+{"level":"INFO","time":"2025-05-29T22:44:55.831Z","msg":"Updating event 5c8cc87a"}
+{"level":"INFO","time":"2025-05-29T22:44:55.831Z","msg":"Updating event b6df8996"}
+{"level":"INFO","time":"2025-05-29T22:44:55.831Z","msg":"Updating event b360cfb5"}
+{"level":"INFO","time":"2025-05-29T22:44:55.831Z","msg":"Uploading 12 events to events/2025.json"}
+{"level":"INFO","time":"2025-05-29T22:44:55.926Z","msg":"Writing 12 events results for 2025"}
+{"level":"INFO","time":"2025-05-29T22:44:55.926Z","msg":"Uploading events results for 98422731 to events-results/2025/98422731.json"}
+{"level":"INFO","time":"2025-05-29T22:44:56.029Z","msg":"Uploading events results for 6e5d61d3 to events-results/2025/6e5d61d3.json"}
+{"level":"INFO","time":"2025-05-29T22:44:56.182Z","msg":"Uploading events results for ef3a0b70 to events-results/2025/ef3a0b70.json"}
+{"level":"INFO","time":"2025-05-29T22:44:56.332Z","msg":"Uploading events results for 5d9e7a70 to events-results/2025/5d9e7a70.json"}
+{"level":"INFO","time":"2025-05-29T22:44:56.395Z","msg":"Uploading events results for f5368bd0 to events-results/2025/f5368bd0.json"}
+{"level":"INFO","time":"2025-05-29T22:44:56.522Z","msg":"Uploading events results for ca77039b to events-results/2025/ca77039b.json"}
+{"level":"INFO","time":"2025-05-29T22:44:56.601Z","msg":"Uploading events results for b372c4f1 to events-results/2025/b372c4f1.json"}
+{"level":"INFO","time":"2025-05-29T22:44:56.702Z","msg":"Uploading events results for b64dd5d1 to events-results/2025/b64dd5d1.json"}
+{"level":"INFO","time":"2025-05-29T22:44:56.803Z","msg":"Uploading events results for 6b16dff5 to events-results/2025/6b16dff5.json"}
+{"level":"INFO","time":"2025-05-29T22:44:56.935Z","msg":"Uploading events results for 5c8cc87a to events-results/2025/5c8cc87a.json"}
+{"level":"INFO","time":"2025-05-29T22:44:57.037Z","msg":"Uploading events results for b6df8996 to events-results/2025/b6df8996.json"}
+{"level":"INFO","time":"2025-05-29T22:44:57.114Z","msg":"Uploading events results for b360cfb5 to events-results/2025/b360cfb5.json"}
+{"level":"INFO","time":"2025-05-29T22:44:57.224Z","msg":"Writing 2 series for 2025"}
+{"level":"INFO","time":"2025-05-29T22:44:57.290Z","msg":"3 existing series found in series/2025.json"}
+{"level":"INFO","time":"2025-05-29T22:44:57.290Z","msg":"Updating serie 2a0fcd99"}
+{"level":"INFO","time":"2025-05-29T22:44:57.290Z","msg":"Updating serie d4112aff"}
+{"level":"INFO","time":"2025-05-29T22:44:57.290Z","msg":"Uploading 3 series to series/2025.json"}
+{"level":"INFO","time":"2025-05-29T22:44:57.343Z","msg":"Writing 2 series results for 2025"}
+{"level":"INFO","time":"2025-05-29T22:44:57.343Z","msg":"Uploading series results for 2a0fcd99 to series-results/2025/2a0fcd99.json"}
+{"level":"INFO","time":"2025-05-29T22:44:57.415Z","msg":"Uploading series results for d4112aff to series-results/2025/d4112aff.json"}
+{"level":"INFO","time":"2025-05-29T22:44:57.775Z","provider":"manual-import","msg":"Analyzing manual import files for CRC-Results..."}
+{"level":"INFO","time":"2025-05-29T22:44:57.868Z","provider":"manual-import","msg":"0 events found"}
+{"level":"INFO","time":"2025-05-29T22:44:57.868Z","provider":"manual-import","msg":"1 series found"}
+{"level":"INFO","time":"2025-05-29T22:44:57.868Z","provider":"manual-import","msg":"Importing series results for Thursday Challenge Series..."}
+{"level":"INFO","time":"2025-05-29T22:44:58.187Z","provider":"manual-import","msg":"Parsing serie individual results for Expert (M)..."}
+{"level":"INFO","time":"2025-05-29T22:44:58.199Z","provider":"manual-import","msg":"Parsing serie individual results for Advanced (M)..."}
+{"level":"INFO","time":"2025-05-29T22:44:58.201Z","provider":"manual-import","msg":"Parsing serie individual results for Expert (W)..."}
+{"level":"INFO","time":"2025-05-29T22:44:58.202Z","provider":"manual-import","msg":"Parsing serie individual results for Novice (M)..."}
+{"level":"INFO","time":"2025-05-29T22:44:58.203Z","provider":"manual-import","msg":"Parsing serie individual results for Sport (M)..."}
+{"level":"INFO","time":"2025-05-29T22:44:58.204Z","provider":"manual-import","msg":"Parsing serie individual results for Sport (W)..."}
+{"level":"INFO","time":"2025-05-29T22:44:58.205Z","provider":"manual-import","msg":"Parsing serie individual results for Master of Leisure (M)..."}
+{"level":"INFO","time":"2025-05-29T22:44:58.207Z","msg":"Writing 1 series for 2025"}
+{"level":"INFO","time":"2025-05-29T22:44:58.245Z","msg":"3 existing series found in series/2025.json"}
+{"level":"INFO","time":"2025-05-29T22:44:58.245Z","msg":"Updating serie fe5c295c"}
+{"level":"INFO","time":"2025-05-29T22:44:58.245Z","msg":"Uploading 3 series to series/2025.json"}
+{"level":"INFO","time":"2025-05-29T22:44:58.299Z","msg":"Writing 1 series results for 2025"}
+{"level":"INFO","time":"2025-05-29T22:44:58.299Z","msg":"Uploading series results for fe5c295c to series-results/2025/fe5c295c.json"}
+{"level":"INFO","time":"2025-05-29T22:45:18.473Z","provider":"cross-mgr","msg":"2 updated events found"}
+{"level":"INFO","time":"2025-05-29T22:45:18.473Z","provider":"cross-mgr","msg":"1 updated series found"}
+{"level":"INFO","time":"2025-05-29T22:45:18.609Z","provider":"cross-mgr","msg":"Parsing team results from 2025/EscapeVelocity/WTNC2025/2025-WTNC-Series.html"}
+{"level":"INFO","time":"2025-05-29T22:45:18.650Z","msg":"Writing 2 events for 2025"}
+{"level":"INFO","time":"2025-05-29T22:45:18.686Z","msg":"12 existing events found in events/2025.json"}
+{"level":"INFO","time":"2025-05-29T22:45:18.686Z","msg":"Updating event 6e5d61d3"}
+{"level":"INFO","time":"2025-05-29T22:45:18.686Z","msg":"Updating event ef3a0b70"}
+{"level":"INFO","time":"2025-05-29T22:45:18.686Z","msg":"Uploading 12 events to events/2025.json"}
+{"level":"INFO","time":"2025-05-29T22:45:18.747Z","msg":"Writing 2 events results for 2025"}
+{"level":"INFO","time":"2025-05-29T22:45:18.748Z","msg":"Uploading events results for 6e5d61d3 to events-results/2025/6e5d61d3.json"}
+{"level":"INFO","time":"2025-05-29T22:45:18.881Z","msg":"Uploading events results for ef3a0b70 to events-results/2025/ef3a0b70.json"}
+{"level":"INFO","time":"2025-05-29T22:45:19.051Z","msg":"Writing 1 series for 2025"}
+{"level":"INFO","time":"2025-05-29T22:45:19.102Z","msg":"3 existing series found in series/2025.json"}
+{"level":"INFO","time":"2025-05-29T22:45:19.102Z","msg":"Updating serie 2a0fcd99"}
+{"level":"INFO","time":"2025-05-29T22:45:19.102Z","msg":"Uploading 3 series to series/2025.json"}
+{"level":"INFO","time":"2025-05-29T22:45:19.156Z","msg":"Writing 1 series results for 2025"}
+{"level":"INFO","time":"2025-05-29T22:45:19.156Z","msg":"Uploading series results for 2a0fcd99 to series-results/2025/2a0fcd99.json"}
+{"level":"INFO","time":"2025-05-29T22:54:16.639Z","provider":"cross-mgr","msg":"2 updated events found"}
+{"level":"INFO","time":"2025-05-29T22:54:16.640Z","provider":"cross-mgr","msg":"1 updated series found"}
+{"level":"INFO","time":"2025-05-29T22:54:16.832Z","provider":"cross-mgr","msg":"Parsing team results from 2025/EscapeVelocity/WTNC2025/2025-WTNC-Series.html"}
+{"level":"INFO","time":"2025-05-29T22:54:16.890Z","msg":"Writing 2 events for 2025"}
+{"level":"INFO","time":"2025-05-29T22:54:16.924Z","msg":"12 existing events found in events/2025.json"}
+{"level":"INFO","time":"2025-05-29T22:54:16.924Z","msg":"Updating event 6e5d61d3"}
+{"level":"INFO","time":"2025-05-29T22:54:16.924Z","msg":"Updating event ef3a0b70"}
+{"level":"INFO","time":"2025-05-29T22:54:16.924Z","msg":"Uploading 12 events to events/2025.json"}
+{"level":"INFO","time":"2025-05-29T22:54:16.981Z","msg":"Writing 2 events results for 2025"}
+{"level":"INFO","time":"2025-05-29T22:54:16.981Z","msg":"Uploading events results for 6e5d61d3 to events-results/2025/6e5d61d3.json"}
+{"level":"INFO","time":"2025-05-29T22:54:17.120Z","msg":"Uploading events results for ef3a0b70 to events-results/2025/ef3a0b70.json"}
+{"level":"INFO","time":"2025-05-29T22:54:17.327Z","msg":"Writing 1 series for 2025"}
+{"level":"INFO","time":"2025-05-29T22:54:17.392Z","msg":"3 existing series found in series/2025.json"}
+{"level":"INFO","time":"2025-05-29T22:54:17.392Z","msg":"Updating serie 2a0fcd99"}
+{"level":"INFO","time":"2025-05-29T22:54:17.392Z","msg":"Uploading 3 series to series/2025.json"}
+{"level":"INFO","time":"2025-05-29T22:54:17.453Z","msg":"Writing 1 series results for 2025"}
+{"level":"INFO","time":"2025-05-29T22:54:17.453Z","msg":"Uploading series results for 2a0fcd99 to series-results/2025/2a0fcd99.json"}
+{"level":"INFO","time":"2025-05-29T23:22:00.840Z","provider":"cross-mgr","msg":"2 updated events found"}
+{"level":"INFO","time":"2025-05-29T23:22:00.840Z","provider":"cross-mgr","msg":"1 updated series found"}
+{"level":"INFO","time":"2025-05-29T23:22:01.041Z","provider":"cross-mgr","msg":"Parsing team results from 2025/EscapeVelocity/WTNC2025/2025-WTNC-Series.html"}
+{"level":"INFO","time":"2025-05-29T23:22:01.095Z","msg":"Writing 2 events for 2025"}
+{"level":"INFO","time":"2025-05-29T23:22:01.146Z","msg":"12 existing events found in events/2025.json"}
+{"level":"INFO","time":"2025-05-29T23:22:01.146Z","msg":"Updating event 6e5d61d3"}
+{"level":"INFO","time":"2025-05-29T23:22:01.146Z","msg":"Updating event ef3a0b70"}
+{"level":"INFO","time":"2025-05-29T23:22:01.146Z","msg":"Uploading 12 events to events/2025.json"}
+{"level":"INFO","time":"2025-05-29T23:22:01.209Z","msg":"Writing 2 events results for 2025"}
+{"level":"INFO","time":"2025-05-29T23:22:01.210Z","msg":"Uploading events results for 6e5d61d3 to events-results/2025/6e5d61d3.json"}
+{"level":"INFO","time":"2025-05-29T23:22:01.351Z","msg":"Uploading events results for ef3a0b70 to events-results/2025/ef3a0b70.json"}
+{"level":"INFO","time":"2025-05-29T23:22:01.555Z","msg":"Writing 1 series for 2025"}
+{"level":"INFO","time":"2025-05-29T23:22:01.618Z","msg":"3 existing series found in series/2025.json"}
+{"level":"INFO","time":"2025-05-29T23:22:01.618Z","msg":"Updating serie 2a0fcd99"}
+{"level":"INFO","time":"2025-05-29T23:22:01.618Z","msg":"Uploading 3 series to series/2025.json"}
+{"level":"INFO","time":"2025-05-29T23:22:01.676Z","msg":"Writing 1 series results for 2025"}
+{"level":"INFO","time":"2025-05-29T23:22:01.677Z","msg":"Uploading series results for 2a0fcd99 to series-results/2025/2a0fcd99.json"}
+{"level":"INFO","time":"2025-05-29T23:22:17.499Z","provider":"manual-import","msg":"Analyzing manual import files for CRC-Results..."}
+{"level":"INFO","time":"2025-05-29T23:22:17.594Z","provider":"manual-import","msg":"0 events found"}
+{"level":"INFO","time":"2025-05-29T23:22:17.594Z","provider":"manual-import","msg":"1 series found"}
+{"level":"INFO","time":"2025-05-29T23:22:17.595Z","provider":"manual-import","msg":"Importing series results for Thursday Challenge Series..."}
+{"level":"INFO","time":"2025-05-29T23:22:17.980Z","provider":"manual-import","msg":"Parsing serie individual results for Expert (M)..."}
+{"level":"INFO","time":"2025-05-29T23:22:17.986Z","provider":"manual-import","msg":"Parsing serie individual results for Advanced (M)..."}
+{"level":"INFO","time":"2025-05-29T23:22:17.987Z","provider":"manual-import","msg":"Parsing serie individual results for Expert (W)..."}
+{"level":"INFO","time":"2025-05-29T23:22:17.988Z","provider":"manual-import","msg":"Parsing serie individual results for Novice (M)..."}
+{"level":"INFO","time":"2025-05-29T23:22:17.989Z","provider":"manual-import","msg":"Parsing serie individual results for Sport (M)..."}
+{"level":"INFO","time":"2025-05-29T23:22:17.990Z","provider":"manual-import","msg":"Parsing serie individual results for Sport (W)..."}
+{"level":"INFO","time":"2025-05-29T23:22:17.991Z","provider":"manual-import","msg":"Parsing serie individual results for Master of Leisure (M)..."}
+{"level":"INFO","time":"2025-05-29T23:22:17.993Z","msg":"Writing 1 series for 2025"}
+{"level":"INFO","time":"2025-05-29T23:22:18.094Z","msg":"3 existing series found in series/2025.json"}
+{"level":"INFO","time":"2025-05-29T23:22:18.094Z","msg":"Updating serie fe5c295c"}
+{"level":"INFO","time":"2025-05-29T23:22:18.094Z","msg":"Uploading 3 series to series/2025.json"}
+{"level":"INFO","time":"2025-05-29T23:22:18.161Z","msg":"Writing 1 series results for 2025"}
+{"level":"INFO","time":"2025-05-29T23:22:18.161Z","msg":"Uploading series results for fe5c295c to series-results/2025/fe5c295c.json"}
+{"level":"INFO","time":"2025-05-29T23:23:28.737Z","provider":"cross-mgr","msg":"2 updated events found"}
+{"level":"INFO","time":"2025-05-29T23:23:28.737Z","provider":"cross-mgr","msg":"1 updated series found"}
+{"level":"INFO","time":"2025-05-29T23:23:28.916Z","provider":"cross-mgr","msg":"Parsing team results from 2025/EscapeVelocity/WTNC2025/2025-WTNC-Series.html"}
+{"level":"INFO","time":"2025-05-29T23:23:28.970Z","msg":"Writing 2 events for 2025"}
+{"level":"INFO","time":"2025-05-29T23:23:29.024Z","msg":"12 existing events found in events/2025.json"}
+{"level":"INFO","time":"2025-05-29T23:23:29.024Z","msg":"Updating event 6e5d61d3"}
+{"level":"INFO","time":"2025-05-29T23:23:29.024Z","msg":"Updating event ef3a0b70"}
+{"level":"INFO","time":"2025-05-29T23:23:29.024Z","msg":"Uploading 12 events to events/2025.json"}
+{"level":"INFO","time":"2025-05-29T23:23:29.122Z","msg":"Writing 2 events results for 2025"}
+{"level":"INFO","time":"2025-05-29T23:23:29.122Z","msg":"Uploading events results for 6e5d61d3 to events-results/2025/6e5d61d3.json"}
+{"level":"INFO","time":"2025-05-29T23:23:29.267Z","msg":"Uploading events results for ef3a0b70 to events-results/2025/ef3a0b70.json"}
+{"level":"INFO","time":"2025-05-29T23:23:29.484Z","msg":"Writing 1 series for 2025"}
+{"level":"INFO","time":"2025-05-29T23:23:29.582Z","msg":"3 existing series found in series/2025.json"}
+{"level":"INFO","time":"2025-05-29T23:23:29.582Z","msg":"Updating serie 2a0fcd99"}
+{"level":"INFO","time":"2025-05-29T23:23:29.582Z","msg":"Uploading 3 series to series/2025.json"}
+{"level":"INFO","time":"2025-05-29T23:23:29.639Z","msg":"Writing 1 series results for 2025"}
+{"level":"INFO","time":"2025-05-29T23:23:29.639Z","msg":"Uploading series results for 2a0fcd99 to series-results/2025/2a0fcd99.json"}

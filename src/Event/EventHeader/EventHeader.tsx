@@ -1,20 +1,11 @@
-import type { BaseEvent } from '../../utils/loadStartupData'
-import { Badge, Group, Text } from '@mantine/core'
-import { ORGANIZERS } from '../../config/organizers'
+import { Button, Group } from '@mantine/core'
+import type { EventSummary } from '../../types/results'
+import { useNavigate } from 'react-router'
+import { OrganizerBadge } from '../Shared/OrganizerBadge'
 
-function getOrganizerLabel(organizer: string): string {
-  return ORGANIZERS[organizer]?.label || organizer
-}
+export const EventHeader = ({ event }: { event: EventSummary }) => {
+  const navigate = useNavigate()
 
-function getOrganizerColor(organizer: string): string {
-  return ORGANIZERS[organizer]?.color || 'black'
-}
-
-function getOrganizerTextColor(organizer: string): string {
-  return ORGANIZERS[organizer]?.textColor || 'white'
-}
-
-export const EventHeader = ({ event }: { event: BaseEvent }) => {
   return (
     <>
       <div style={{
@@ -29,16 +20,23 @@ export const EventHeader = ({ event }: { event: BaseEvent }) => {
 
       <Group justify="space-between" style={{ alignItems: 'center', marginTop: 5 }}>
         <h2 style={{ marginTop: 0, marginBottom: 0 }}>{event.name}</h2>
-        <Badge
-          color={getOrganizerColor(event.organizer)}
-          size="lg"
-          style={{ color: getOrganizerTextColor(event.organizer) }}
-        >{getOrganizerLabel(event.organizer)}</Badge>
+        <OrganizerBadge organizerAlias={event.organizerAlias}/>
       </Group>
 
-      <Text size="sm" c="dimmed">
-        {event.series}
-      </Text>
+      {/*<Group justify="space-between" style={{ alignItems: 'center', marginTop: 5 }}>*/}
+      {/*  <div></div>*/}
+
+      {/*  <div style={{ textAlign: 'right' }}>*/}
+      {/*    {organizerLabel !== event.organizerName && ( <Text size="sm">{event.organizerName}</Text> )}*/}
+      {/*    /!*<Text size="sm"><a href="mailto:drew@oh-water.com">{event.organizerEmail}</a></Text>*!/*/}
+      {/*  </div>*/}
+      {/*</Group>*/}
+
+      <Button variant="transparent" size="compact-sm" c="dimmed" style={{
+        paddingLeft: 0, display: 'inline-block',
+        alignSelf: 'flex-start',
+      }}
+              onClick={() => navigate(`/events?year=${event.year}&series=${event.series}`)}>{event.series}</Button>
     </>
   )
 }

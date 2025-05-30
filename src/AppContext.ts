@@ -1,16 +1,15 @@
 import { createContext } from 'react'
-import type { BaseEvent } from './utils/loadStartupData'
-import type { CrossMgrEventSourceFiles } from './types/CrossMgr'
+import type { EventSummary, SerieSummary } from './types/results'
 
 export const AppContext = createContext({
   years: [] as number[],
   setYears: (_: number[]) => {
   },
-  events: new Map<number, BaseEvent[]>(),
-  setEventsForYear: (_: BaseEvent[], __: number) => {
+  events: new Map<number, EventSummary[]>(),
+  setEvents: (_: EventSummary[], __: number) => {
   },
-  sourceFiles: new Map<number, CrossMgrEventSourceFiles>(),
-  setSourceFilesForYear: (_: CrossMgrEventSourceFiles, __: number) => {
+  series: new Map<number, SerieSummary[]>(),
+  setSeries: (_: SerieSummary[], __: number) => {
   },
   loading: true,
   setLoading: (_: boolean) => {

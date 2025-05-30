@@ -1,4 +1,13 @@
-export type CrossMgrEventSourceFiles = Record<string, string[]>
+export type CrossMgrEventFile = {
+  hash: string
+  type: 'event' | 'series' | 'doc' | 'startlist'
+  date: string | null
+  year: number
+  organizer: string
+  series?: string | null
+  lastUpdated: string
+  files: string[]
+}
 
 export type CrossMgrEventResultPayload = {
   raceName: string

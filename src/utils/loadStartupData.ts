@@ -1,9 +1,7 @@
-import { type EventFile, fetchResultsYears } from './aws-s3'
-
-export type BaseEvent = Pick<EventFile, 'year' | 'date' | 'organizer' | 'name' | 'series' | 'hash'>
+import { fetchEventYears } from './aws-s3'
 
 export async function loadStartupData() {
-  const years = await fetchResultsYears()
+  const years = await fetchEventYears()
 
   return {
     years,

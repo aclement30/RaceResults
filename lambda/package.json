@@ -1,0 +1,25 @@
+{
+  "name": "race-results-watcher",
+  "version": "1.0.0",
+  "main": "index.js",
+  "scripts": {
+    "prebuild": "rm -rf dist",
+    "build": "esbuild watcher/index.ts --bundle --sourcemap --platform=node --target=es2020 --outfile=dist/index.js",
+    "postbuild": "cd dist && zip -r index.zip index.js*"
+  },
+  "author": "Alex Clement",
+  "license": "ISC",
+  "description": "",
+  "devDependencies": {
+    "@types/aws-lambda": "^8.10.149",
+    "@types/node": "^22.15.26",
+    "@types/short-hash": "^1.0.3",
+    "aws-lambda": "^1.0.7",
+    "esbuild": "^0.25.5"
+  },
+  "dependencies": {
+    "cheerio": "^1.0.0",
+    "csv": "^6.3.11",
+    "short-hash": "^1.0.0"
+  }
+}

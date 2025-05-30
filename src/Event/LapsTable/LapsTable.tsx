@@ -3,6 +3,7 @@ import { SegmentedControl, Table } from '@mantine/core'
 import { useMemo, useState } from 'react'
 import { columns } from '../Shared/columns'
 import { formatGapTime, formatSpeed, formatTimeDuration } from '../../utils/race-results'
+import { ResponsiveTable } from '../Shared/ResponsiveTable'
 
 type LapsTableProps = {
   lapCount: number
@@ -39,36 +40,74 @@ export const LapsTable: React.FC<LapsTableProps> = ({
   const rows = useMemo(() => filteredResults.map((result) => {
     const athlete = athletes[result.bibNumber]
     return (
-      <Table.Tr key={result.bibNumber}>
+      <Table.Tr key={result.bibNumber} style={{ height: 42 }}>
         <Table.Td>{columns.position(result)}</Table.Td>
         <Table.Td>{athlete.lastName}, {athlete.firstName.substring(0, 1)}.</Table.Td>
         <Table.Td>{columns.bibNumber(result)}</Table.Td>
+        {dataType === 'TIME' && (
+          <Table.Td style={{
+            borderInlineStart: 'calc(0.0625rem * var(--mantine-scale)) solid var(--table-border-color)',
+            textAlign: 'center',
+            fontWeight: 'bold',
+          }}>{columns.time(result, { showGapTime: false })}</Table.Td>
+        )}
+        {dataType === 'SPEED' && (
+          <Table.Td style={{
+            borderInlineStart: 'calc(0.0625rem * var(--mantine-scale)) solid var(--table-border-color)',
+            textAlign: 'center',
+            fontWeight: 'bold',
+          }}>{result.avgSpeed > 0 ? formatSpeed(result.avgSpeed) : '-'}</Table.Td>
+        )}
         {Array(lapCount).fill(0).map((_, i) => (
           <>
             {dataType === 'TIME' && (
               <Table.Td
+                style={{
+                  whiteSpace: 'nowrap',
+                  textAlign: 'center',
+                }}
                 key={`lap-${i + 1}`}>{result.lapDurations[i] ? formatTimeDuration(result.lapDurations[i]) : '-'}</Table.Td> )}
             {dataType === 'SPEED' && (
               <Table.Td
+                style={{
+                  whiteSpace: 'nowrap',
+                  textAlign: 'center',
+                }}
                 key={`lap-${i + 1}`}>{result.lapSpeeds[i] ? formatSpeed(result.lapSpeeds[i]) : '-'}</Table.Td> )}
             {dataType === 'GAP' && (
               <Table.Td
+                style={{
+                  whiteSpace: 'nowrap',
+                  textAlign: 'center',
+                }}
                 key={`lap-${i + 1}`}>{lapGaps[result.bibNumber][i] !== null ? formatGapTime(lapGaps[result.bibNumber][i]!) : '-'}</Table.Td> )}
           </>
         ))}
-        {dataType === 'TIME' && (
-          <Table.Td>{columns.time(result, { showGapTime: false })}</Table.Td>
-        )}
-        {dataType === 'SPEED' && (
-          <Table.Td>{result.avgSpeed > 0 ? formatSpeed(result.avgSpeed) : '-'}</Table.Td>
-        )}
       </Table.Tr>
     )
   }), [filteredResults, athletes, dataType])
 
+  const stickyColumnHeaders = <Table.Tr>
+    <Table.Th>P<span className="mantine-visible-from-sm">osition</span></Table.Th>
+    <Table.Th>Name</Table.Th>
+    <Table.Th>Bib</Table.Th>
+    {dataType !== 'GAP' && ( <Table.Th style={{
+      whiteSpace: 'nowrap',
+      textAlign: 'center',
+      borderInlineStart: 'calc(0.0625rem * var(--mantine-scale)) solid var(--table-border-color)',
+    }}>{dataType === 'TIME' ? 'Total Time' : 'Avg Speed'}</Table.Th> )}
+  </Table.Tr>
+
+  const lapColumnHeaders = <Table.Tr>
+    {Array(lapCount).fill(0).map((_, i) => (
+      <Table.Th key={`lap-${i + 1}`}
+                style={{ whiteSpace: 'nowrap', textAlign: 'center' }}>Lap {i + 1}</Table.Th>
+    ))}
+  </Table.Tr>
+
   return (
     <div style={{ overflowX: 'auto' }}>
-      <div style={{ margin: '10px 0' }}>
+      <div style={{ margin: '20px 0 10px' }}>
         <SegmentedControl
           value={dataType}
           // @ts-ignore
@@ -81,20 +120,8 @@ export const LapsTable: React.FC<LapsTableProps> = ({
         />
       </div>
 
-      <Table stickyHeader stickyHeaderOffset={60}>
-        <Table.Thead>
-          <Table.Tr>
-            <Table.Th>Position</Table.Th>
-            <Table.Th>Name</Table.Th>
-            <Table.Th>Bib</Table.Th>
-            {Array(lapCount).fill(0).map((_, i) => (
-              <Table.Th key={`lap-${i + 1}`}>Lap {i + 1}</Table.Th>
-            ))}
-            {dataType !== 'GAP' && ( <Table.Th>{dataType === 'TIME' ? 'Total Time' : 'Avg Speed'}</Table.Th> )}
-          </Table.Tr>
-        </Table.Thead>
-        <Table.Tbody>{rows}</Table.Tbody>
-      </Table>
+      <ResponsiveTable stickyColumnHeaders={stickyColumnHeaders}
+                       scrollableColumnHeaders={lapColumnHeaders}>{rows}</ResponsiveTable>
     </div>
   )
 }

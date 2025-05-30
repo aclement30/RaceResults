@@ -1,9 +1,9 @@
-import type { Athlete, AthleteRaceResult } from '../../types/results'
+import type { Athlete, AthleteRaceResult, AthleteSerieResult } from '../../types/results'
 import { Badge, Tooltip } from '@mantine/core'
 import { formatTimeDuration, formatGapTime } from '../../utils/race-results'
 
 
-const formatRacerPositionLabel = (position: number) => {
+export const formatRacerPositionLabel = (position: number) => {
   if (position > 3) return position
 
   const badgeColour = position === 1 ? 'gold' : position === 2 ? 'silver' : 'brown'
@@ -18,7 +18,7 @@ export const columns = {
   city: (row: Pick<Athlete, 'city' | 'state'>) => {
     return [row.city, row.state].filter(Boolean).join(', ')
   },
-  bibNumber: (row: Pick<AthleteRaceResult, 'bibNumber'> | { bibNumber: number }) => {
+  bibNumber: (row: Pick<AthleteRaceResult | AthleteSerieResult, 'bibNumber'> | { bibNumber: number }) => {
     return <Badge
       size="lg"
       variant="gradient"

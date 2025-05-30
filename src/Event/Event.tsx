@@ -1,75 +1,84 @@
 import { useContext, useEffect, useMemo, useState } from 'react'
 import { AppContext } from '../AppContext'
-import { useNavigate, useParams, NavLink as RouterNavLink } from 'react-router'
-import { getFullEventWithResults } from '../utils/race-results'
-import type { EventInfo, EventStats } from '../types/results'
-import { CategoryResultsTable } from './CategoryResultsTable/CategoryResultsTable'
-import { AppShell, Button, NavLink, TextInput, Divider, Tabs } from '@mantine/core'
-import cx from 'clsx'
-import { IconArrowLeft } from '@tabler/icons-react'
+import { useParams, useSearchParams } from 'react-router'
+import type { EventResults, EventSummary } from '../types/results'
+import { ResultsTable } from './ResultsTable/ResultsTable'
+import { AppShell, TextInput, Text, Divider, Tabs, LoadingOverlay, Anchor, Blockquote } from '@mantine/core'
+import { IconCoins, IconRotateClockwise, IconTrophy } from '@tabler/icons-react'
 import { EventHeader } from './EventHeader/EventHeader'
 import { LapsTable } from './LapsTable/LapsTable'
 import { PrimesTable } from './PrimesTable/PrimesTable'
 import { useCategoryResults } from './utils'
-import { fetchEventsAndSeriesForYear } from '../utils/aws-s3'
+import { fetchEventResults, fetchEventsAndSeries, validateYear } from '../utils/aws-s3'
+import { Navbar } from './Navbar/Navbar'
 
 export const Event: React.FC = () => {
-  const { events, sourceFiles: allFiles, setLoading, setEventsForYear, setSourceFilesForYear } = useContext(AppContext)
-  const [eventInfo, setEventInfo] = useState<EventInfo | null>(null)
-  const [eventResults, setEventResults] = useState<EventStats | null>(null)
+  const { events, loading, setLoading, setEvents, setSeries } = useContext(AppContext)
+  const [eventSummary, setEventSummary] = useState<EventSummary | null>(null)
+  const [eventResults, setEventResults] = useState<EventResults | null>(null)
   const [searchValue, setSearchValue] = useState('')
+  const [loadingResults, setLoadingResults] = useState<boolean>(true)
 
   const params = useParams()
-  const { selectedCategory: selectedCategoryAlias } = params
-  const navigate = useNavigate()
+  const { year, hash } = params
+  const eventYear = +year!
+  const eventHash = hash!
 
-  const selectedEvent = useMemo(() => events.get(+params.year!)?.find(({ hash }) => hash === params.hash!), [events, params])
+  const [searchParams, setSearchParams] = useSearchParams()
+  const selectedCategory = searchParams.get('category') || eventSummary?.categories[0].alias
+  const selectedTab = searchParams.get('tab') || 'results'
+
+  const selectedEvent = useMemo(() => events.get(eventYear)?.find(({ hash }) => hash === eventHash), [events, params])
 
   useEffect(() => {
     const fetchData = async () => {
       try {
         setLoading(true)
 
-        const { events, sourceFiles } = await fetchEventsAndSeriesForYear(+params.year!)
+        if (!validateYear(eventYear)) throw new Error('Invalid year:' + eventYear)
 
-        setEventsForYear(events, +params.year!)
-        // setSeriesForYear(series, year)
-        setSourceFilesForYear(sourceFiles, +params.year!)
+        const { events, series } = await fetchEventsAndSeries(eventYear)
+
+        setEvents(events, eventYear)
+        setSeries(series, eventYear)
         setLoading(false)
       } catch (error) {
         console.error(error)
       }
     }
 
-    if (!events.get(+params.year!)) {
+    if (!events.get(eventYear)) {
       fetchData()
     }
-  }, [params.year, setLoading, setEventsForYear])
+  }, [eventYear])
 
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const baseEvent = events.get(+params.year!)?.find(({ hash }) => hash === params.hash!)
-        const sourceFiles = allFiles.get(+params.year!)?.[params.hash!]
+        setLoadingResults(true)
 
-        if (!baseEvent) throw new Error('No event found!')
-        if (!sourceFiles) throw new Error('No source files found for this event!')
+        const eventSummary = events.get(eventYear)?.find(({ hash }) => hash === eventHash)
 
-        const { eventInfo, results } = await getFullEventWithResults(baseEvent, sourceFiles)
+        if (!eventSummary) throw new Error('No event found!')
 
-        setEventInfo(eventInfo)
-        setEventResults(results)
+        setEventSummary(eventSummary)
+
+        const eventResults = await fetchEventResults(eventYear, eventHash)
+
+        setEventResults(eventResults)
+
+        setLoadingResults(false)
       } catch (error) {
         console.log(error)
       }
     }
 
-    if (events.get(+params.year!) && allFiles.get(+params.year!)) {
+    if (events.get(eventYear)) {
       fetchData()
     }
-  }, [params.hash, events, allFiles])
+  }, [eventHash, events])
 
-  const selectedEventCategory = !!selectedCategoryAlias && eventResults?.results[selectedCategoryAlias] || null
+  const selectedEventCategory = !!selectedCategory && eventResults?.results[selectedCategory] || undefined
 
   const {
     sortedResults,
@@ -77,52 +86,35 @@ export const Event: React.FC = () => {
     isFiltered
   } = useCategoryResults(selectedEventCategory?.results || [], eventResults?.athletes || {}, searchValue)
 
-  if (!selectedCategoryAlias && eventResults?.categories.length) {
-    navigate(`/events/${params.year}/${params.hash}/${eventResults.categories[0].alias}`)
+  const handleTabChamge = (tab: string | null) => {
+    if (!tab) {
+      setSearchParams(new URLSearchParams({ category: selectedEventCategory!.alias }))
+    } else {
+      setSearchParams(new URLSearchParams({ category: selectedEventCategory!.alias, tab }))
+    }
   }
 
   if (!selectedEvent) {
     return ( 'NO EVENT FOUND' )
   }
 
-  // @ts-ignore
   return (
     <>
-      <AppShell.Navbar p="md">
-        <Button
-          variant="subtle"
-          leftSection={<IconArrowLeft size={14}/>}
-          style={{ marginBottom: 20 }}
-          onClick={() => navigate('/events?year=' + params.year!)}
-        >
-          Back to events list
-        </Button>
+      <LoadingOverlay visible={loading} loaderProps={{ children: 'Loading event...' }}/>
 
-        {eventResults?.categories.map((cat) => (
-          <NavLink
-            key={cat.alias}
-            renderRoot={({ className, ...others }) => (
-              <RouterNavLink
-                to={`/events/${params.year}/${params.hash}/${cat.alias}`}
-                className={({ isActive }) =>
-                  cx(className, { 'active-class': isActive })
-                }
-                {...others}
-              />
-            )}
-            label={cat.label}
-          />
-        ))}
-      </AppShell.Navbar>
+      <Navbar eventYear={eventYear} eventHash={eventHash} selectedCategory={selectedCategory}
+              categories={eventSummary?.categories}/>
 
       <AppShell.Main>
-        {eventInfo && ( <EventHeader event={eventInfo}/> )}
+        <LoadingOverlay visible={loadingResults} loaderProps={{ children: 'Loading results...' }}/>
+
+        {eventSummary && ( <EventHeader event={eventSummary}/> )}
 
         <Divider my="md"/>
 
         {eventResults && (
           <>
-            <div style={{ padding: 10 }}>
+            <div style={{ paddingBottom: '1rem' }}>
               <TextInput
                 placeholder="Search participant name, team, bib number..."
                 value={searchValue}
@@ -130,27 +122,28 @@ export const Event: React.FC = () => {
               />
             </div>
 
-            <Tabs defaultValue="ranking">
+            <Tabs value={selectedTab} onChange={handleTabChamge}>
               <Tabs.List>
-                <Tabs.Tab value="ranking">
-                  Ranking
+                <Tabs.Tab value="results" leftSection={<IconTrophy/>}>
+                  Results
                 </Tabs.Tab>
                 {!!selectedEventCategory?.primes.length && (
-                  <Tabs.Tab value="primes">
+                  <Tabs.Tab value="primes" leftSection={<IconCoins/>}>
                     Primes
                   </Tabs.Tab>
                 )}
-                {selectedEventCategory!.laps < 1 && (
-                  <Tabs.Tab value="laps">
+                {selectedEventCategory?.laps && selectedEventCategory?.laps > 1 && (
+                  <Tabs.Tab value="laps" leftSection={<IconRotateClockwise/>}>
                     Laps
                   </Tabs.Tab>
                 )}
               </Tabs.List>
 
-              <Tabs.Panel value="ranking">
-                <CategoryResultsTable
+              <Tabs.Panel value="results">
+                <ResultsTable
                   results={filteredResults}
                   athletes={eventResults.athletes}
+                  isFiltered={isFiltered}
                 />
               </Tabs.Panel>
 
@@ -165,6 +158,40 @@ export const Event: React.FC = () => {
                            athletes={eventResults.athletes}/>
               </Tabs.Panel>
             </Tabs>
+
+            <Divider/>
+
+            {eventResults.raceNotes && (
+              <>
+                <Blockquote color="gray" mt="lg" p="md">
+                  <div dangerouslySetInnerHTML={{ __html: eventResults.raceNotes }} style={{ fontSize: 'smaller' }}/>
+                </Blockquote>
+
+                <Divider/>
+              </>
+            )}
+
+            <Text c="dimmed" size="sm" style={{ padding: '1rem 10px 1rem' }}>
+              Last Updated: {new Date(eventResults.lastUpdated).toLocaleDateString('en-CA', {
+              year: 'numeric',
+              month: 'long',
+              day: 'numeric',
+              hour: 'numeric',
+              minute: '2-digit',
+            })}
+            </Text>
+
+            <Divider/>
+
+            {!!eventResults.sourceUrls?.length && ( <>
+              <Text c="dimmed" size="sm" style={{ padding: '10px 10px 0' }}>Source:</Text>
+              <ul style={{ listStyle: 'inside', listStyleType: '-', margin: 0, paddingLeft: 10 }}>
+                {eventResults.sourceUrls?.map((url) =>
+                  <li key={url}><Anchor href={url} target="_blank" size="sm">{url}</Anchor>
+                  </li>
+                )}
+              </ul>
+            </> )}
           </>
         )}
       </AppShell.Main>
