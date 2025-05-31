@@ -2,9 +2,32 @@ import { Button, Group } from '@mantine/core'
 import type { EventSummary } from '../../types/results'
 import { useNavigate } from 'react-router'
 import { OrganizerBadge } from '../Shared/OrganizerBadge'
+import { useContext } from 'react'
+import { AppContext } from '../../AppContext'
 
 export const EventHeader = ({ event }: { event: EventSummary }) => {
   const navigate = useNavigate()
+  const { series } = useContext(AppContext)
+
+  const yearSeries = series.get(event.year) || []
+
+  const getSerieLabel = (eventSerieAlias: string | null | undefined): string | null => {
+    if (!eventSerieAlias) return null
+
+    const serieSummary = yearSeries.find(s => s.alias === eventSerieAlias)
+    if (serieSummary) {
+      return serieSummary.name
+    } else {
+      switch (eventSerieAlias) {
+        case 'BCProvincials':
+          return 'BC Provincials'
+        case 'SpringSeries':
+          return 'Spring Series'
+        default:
+          return eventSerieAlias
+      }
+    }
+  }
 
   return (
     <>
@@ -18,8 +41,8 @@ export const EventHeader = ({ event }: { event: EventSummary }) => {
         {event.date}
       </div>
 
-      <Group justify="space-between" style={{ alignItems: 'center', marginTop: 5 }}>
-        <h2 style={{ marginTop: 0, marginBottom: 0 }}>{event.name}</h2>
+      <Group justify="space-between" style={{ alignItems: 'center', marginTop: 5, flexWrap: 'nowrap' }}>
+        <h3 style={{ marginTop: 0, marginBottom: 0 }}>{event.name}</h3>
         <OrganizerBadge organizerAlias={event.organizerAlias}/>
       </Group>
 
@@ -32,11 +55,18 @@ export const EventHeader = ({ event }: { event: EventSummary }) => {
       {/*  </div>*/}
       {/*</Group>*/}
 
-      <Button variant="transparent" size="compact-sm" c="dimmed" style={{
-        paddingLeft: 0, display: 'inline-block',
-        alignSelf: 'flex-start',
-      }}
-              onClick={() => navigate(`/events?year=${event.year}&series=${event.series}`)}>{event.series}</Button>
+      {event.series && (
+        <Button
+          variant="transparent" size="compact-sm" c="dimmed"
+          style={{
+            paddingLeft: 0, display: 'inline-block',
+            alignSelf: 'flex-start',
+          }}
+          onClick={() => navigate(`/events?year=${event.year}&series=${event.series}`)}
+        >
+          {getSerieLabel(event.series)}
+        </Button>
+      )}
     </>
   )
 }

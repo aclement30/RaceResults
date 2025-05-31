@@ -28,7 +28,7 @@ export const useCategoryResults = (results: Array<AthleteSerieResult | TeamSerie
         return fullName.includes(searchValueLower) || teamLower?.includes(searchValueLower)
       } else {
         const bibNumber = +searchValueLower
-        return seriesResult.bibNumber?.toString().startsWith(bibNumber.toString())
+        return ( seriesResult as AthleteSerieResult ).bibNumber?.toString().startsWith(bibNumber.toString())
       }
     })
   }, [sortedResults, searchValue])

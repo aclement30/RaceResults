@@ -2,6 +2,8 @@ import { AppShell, Button, NavLink } from '@mantine/core'
 import { IconArrowLeft } from '@tabler/icons-react'
 import { useNavigate, useSearchParams } from 'react-router'
 import type { BaseCategory } from '../../types/results'
+import { useContext } from 'react'
+import { AppContext } from '../../AppContext'
 
 type NavbarProps = {
   eventYear: number
@@ -13,6 +15,7 @@ type NavbarProps = {
 export const Navbar: React.FC<NavbarProps> = ({ eventYear, categories, selectedCategory }) => {
   const navigate = useNavigate()
   const [_, setSearchParams] = useSearchParams()
+  const { closeNavbar } = useContext(AppContext)
 
   return (
     <AppShell.Navbar p="md">
@@ -20,7 +23,10 @@ export const Navbar: React.FC<NavbarProps> = ({ eventYear, categories, selectedC
         variant="subtle"
         leftSection={<IconArrowLeft size={14}/>}
         style={{ marginBottom: 20 }}
-        onClick={() => navigate('/events?year=' + eventYear)}
+        onClick={() => {
+          closeNavbar()
+          navigate('/events?year=' + eventYear)
+        }}
       >
         Back to events list
       </Button>
@@ -29,7 +35,10 @@ export const Navbar: React.FC<NavbarProps> = ({ eventYear, categories, selectedC
         <NavLink
           key={cat.alias}
           active={selectedCategory === cat.alias}
-          onClick={() => setSearchParams(new URLSearchParams({ category: cat.alias }))}
+          onClick={() => {
+            closeNavbar()
+            setSearchParams(new URLSearchParams({ category: cat.alias }))
+          }}
           label={cat.label}
         />
       ))}

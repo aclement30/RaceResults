@@ -1,23 +1,27 @@
-import { useContext, useEffect, useMemo, useState } from 'react'
+import { useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react'
 import { AppContext } from '../AppContext'
 import { useParams, useSearchParams } from 'react-router'
 import type { EventResults, EventSummary } from '../types/results'
 import { ResultsTable } from './ResultsTable/ResultsTable'
-import { AppShell, TextInput, Text, Divider, Tabs, LoadingOverlay, Anchor, Blockquote } from '@mantine/core'
+import { AppShell, TextInput, Text, Divider, Tabs, LoadingOverlay, Blockquote } from '@mantine/core'
 import { IconCoins, IconRotateClockwise, IconTrophy } from '@tabler/icons-react'
 import { EventHeader } from './EventHeader/EventHeader'
 import { LapsTable } from './LapsTable/LapsTable'
 import { PrimesTable } from './PrimesTable/PrimesTable'
 import { useCategoryResults } from './utils'
-import { fetchEventResults, fetchEventsAndSeries, validateYear } from '../utils/aws-s3'
+import { FETCH_ERROR_TYPE, FetchError, fetchEventResults } from '../utils/aws-s3'
 import { Navbar } from './Navbar/Navbar'
+import { useEventsAndSeries } from '../utils/useEventsAndSeries'
+import { Source } from './Shared/Source'
 
 export const Event: React.FC = () => {
-  const { events, loading, setLoading, setEvents, setSeries } = useContext(AppContext)
+  const { events, loading } = useContext(AppContext)
   const [eventSummary, setEventSummary] = useState<EventSummary | null>(null)
   const [eventResults, setEventResults] = useState<EventResults | null>(null)
+  const eventResultsLastModifiedRef = useRef<Date | null>(null)
   const [searchValue, setSearchValue] = useState('')
   const [loadingResults, setLoadingResults] = useState<boolean>(true)
+  const timerRef = useRef<NodeJS.Timeout | null>(null)
 
   const params = useParams()
   const { year, hash } = params
@@ -30,53 +34,56 @@ export const Event: React.FC = () => {
 
   const selectedEvent = useMemo(() => events.get(eventYear)?.find(({ hash }) => hash === eventHash), [events, params])
 
-  useEffect(() => {
-    const fetchData = async () => {
-      try {
-        setLoading(true)
+  useEventsAndSeries(eventYear)
 
-        if (!validateYear(eventYear)) throw new Error('Invalid year:' + eventYear)
+  const fetchData = useCallback(async (year: number, hash: string) => {
+    if (timerRef.current) clearTimeout(timerRef.current)
 
-        const { events, series } = await fetchEventsAndSeries(eventYear)
+    try {
+      setLoadingResults(true)
 
-        setEvents(events, eventYear)
-        setSeries(series, eventYear)
-        setLoading(false)
-      } catch (error) {
-        console.error(error)
+      console.log(`Fetching event results for: ${year}/${hash}`)
+
+      const {
+        eventResults,
+        lastModified
+      } = await fetchEventResults(year, hash, eventResultsLastModifiedRef.current)
+
+      setEventResults(eventResults)
+      eventResultsLastModifiedRef.current = lastModified
+
+      timerRef.current = setTimeout(() => {
+        fetchData(year, hash)
+      }, 1000 * 30) // Refresh every minute
+    } catch (error) {
+      if (error instanceof FetchError && error.type === FETCH_ERROR_TYPE.NotModified) {
+        // If the results file is not modified, we can skip updating
+        return
       }
-    }
 
-    if (!events.get(eventYear)) {
-      fetchData()
+      console.log(error)
+    } finally {
+      setLoadingResults(false)
     }
-  }, [eventYear])
+  }, [setLoadingResults])
+
+  // Cleanup timer on unmount
+  useEffect(() => {
+    return function cleanup() {
+      if (timerRef.current) clearTimeout(timerRef.current)
+    }
+  }, [])
 
   useEffect(() => {
-    const fetchData = async () => {
-      try {
-        setLoadingResults(true)
-
-        const eventSummary = events.get(eventYear)?.find(({ hash }) => hash === eventHash)
-
-        if (!eventSummary) throw new Error('No event found!')
-
-        setEventSummary(eventSummary)
-
-        const eventResults = await fetchEventResults(eventYear, eventHash)
-
-        setEventResults(eventResults)
-
-        setLoadingResults(false)
-      } catch (error) {
-        console.log(error)
-      }
-    }
-
     if (events.get(eventYear)) {
-      fetchData()
+      const eventSummary = events.get(eventYear)?.find(({ hash }) => hash === eventHash)
+      if (!eventSummary) throw new Error('No event found!')
+
+      setEventSummary(eventSummary)
+
+      fetchData(eventYear, eventHash)
     }
-  }, [eventHash, events])
+  }, [eventYear, eventHash, events])
 
   const selectedEventCategory = !!selectedCategory && eventResults?.results[selectedCategory] || undefined
 
@@ -100,7 +107,7 @@ export const Event: React.FC = () => {
 
   return (
     <>
-      <LoadingOverlay visible={loading} loaderProps={{ children: 'Loading event...' }}/>
+      <LoadingOverlay visible={loading && !events.get(eventYear)} loaderProps={{ children: 'Loading event...' }}/>
 
       <Navbar eventYear={eventYear} eventHash={eventHash} selectedCategory={selectedCategory}
               categories={eventSummary?.categories}/>
@@ -171,7 +178,7 @@ export const Event: React.FC = () => {
               </>
             )}
 
-            <Text c="dimmed" size="sm" style={{ padding: '1rem 10px 1rem' }}>
+            <Text c="dimmed" size="sm" style={{ padding: '1rem 0' }}>
               Last Updated: {new Date(eventResults.lastUpdated).toLocaleDateString('en-CA', {
               year: 'numeric',
               month: 'long',
@@ -183,15 +190,7 @@ export const Event: React.FC = () => {
 
             <Divider/>
 
-            {!!eventResults.sourceUrls?.length && ( <>
-              <Text c="dimmed" size="sm" style={{ padding: '10px 10px 0' }}>Source:</Text>
-              <ul style={{ listStyle: 'inside', listStyleType: '-', margin: 0, paddingLeft: 10 }}>
-                {eventResults.sourceUrls?.map((url) =>
-                  <li key={url}><Anchor href={url} target="_blank" size="sm">{url}</Anchor>
-                  </li>
-                )}
-              </ul>
-            </> )}
+            <Source sourceUrls={eventResults.sourceUrls}/>
           </>
         )}
       </AppShell.Main>

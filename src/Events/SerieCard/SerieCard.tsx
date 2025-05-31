@@ -30,8 +30,11 @@ export const SerieCard: React.FC<SerieCardProps> = ({ serie }) => {
       {/*</div>*/}
 
       <Card.Section withBorder inheritPadding py="md">
-        <Group justify="space-between" style={{ alignItems: 'center' }}>
-          <h2 style={{ marginTop: 0, marginBottom: 0 }}>{serie.year} {serie.name}</h2>
+        <Group justify="space-between" style={{ alignItems: 'center', flexWrap: 'nowrap' }}>
+          <h3 style={{
+            marginTop: 0,
+            marginBottom: 0
+          }}>{serie.name.includes(serie.year.toString()) ? '' : serie.year} {serie.name}</h3>
           <OrganizerBadge organizerAlias={serie.organizerAlias}/>
         </Group>
       </Card.Section>

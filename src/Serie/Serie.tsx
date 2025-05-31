@@ -1,78 +1,65 @@
-import { useContext, useEffect, useMemo, useState } from 'react'
+import { useCallback, useContext, useEffect, useMemo, useState } from 'react'
 import { AppContext } from '../AppContext'
 import { useParams, useSearchParams } from 'react-router'
 import type { AthleteSerieResult, SerieResults, SerieSummary, TeamSerieResult } from '../types/results'
-import { AppShell, Text, TextInput, Divider, LoadingOverlay, Anchor, Group, CloseButton } from '@mantine/core'
+import { AppShell, Text, TextInput, Divider, LoadingOverlay, Group, CloseButton } from '@mantine/core'
 import { useCategoryResults } from './utils'
-import { fetchEventsAndSeries, fetchSeriesResults, validateYear } from '../utils/aws-s3'
+import { fetchSeriesResults } from '../utils/aws-s3'
 import { IndividualRankingsTable } from './IndividualRankingsTable/IndividualRankingsTable'
 import { Navbar } from './Navbar/Navbar'
 import { OrganizerBadge } from '../Event/Shared/OrganizerBadge'
 import { TeamRankingsTable } from './TeamRankingsTable/TeamRankingsTable'
+import { useEventsAndSeries } from '../utils/useEventsAndSeries'
+import { Source } from '../Event/Shared/Source'
 
 export const Serie: React.FC = () => {
-  const { series, loading, setLoading, setSeries, setEvents } = useContext(AppContext)
+  const { series, loading, } = useContext(AppContext)
   const [serieSummary, setSerieSummary] = useState<SerieSummary | null>(null)
   const [seriesResults, setSeriesResults] = useState<SerieResults | null>(null)
   const [searchValue, setSearchValue] = useState('')
   const [loadingResults, setLoadingResults] = useState<boolean>(true)
 
   const params = useParams<{ resultType: 'individual' | 'team', year: string, hash: string }>()
-  const { year, resultType } = params
+  const { year, hash, resultType } = params
   const serieYear = +year!
+  const serieHash = hash!
+
   const [searchParams] = useSearchParams()
-  const selectedCategory = searchParams.get('category') || serieSummary?.categories[resultType!]?.[0].alias
+  const selectedCategory = searchParams.get('category') || serieSummary?.categories[resultType!]?.[0].alias!
   const selectedTeam = searchParams.get('team')
 
   const selectedSeries = useMemo(() => series.get(serieYear)?.find(({ hash }) => hash === params.hash!), [series, params])
 
-  useEffect(() => {
-    const fetchData = async () => {
-      try {
-        setLoading(true)
+  useEventsAndSeries(serieYear)
 
-        if (!validateYear(serieYear)) throw new Error('Invalid year:' + serieYear)
+  const fetchData = useCallback(async (year: number, hash: string) => {
+    try {
+      setLoadingResults(true)
 
-        const { events, series } = await fetchEventsAndSeries(serieYear)
+      console.log(`Fetching serie results for: ${year}/${hash}`)
 
-        setEvents(events, serieYear)
-        setSeries(series, serieYear)
-        setLoading(false)
-      } catch (error) {
-        console.error(error)
-      }
+      const {
+        serieResults,
+      } = await fetchSeriesResults(year, hash)
+
+      setSeriesResults(serieResults)
+    } catch (error) {
+      console.log(error)
+    } finally {
+      setLoadingResults(false)
     }
-
-    if (!series.get(serieYear)) {
-      fetchData()
-    }
-  }, [serieYear])
+  }, [setSeriesResults, setLoadingResults])
 
   useEffect(() => {
-    const fetchData = async () => {
-      try {
-        setLoadingResults(true)
-
-        const seriesSummary = series.get(serieYear)?.find(({ hash }) => hash === params.hash!)
-
-        if (!seriesSummary) throw new Error('No series found!')
-
-        setSerieSummary(seriesSummary)
-
-        const seriesResults = await fetchSeriesResults(serieYear, params.hash!)
-
-        setSeriesResults(seriesResults)
-
-        setLoadingResults(false)
-      } catch (error) {
-        console.log(error)
-      }
-    }
-
     if (series.get(serieYear)) {
-      fetchData()
+      const serieSummary = series.get(serieYear)?.find(({ hash }) => hash === serieHash)
+      if (!serieSummary) throw new Error('No series found!')
+
+      setSerieSummary(serieSummary)
+
+      fetchData(serieYear, serieHash)
     }
-  }, [params.hash, series])
+  }, [serieYear, serieHash, series])
 
   useEffect(() => {
     if (selectedTeam?.length) setSearchValue(selectedTeam)
@@ -154,7 +141,7 @@ export const Serie: React.FC = () => {
 
             <Divider/>
 
-            <Text c="dimmed" size="sm" style={{ padding: '1rem 10px 1rem' }}>Last
+            <Text c="dimmed" size="sm" style={{ padding: '1rem 0' }}>Last
               Updated: {new Date(seriesResults.lastUpdated).toLocaleDateString('en-CA', {
                 year: 'numeric',
                 month: 'long',
@@ -165,15 +152,9 @@ export const Serie: React.FC = () => {
 
             <Divider/>
 
-            {serieSummary.provider !== 'manual-import' && !!seriesResults[resultType!]?.sourceUrls.length && ( <>
-              <Text c="dimmed" size="sm" style={{ padding: '10px 10px 0' }}>Source:</Text>
-              <ul style={{ listStyle: 'inside', listStyleType: '-', margin: 0, paddingLeft: 10 }}>
-                {seriesResults[resultType!]!.sourceUrls!.map((url) =>
-                  <li key={url}><Anchor href={url} target="_blank" size="sm">{url}</Anchor>
-                  </li>
-                )}
-              </ul>
-            </> )}
+            {serieSummary.provider !== 'manual-import' && (
+              <Source sourceUrls={seriesResults[resultType!]!.sourceUrls}/>
+            )}
           </>
         )}
       </AppShell.Main>

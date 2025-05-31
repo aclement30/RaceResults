@@ -60,7 +60,7 @@ export const ResultsTable: React.FC<ResultsTableProps> = ({
               width: 70
             }}>Bib</Table.Th>
             <Table.Th style={{
-              width: 60
+              width: 80
             }}>Time</Table.Th>
           </Table.Tr>
         </Table.Thead>

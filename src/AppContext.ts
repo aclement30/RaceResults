@@ -14,6 +14,11 @@ export const AppContext = createContext({
   loading: true,
   setLoading: (_: boolean) => {
   },
+  isNavbarOpened: false,
+  toggleNavbar: () => {
+  },
+  closeNavbar: () => {
+  }
 })
 
 // type AppContextProviderProps = {

@@ -1,4 +1,4 @@
-import { AppShell, Button, Divider, Group, NavLink } from '@mantine/core'
+import { AppShell, Divider, NavLink } from '@mantine/core'
 import { useNavigate } from 'react-router'
 import { useContext, useMemo } from 'react'
 import { AppContext } from '../../AppContext'
@@ -12,7 +12,7 @@ type NavbarProps = {
 
 export const Navbar: React.FC<NavbarProps> = ({ filters }) => {
   const navigate = useNavigate()
-  const { events, series, years } = useContext(AppContext)
+  const { events, series, years, closeNavbar } = useContext(AppContext)
 
   const seriesSummaries = series.get(filters.year) || []
 
@@ -31,7 +31,11 @@ export const Navbar: React.FC<NavbarProps> = ({ filters }) => {
     <AppShell.Navbar p="md">
       {years.map((year) => (
         <NavLink
-          onClick={() => navigate(`/events?year=${year}`)}
+          key={year}
+          onClick={() => {
+            closeNavbar()
+            navigate(`/events?year=${year}`)
+          }}
           active={year === filters.year}
           label={year}
         /> ))}
@@ -39,7 +43,10 @@ export const Navbar: React.FC<NavbarProps> = ({ filters }) => {
       <Divider style={{ marginBottom: '1rem' }}/>
 
       <NavLink
-        onClick={() => navigate(`/events?year=${filters.year}`)}
+        onClick={() => {
+          closeNavbar()
+          navigate(`/events?year=${filters.year}`)
+        }}
         active={!filters.serie}
         label="All Events"
       />
@@ -50,7 +57,10 @@ export const Navbar: React.FC<NavbarProps> = ({ filters }) => {
         return (
           <NavLink
             key={serieAlias}
-            onClick={() => navigate(`/events?year=${filters.year}&series=${serieAlias}`)}
+            onClick={() => {
+              closeNavbar()
+              navigate(`/events?year=${filters.year}&series=${serieAlias}`)
+            }}
             active={serieAlias === filters.serie}
             label={matchingSerie?.name || serieAlias}
           /> )

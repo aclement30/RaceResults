@@ -31,6 +31,22 @@ export function validateYear(year: string | number) {
   return +year >= 2020 && +year <= new Date().getFullYear()
 }
 
+export const FETCH_ERROR_TYPE = {
+  NotFound: 'NotFound',
+  NotModified: 'NotModified',
+  Unknown: 'Unknown',
+} as const
+
+export class FetchError<const T> extends Error {
+  type: T
+
+  constructor(message: string, type: T) {
+    super(message)
+    this.name = 'FetchError'
+    this.type = type
+  }
+}
+
 export async function fetchDirectoryFiles(directory: string): Promise<{ files: AwsFiles, subdirectories: string[] }> {
   const response = await s3Client.send(
     new ListObjectsCommand({
@@ -52,25 +68,32 @@ export async function fetchDirectoryFiles(directory: string): Promise<{ files: A
   }
 }
 
-export async function fetchFile(filename: string, skipNotFound = false): Promise<string | false> {
+type FetchFileOptions = {
+  ifModifiedSince?: Date | null
+}
+
+export async function fetchFile(filename: string, options?: FetchFileOptions): Promise<{
+  content: string,
+  lastModified: Date
+}> {
   try {
     const response = await s3Client.send(
       new GetObjectCommand({
         Bucket: S3_BUCKET,
         Key: filename,
+        IfModifiedSince: options?.ifModifiedSince || undefined,
       }),
     )
-
 
     // The Body object also has 'transformToByteArray' and 'transformToWebStream' methods.
     const content = await response.Body?.transformToString() || ''
 
-    return content
+    return { content, lastModified: response.LastModified! }
   } catch (error) {
-    if (error instanceof S3ServiceException && error.name === 'NoSuchKey') {
-      if (skipNotFound) return false
-
-      throw new Error('No event found for this year!')
+    if (error instanceof S3ServiceException && error.$response?.statusCode === 304) {
+      throw new FetchError(`File not modified: ${filename}`, FETCH_ERROR_TYPE.NotModified)
+    } else if (error instanceof S3ServiceException && error.name === 'NoSuchKey') {
+      throw new FetchError(`File not found: ${filename}`, FETCH_ERROR_TYPE.NotFound)
     }
 
     throw error
@@ -85,37 +108,30 @@ export async function fetchEventYears(): Promise<number[]> {
   return years
 }
 
-export async function fetchEventsAndSeries(year: number) {
-  let fileContents
+export async function fetchEvents(year: number, ifModifiedSince?: Date | null) {
+  let response
 
   try {
-    fileContents = await Promise.all([
-      fetchFile(`events/${year}.json`),
-      fetchFile(`series/${year}.json`, true),
-    ])
+    response = await fetchFile(`events/${year}.json`, { ifModifiedSince })
   } catch (error) {
-    if (error instanceof S3ServiceException && error.name === 'NoSuchKey') {
-      throw new Error('No event found for this year!')
+    // If the file is not found, return an empty array
+    if (error instanceof FetchError && error.type === FETCH_ERROR_TYPE.NotFound) {
+      return { events: [] as EventSummary[], lastModified: new Date() }
     }
 
     throw error
   }
 
-  const events: EventSummary[] = !!fileContents[0] ? JSON.parse(fileContents[0]) : []
-  const series: SerieSummary[] = !!fileContents[1] ? JSON.parse(fileContents[1]) : []
+  const events: EventSummary[] = JSON.parse(response.content)
 
-
-  return {
-    events,
-    series,
-  }
+  return { events, lastModified: response.lastModified }
 }
 
-export async function fetchEventResults(year: number, hash: string) {
-  let content
+export async function fetchEventResults(year: number, hash: string, ifModifiedSince?: Date | null) {
+  let response
 
   try {
-    content = await fetchFile(`events-results/${year}/${hash}.json`)
+    response = await fetchFile(`events-results/${year}/${hash}.json`, { ifModifiedSince })
   } catch (error) {
     if (error instanceof S3ServiceException && error.name === 'NoSuchKey') {
       throw new Error('No such event could be found!')
@@ -124,16 +140,35 @@ export async function fetchEventResults(year: number, hash: string) {
     throw error
   }
 
-  const eventResults: EventResults = content && JSON.parse(content)
+  const eventResults: EventResults = response && response.content && JSON.parse(response.content)
 
-  return eventResults
+  return { eventResults, lastModified: response.lastModified }
 }
 
-export async function fetchSeriesResults(year: number, hash: string) {
-  let content
+export async function fetchSeries(year: number, ifModifiedSince?: Date | null) {
+  let response
 
   try {
-    content = await fetchFile(`series-results/${year}/${hash}.json`)
+    response = await fetchFile(`series/${year}.json`, { ifModifiedSince })
+  } catch (error) {
+    // If the file is not found, return an empty array
+    if (error instanceof FetchError && error.type === FETCH_ERROR_TYPE.NotFound) {
+      return { series: [] as EventSummary[], lastModified: new Date() }
+    }
+
+    throw error
+  }
+
+  const series: SerieSummary[] = JSON.parse(response.content)
+
+  return { series, lastModified: response.lastModified }
+}
+
+export async function fetchSeriesResults(year: number, hash: string, ifModifiedSince?: Date | null) {
+  let response
+
+  try {
+    response = await fetchFile(`series-results/${year}/${hash}.json`, { ifModifiedSince })
   } catch (error) {
     if (error instanceof S3ServiceException && error.name === 'NoSuchKey') {
       throw new Error('No such series could be found!')
@@ -142,7 +177,7 @@ export async function fetchSeriesResults(year: number, hash: string) {
     throw error
   }
 
-  const eventResults: SerieResults = content && JSON.parse(content)
+  const serieResults: SerieResults = response && response.content && JSON.parse(response.content)
 
-  return eventResults
+  return { serieResults, lastModified: response.lastModified }
 }

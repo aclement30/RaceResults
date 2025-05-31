@@ -12,7 +12,7 @@ import type { EventSummary, SerieSummary } from './types/results'
 import { Serie } from './Serie/Serie'
 
 function App() {
-  const [opened, { toggle }] = useDisclosure()
+  const [opened, { toggle: toggleNavbar, close: closeNavbar }] = useDisclosure()
   const [years, setYears] = useState<number[]>([])
   const [events, setAllEvents] = useState<Map<number, EventSummary[]>>(new Map<number, EventSummary[]>())
   const [series, setAllSeries] = useState<Map<number, SerieSummary[]>>(new Map<number, SerieSummary[]>())
@@ -47,7 +47,19 @@ function App() {
   return (
     <BrowserRouter>
       <AppContext.Provider
-        value={{ years, setYears, events, setEvents, series, setSeries, loading, setLoading }}>
+        value={{
+          years,
+          setYears,
+          events,
+          setEvents,
+          series,
+          setSeries,
+          loading,
+          setLoading,
+          isNavbarOpened: opened,
+          toggleNavbar,
+          closeNavbar,
+        }}>
         <MantineProvider>
           <AppShell
             header={{ height: 60 }}
@@ -62,12 +74,12 @@ function App() {
               <Group h="100%" px="md">
                 <Burger
                   opened={opened}
-                  onClick={toggle}
+                  onClick={toggleNavbar}
                   hiddenFrom="sm"
                   size="sm"
                 />
 
-                <h1 style={{ margin: 0 }}>BC Race Results</h1>
+                <h2 style={{ margin: 0 }}>BC Race Results</h2>
               </Group>
             </AppShell.Header>
 

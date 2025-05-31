@@ -5,7 +5,7 @@ import { formatRacerPositionLabel, columns as sharedColumns } from '../../Event/
 import { ResponsiveTable } from '../../Event/Shared/ResponsiveTable'
 import { formatRaceDate } from '../utils'
 import { AppContext } from '../../AppContext'
-import { keyBy } from 'lodash'
+import keyBy from 'lodash/keyBy'
 import { useNavigate } from 'react-router'
 
 type IndividualRankingsTableProps = {

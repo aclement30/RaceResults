@@ -91,5 +91,9 @@ export const ORGANIZERS: Record<string, { label: string, color: string, textColo
   'RideForWater': {
     label: 'Ride For Water',
     color: '#02b9d0',
+  },
+  'VictoriaCycling': {
+    label: 'Victoria Cycling League',
+    color: 'black',
   }
 }
