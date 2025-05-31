@@ -8,3 +8,4 @@ storage/manual-import
 storage/series
 storage/series-results
 storage/watchers/last-check
+dist/*
