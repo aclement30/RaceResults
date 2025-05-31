@@ -1,6 +1,6 @@
 import { handler } from './index.ts'
 
-const WATCHER_TYPE = 'event-day'
+const WATCHER_TYPE = 'hourly'
 
 ;( async () => {
   if (WATCHER_TYPE === 'hourly') {

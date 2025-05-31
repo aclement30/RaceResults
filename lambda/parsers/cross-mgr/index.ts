@@ -1,7 +1,8 @@
-import { fetchFilesForYear, fetchResultsYears } from './aws-s3.ts'
+import { fetchFilesForYear, fetchResultsYears, groupEventFiles } from './aws-s3.ts'
 import defaultLogger from '../shared/logger.ts'
-import { getLastCheckDate, setLastCheck } from '../shared/utils.ts'
 import { processEvents } from './event-processor.ts'
+import type { CrossMgrEventFile } from './types.ts'
+import { getLastCheckDate, setLastCheck } from '../shared/utils.ts'
 
 const logger = defaultLogger.child({ provider: 'cross-mgr' })
 
@@ -14,9 +15,28 @@ export async function main() {
   logger.info(`Fetching updated files since ${lastCheckDate}`)
 
   // Fetch event files changed since last check date
-  const updatedEventFiles = await fetchFilesForYear(currentYear, lastCheckDate)
+  const updatedEventFiles = await fetchFilesForYear(currentYear, { lastModifiedSince: lastCheckDate })
 
-  const { event: eventFiles, series: seriesFiles } = updatedEventFiles
+  let eventFiles = updatedEventFiles.filter(e => e.type === 'event')
+  const seriesFiles = updatedEventFiles.filter(e => e.type === 'series')
+
+  if (eventFiles?.length) {
+    let otherEventFiles: CrossMgrEventFile[] = []
+
+    for (const eventFile of eventFiles) {
+      // Fetch other event files for the same organizer/year and series (eg. other categories of same event)
+      const similarEventFiles = await fetchFilesForYear(currentYear, {
+        organizer: eventFile.organizer,
+        serie: eventFile.series
+      })
+
+      otherEventFiles = otherEventFiles.concat(similarEventFiles.filter(e => e.type === 'event'))
+    }
+
+    // Consolidate all event files for the same date, organizer & type
+    const consolidatedEventFiles = groupEventFiles([...eventFiles, ...otherEventFiles])
+    eventFiles = consolidatedEventFiles.filter(e => e.type === 'event')
+  }
 
   logger.info(`${eventFiles?.length || 0} updated events found`)
   logger.info(`${seriesFiles?.length || 0} updated series found`)
@@ -30,8 +50,8 @@ export async function main() {
   await setLastCheck('cross-mgr', new Date(), { eventChanges: eventFiles?.length })
 
   return {
-    events: updatedEvents[currentYear]?.map(e => `${e.date} - ${e.name}`).join(','),
-    series: updatedSeries[currentYear]?.map(e => `${e.year} - ${e.name}`).join(','),
+    events: updatedEvents[currentYear]?.map(e => `${e.date} - ${e.name}`).join(',') || '',
+    series: updatedSeries[currentYear]?.map(e => `${e.year} - ${e.name}`).join(',') || '',
   }
 }
 
@@ -59,7 +79,8 @@ export async function refreshYear(fetchAllYears = false) {
   for (const targetYear of targetYears) {
     const allFiles = await fetchFilesForYear(targetYear)
 
-    const { event: eventFiles, series: seriesFiles } = allFiles
+    const eventFiles = allFiles.filter(e => e.type === 'event')
+    const seriesFiles = allFiles.filter(e => e.type === 'series')
 
     logger.info(`${targetYear}: ${eventFiles?.length || 0} events found`)
     logger.info(`${targetYear}: ${seriesFiles?.length || 0} series found`)

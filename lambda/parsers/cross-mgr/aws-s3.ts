@@ -141,16 +141,26 @@ function parseFiles(files: AwsFiles): Partial<CrossMgrEventFile>[] {
   return categorizedFiles
 }
 
-export async function fetchFilesForYear(year: number, lastModifiedSince?: Date | null): Promise<{
-  event?: CrossMgrEventFile[],
-  series?: CrossMgrEventFile[]
-}> {
-  const organizers = await fetchOrganizersForYear(year)
+export async function fetchFilesForYear(year: number, params?: {
+  organizer?: string,
+  serie?: string | null,
+  lastModifiedSince?: Date | null
+}): Promise<CrossMgrEventFile[]> {
+  const { organizer, serie, lastModifiedSince } = params || {}
+  let organizers = [] as string[]
+
+  // If organizers are not provided, fetch all organizers for the given year
+  if (!organizer) {
+    organizers = await fetchOrganizersForYear(year)
+  } else {
+    organizers = [organizer]
+  }
 
   const files = await Promise.all(organizers.map(async (organizer) => {
     if (organizer === 'testing') return []
 
-    const basePrefix = `${year}/${organizer}/`
+    let basePrefix = `${year}/${organizer}/`
+    if (serie) basePrefix += `${serie}/`
 
     const { files, subdirectories } = await s3.fetchDirectoryFiles(basePrefix)
 
@@ -162,23 +172,14 @@ export async function fetchFilesForYear(year: number, lastModifiedSince?: Date |
     const { excludes } = parseDotFiles(files)
 
     if (subdirectories?.length) {
-      const subdirFiles = await Promise.all(subdirectories.map(async (subdir) => {
-        const subdirName = subdir.slice(0, -1).split('/').pop()!
+      const subdirFiles = await Promise.all(subdirectories.filter(subdirPath => !excludes?.includes(subdirPath.slice(0, -1).split('/').pop()!)).map(async (subdir) => {
+        const serieAlias = subdir.slice(0, -1).split('/').pop()!
 
-        if (excludes?.includes(subdirName)) return []
+        const subdirParsedFiles = await fetchFilesForYear(year, { organizer, serie: serieAlias, lastModifiedSince })
 
-        const { files } = await s3.fetchDirectoryFiles(subdir)
-
-        if (!files?.length) return []
-
-        let filteredFiles = files
-        if (lastModifiedSince) filteredFiles = filteredFiles.filter((file) => file.LastModified! >= lastModifiedSince)
-
-        const parsedFiles = parseFiles(filteredFiles)
-
-        return parsedFiles.map((file) => ( {
+        return subdirParsedFiles.map((file) => ( {
           ...file,
-          series: subdirName
+          series: serieAlias
         } ))
       }))
 
@@ -194,16 +195,23 @@ export async function fetchFilesForYear(year: number, lastModifiedSince?: Date |
     return shapedFiles
   }))
 
-  const allOrganizerFiles = _.flatten(files) as Partial<CrossMgrEventFile>[]
+  const allOrganizersFiles = _.flatten(files) as Partial<CrossMgrEventFile>[]
 
   // Consolidate event files based on date, organizer & type
-  const groupedFiles = allOrganizerFiles.reduce((acc, event) => {
+  const groupedFiles = groupEventFiles(allOrganizersFiles)
+
+  return groupedFiles
+}
+
+export const groupEventFiles = (files: Partial<CrossMgrEventFile>[]): CrossMgrEventFile[] => {
+  // Consolidate event files based on date, organizer & type
+  const groupedFiles = files.reduce((acc, event) => {
     const eventHash = createEventSerieHash(event as CrossMgrEventFile)
 
     const matchingEvent = acc.find(({ hash }) => hash === eventHash)
 
     if (matchingEvent) {
-      matchingEvent.files = [...matchingEvent.files, ...( event.files || [] )]
+      matchingEvent.files = [...new Set([...matchingEvent.files, ...( event.files || [] )])]
     } else {
       acc.push({
         hash: eventHash,
@@ -214,9 +222,8 @@ export async function fetchFilesForYear(year: number, lastModifiedSince?: Date |
     return acc
   }, [] as CrossMgrEventFile[])
 
-  return _.groupBy(groupedFiles, 'type')
+  return groupedFiles
 }
-
 
 export async function fetchResultPayloads(filenames: string[]) {
   const payloads = await Promise.all(filenames.map(async (filename: string) => {

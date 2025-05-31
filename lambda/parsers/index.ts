@@ -3,5 +3,5 @@ import { main as ManualImportParser } from './manual-import/index.ts'
 
 ( async () => {
   await CrossMgrParser()
-  await ManualImportParser()
+  // await ManualImportParser()
 } )()

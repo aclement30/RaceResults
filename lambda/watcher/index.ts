@@ -1,7 +1,7 @@
 import type { Context, EventBridgeEvent } from 'aws-lambda'
 import { main as ManualImportParser } from '../parsers/manual-import/index.ts'
-import { getEventDays } from '../parsers/shared/utils'
-import { main as CrossMgrParser } from '../parsers/cross-mgr'
+import { getEventDays } from '../parsers/shared/utils.ts'
+import { main as CrossMgrParser } from '../parsers/cross-mgr/index.ts'
 
 const WATCH_HOURS = { morning: [9, 12], afternoon: [12, 17], evening: [17, 21], day: [9, 17] }
 
