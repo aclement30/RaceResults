@@ -15,13 +15,10 @@ export const handler = async (event: EventBridgeEvent<any, any>, _: Context) => 
   if (eventBridgeRule?.endsWith('5-minutes')) {
     // Event day watcher
     watcher = 'EVENT-DAY'
+    console.log('Watcher', watcher)
 
     const eventDays = await getEventDays()
-    const today = new Date().toLocaleDateString('sv')
-
-    // const tomorrow = new Date()
-    // tomorrow.setDate(tomorrow.getDate() + 1)
-    // const today = tomorrow.toLocaleDateString('sv')
+    const today = new Date().toLocaleDateString('sv', { timeZone: 'America/Vancouver' })
 
     const currentHour = new Date().getHours()
 
@@ -43,15 +40,19 @@ export const handler = async (event: EventBridgeEvent<any, any>, _: Context) => 
   } else if (eventBridgeRule?.endsWith('1-day')) {
     // Daily watcher
     watcher = 'DAILY'
+    console.log('Watcher', watcher)
 
     // @ts-ignore
     results['manual-import'] = await ManualImportParser()
   } else {
     // Hourly watcher
     watcher = 'HOURLY'
+    console.log('Watcher', watcher)
 
     results['cross-mgr'] = await CrossMgrParser()
   }
+
+  console.log(results)
 
   return {
     statusCode: 200,

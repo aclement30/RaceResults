@@ -11,13 +11,15 @@ export async function main() {
   const currentYear = new Date().getFullYear()
   const lastCheckDate = await getLastCheckDate('cross-mgr')
 
+  logger.info(`Fetching updated files since ${lastCheckDate}`)
+
   // Fetch event files changed since last check date
   const updatedEventFiles = await fetchFilesForYear(currentYear, lastCheckDate)
 
   const { event: eventFiles, series: seriesFiles } = updatedEventFiles
 
-  logger.info(`${eventFiles?.length} updated events found`)
-  logger.info(`${seriesFiles?.length} updated series found`)
+  logger.info(`${eventFiles?.length || 0} updated events found`)
+  logger.info(`${seriesFiles?.length || 0} updated series found`)
 
   const {
     events: updatedEvents,
