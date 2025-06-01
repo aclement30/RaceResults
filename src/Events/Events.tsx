@@ -50,7 +50,7 @@ export const Events: React.FC = () => {
 
         {!!todayEvents.length && (
           <div style={{ marginBottom: 20 }}>
-            <h2>Today</h2>
+            <h2 style={{ marginTop: 0 }}>Today</h2>
             {todayEvents.map((event) => (
               <EventCard key={`${event.hash}`} event={event}/> ))}
           </div>

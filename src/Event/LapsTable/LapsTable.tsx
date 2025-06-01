@@ -107,7 +107,7 @@ export const LapsTable: React.FC<LapsTableProps> = ({
 
   return (
     <div style={{ overflowX: 'auto' }}>
-      <div style={{ margin: '20px 0 10px' }}>
+      <div style={{ margin: '1rem 0' }}>
         <SegmentedControl
           value={dataType}
           // @ts-ignore

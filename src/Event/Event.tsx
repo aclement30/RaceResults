@@ -3,7 +3,7 @@ import { AppContext } from '../AppContext'
 import { useParams, useSearchParams } from 'react-router'
 import type { EventResults, EventSummary } from '../types/results'
 import { ResultsTable } from './ResultsTable/ResultsTable'
-import { AppShell, TextInput, Text, Divider, Tabs, LoadingOverlay, Blockquote } from '@mantine/core'
+import { AppShell, Text, Divider, Tabs, LoadingOverlay, Blockquote } from '@mantine/core'
 import { IconCoins, IconRotateClockwise, IconTrophy } from '@tabler/icons-react'
 import { EventHeader } from './EventHeader/EventHeader'
 import { LapsTable } from './LapsTable/LapsTable'
@@ -13,6 +13,7 @@ import { FETCH_ERROR_TYPE, FetchError, fetchEventResults } from '../utils/aws-s3
 import { Navbar } from './Navbar/Navbar'
 import { useEventsAndSeries } from '../utils/useEventsAndSeries'
 import { Source } from './Shared/Source'
+import { SearchField } from './Shared/SearchField'
 
 export const Event: React.FC = () => {
   const { events, loading } = useContext(AppContext)
@@ -122,11 +123,7 @@ export const Event: React.FC = () => {
         {eventResults && (
           <>
             <div style={{ paddingBottom: '1rem' }}>
-              <TextInput
-                placeholder="Search participant name, team, bib number..."
-                value={searchValue}
-                onChange={(event) => setSearchValue(event.currentTarget.value)}
-              />
+              <SearchField value={searchValue} onChange={setSearchValue}/>
             </div>
 
             <Tabs value={selectedTab} onChange={handleTabChamge}>

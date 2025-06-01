@@ -18,7 +18,7 @@ export const Navbar: React.FC<NavbarProps> = ({ eventYear, categories, selectedC
   const { closeNavbar } = useContext(AppContext)
 
   return (
-    <AppShell.Navbar p="md">
+    <AppShell.Navbar p="md" style={{ paddingBottom: 0 }}>
       <Button
         variant="subtle"
         leftSection={<IconArrowLeft size={14}/>}
@@ -31,17 +31,19 @@ export const Navbar: React.FC<NavbarProps> = ({ eventYear, categories, selectedC
         Back to events list
       </Button>
 
-      {categories?.map((cat) => (
-        <NavLink
-          key={cat.alias}
-          active={selectedCategory === cat.alias}
-          onClick={() => {
-            closeNavbar()
-            setSearchParams(new URLSearchParams({ category: cat.alias }))
-          }}
-          label={cat.label}
-        />
-      ))}
+      <div style={{ overflowX: 'auto' }}>
+        {categories?.map((cat) => (
+          <NavLink
+            key={cat.alias}
+            active={selectedCategory === cat.alias}
+            onClick={() => {
+              closeNavbar()
+              setSearchParams(new URLSearchParams({ category: cat.alias }))
+            }}
+            label={cat.label}
+          />
+        ))}
+      </div>
     </AppShell.Navbar>
   )
 }

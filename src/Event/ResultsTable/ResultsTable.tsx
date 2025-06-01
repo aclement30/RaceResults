@@ -43,8 +43,8 @@ export const ResultsTable: React.FC<ResultsTableProps> = ({
   }), [results, athletes, showFinishTimes])
 
   return (
-    <div style={{ width: '100%' }}>
-      <Table style={{ tableLayout: 'fixed' }}>
+    <div style={{ width: '100%', marginTop: '1rem' }}>
+      <Table style={{ tableLayout: 'fixed' }} withTableBorder>
         <Table.Thead>
           <Table.Tr>
             <Table.Th hiddenFrom="sm" style={{
@@ -60,7 +60,7 @@ export const ResultsTable: React.FC<ResultsTableProps> = ({
               width: 70
             }}>Bib</Table.Th>
             <Table.Th style={{
-              width: 80
+              width: 100
             }}>Time</Table.Th>
           </Table.Tr>
         </Table.Thead>

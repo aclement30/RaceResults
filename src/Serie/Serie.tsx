@@ -11,6 +11,7 @@ import { OrganizerBadge } from '../Event/Shared/OrganizerBadge'
 import { TeamRankingsTable } from './TeamRankingsTable/TeamRankingsTable'
 import { useEventsAndSeries } from '../utils/useEventsAndSeries'
 import { Source } from '../Event/Shared/Source'
+import { SearchField } from '../Event/Shared/SearchField'
 
 export const Serie: React.FC = () => {
   const { series, loading, } = useContext(AppContext)
@@ -111,18 +112,7 @@ export const Serie: React.FC = () => {
         {serieSummary && seriesResults && (
           <>
             <div style={{ paddingBottom: '1rem' }}>
-              <TextInput
-                placeholder="Search participant name, team, bib number..."
-                value={searchValue}
-                onChange={(event) => setSearchValue(event.currentTarget.value)}
-                rightSection={
-                  <CloseButton
-                    aria-label="Clear input"
-                    onClick={() => setSearchValue('')}
-                    style={{ display: searchValue ? undefined : 'none' }}
-                  />
-                }
-              />
+              <SearchField value={searchValue} onChange={setSearchValue}/>
             </div>
 
             {resultType === 'individual' ? (
