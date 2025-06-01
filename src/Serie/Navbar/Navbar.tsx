@@ -4,6 +4,7 @@ import { AppShell, Button, NavLink } from '@mantine/core'
 import { IconArrowLeft } from '@tabler/icons-react'
 import { useContext } from 'react'
 import { AppContext } from '../../AppContext'
+import { Credit } from '../../Event/Shared/Credit'
 
 type NavbarProps = {
   serieSummary: SerieSummary
@@ -72,6 +73,8 @@ export const Navbar: React.FC<NavbarProps> = ({ serieSummary, selectedCategory }
           </NavLink>
         )}
       </div>
+
+      <Credit/>
     </AppShell.Navbar>
   )
 }

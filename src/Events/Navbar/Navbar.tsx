@@ -2,6 +2,7 @@ import { AppShell, Divider, NavLink } from '@mantine/core'
 import { useNavigate } from 'react-router'
 import { useContext, useMemo } from 'react'
 import { AppContext } from '../../AppContext'
+import { Credit } from '../../Event/Shared/Credit'
 
 type NavbarProps = {
   filters: {
@@ -65,6 +66,8 @@ export const Navbar: React.FC<NavbarProps> = ({ filters }) => {
             label={matchingSerie?.name || serieAlias}
           /> )
       })}
+
+      <Credit/>
     </AppShell.Navbar>
   )
 }

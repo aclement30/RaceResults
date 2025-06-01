@@ -31,19 +31,28 @@ export const EventHeader = ({ event }: { event: EventSummary }) => {
 
   return (
     <>
-      <div style={{
-        backgroundColor: '#dee2e6',
-        padding: '2px 6px',
-        display: 'inline-block',
-        alignSelf: 'flex-start',
-        fontWeight: 700,
-      }}>
-        {event.date}
-      </div>
+      <Group justify="space-between" style={{ alignItems: 'center', marginTop: 5, flexWrap: 'nowrap' }}>
+        <div style={{
+          backgroundColor: '#dee2e6',
+          padding: '2px 6px',
+          display: 'inline-block',
+          alignSelf: 'flex-start',
+          fontWeight: 700,
+        }}>
+          {event.date}
+        </div>
+
+        <div className="mantine-hidden-from-sm">
+          <OrganizerBadge organizerAlias={event.organizerAlias}/>
+        </div>
+      </Group>
 
       <Group justify="space-between" style={{ alignItems: 'center', marginTop: 5, flexWrap: 'nowrap' }}>
         <h3 style={{ marginTop: 0, marginBottom: 0 }}>{event.name}</h3>
-        <OrganizerBadge organizerAlias={event.organizerAlias}/>
+
+        <div className="mantine-visible-from-sm">
+          <OrganizerBadge organizerAlias={event.organizerAlias}/>
+        </div>
       </Group>
 
       {/*<Group justify="space-between" style={{ alignItems: 'center', marginTop: 5 }}>*/}

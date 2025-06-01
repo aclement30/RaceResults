@@ -65,21 +65,27 @@ function App() {
             header={{ height: 60 }}
             navbar={{
               width: 300,
-              breakpoint: 'sm',
+              breakpoint: 'md',
               collapsed: { mobile: !opened },
             }}
+            footer={{ height: 32 }}
             padding="md"
           >
-            <AppShell.Header>
+            <AppShell.Header
+              style={{
+                backgroundImage: 'url(/header-bg.png)',
+                backgroundPosition: 'top right',
+                backgroundRepeat: 'no-repeat',
+              }}>
               <Group h="100%" px="md">
                 <Burger
                   opened={opened}
                   onClick={toggleNavbar}
-                  hiddenFrom="sm"
+                  hiddenFrom="md"
                   size="sm"
                 />
 
-                <h2 style={{ margin: 0 }}>BC Race Results</h2>
+                <h2 style={{ margin: 0, fontStyle: 'oblique' }}>BC Race Results</h2>
               </Group>
             </AppShell.Header>
 

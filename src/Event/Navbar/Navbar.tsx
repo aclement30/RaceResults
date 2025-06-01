@@ -4,6 +4,7 @@ import { useNavigate, useSearchParams } from 'react-router'
 import type { BaseCategory } from '../../types/results'
 import { useContext } from 'react'
 import { AppContext } from '../../AppContext'
+import { Credit } from '../Shared/Credit'
 
 type NavbarProps = {
   eventYear: number
@@ -18,7 +19,7 @@ export const Navbar: React.FC<NavbarProps> = ({ eventYear, categories, selectedC
   const { closeNavbar } = useContext(AppContext)
 
   return (
-    <AppShell.Navbar p="md" style={{ paddingBottom: 0 }}>
+    <AppShell.Navbar p="md" style={{ paddingBottom: 0 }} className="no-print">
       <Button
         variant="subtle"
         leftSection={<IconArrowLeft size={14}/>}
@@ -44,6 +45,8 @@ export const Navbar: React.FC<NavbarProps> = ({ eventYear, categories, selectedC
           />
         ))}
       </div>
+
+      <Credit/>
     </AppShell.Navbar>
   )
 }

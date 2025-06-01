@@ -10,6 +10,7 @@ export const SearchField: React.FC<SearchFieldProps> = ({ value, onChange }) => 
     <TextInput
       placeholder="Search participant name, team, bib number..."
       value={value}
+      className="no-print"
       onChange={(event) => onChange(event.currentTarget.value)}
       rightSection={
         <CloseButton
