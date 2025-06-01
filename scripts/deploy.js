@@ -8,7 +8,7 @@ import mime from 'mime'
 // Configure your AWS credentials and region (or use environment variables)
 const REGION = 'us-west-2'
 const BUCKET = 'race-results.aclement.com'
-const CLOUDFRONT_DISTRIBUTION_ID = 'YOUR_DISTRIBUTION_ID'
+const CLOUDFRONT_DISTRIBUTION_ID = 'E1Z6YJZY7N19L6'
 
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
@@ -60,6 +60,7 @@ async function uploadFile(file) {
     Key: file.key,
     Body: fileContent,
     ContentType: contentType,
+    CacheControl: file.key === 'index.html' ? 'max-age=0, no-cache, no-store, must-revalidate' : ' max-age=172800',
   })
 
   await s3.send(command)
