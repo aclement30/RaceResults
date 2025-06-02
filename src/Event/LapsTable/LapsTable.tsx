@@ -7,15 +7,13 @@ import { ResponsiveTable } from '../Shared/ResponsiveTable'
 
 type LapsTableProps = {
   lapCount: number
-  sortedResults: AthleteRaceResult[]
-  filteredResults: AthleteRaceResult[]
+  results: AthleteRaceResult[]
   athletes: Record<string, Athlete>
 }
 
 export const LapsTable: React.FC<LapsTableProps> = ({
                                                       lapCount,
-                                                      sortedResults,
-                                                      filteredResults,
+                                                      results,
                                                       athletes,
                                                     }) => {
   const [dataType, setDataType] = useState<'TIME' | 'SPEED' | 'GAP'>('TIME')
@@ -24,10 +22,10 @@ export const LapsTable: React.FC<LapsTableProps> = ({
     const lapGaps: Record<string, Array<number | null>> = {}
 
     for (let i = 1; i < lapCount + 1; i++) {
-      const firstRiderPastTheLine = sortedResults.reduce((prev, curr) => !curr.lapTimes[i] || prev.lapTimes[i] < curr.lapTimes[i] ? prev : curr)
+      const firstRiderPastTheLine = results.reduce((prev, curr) => !curr.lapTimes![i] || prev.lapTimes![i] < curr.lapTimes![i] ? prev : curr)
 
-      sortedResults.forEach(({ bibNumber, lapTimes }) => {
-        const riderGapInCurrentLap = lapTimes[i] ? lapTimes[i] - firstRiderPastTheLine.lapTimes[i] : null
+      results.forEach(({ bibNumber, lapTimes }) => {
+        const riderGapInCurrentLap = lapTimes![i] ? lapTimes![i] - firstRiderPastTheLine.lapTimes![i] : null
 
         if (!lapGaps.hasOwnProperty(bibNumber)) lapGaps[bibNumber] = []
         lapGaps[bibNumber].push(riderGapInCurrentLap)
@@ -35,9 +33,9 @@ export const LapsTable: React.FC<LapsTableProps> = ({
     }
 
     return lapGaps
-  }, [sortedResults])
+  }, [results])
 
-  const rows = useMemo(() => filteredResults.map((result) => {
+  const rows = useMemo(() => results.map((result) => {
     const athlete = athletes[result.bibNumber]
     return (
       <Table.Tr key={result.bibNumber} style={{ height: 42 }}>
@@ -66,14 +64,14 @@ export const LapsTable: React.FC<LapsTableProps> = ({
                   whiteSpace: 'nowrap',
                   textAlign: 'center',
                 }}
-                key={`lap-${i + 1}`}>{result.lapDurations[i] ? formatTimeDuration(result.lapDurations[i]) : '-'}</Table.Td> )}
+                key={`lap-${i + 1}`}>{result.lapDurations![i] ? formatTimeDuration(result.lapDurations![i]) : '-'}</Table.Td> )}
             {dataType === 'SPEED' && (
               <Table.Td
                 style={{
                   whiteSpace: 'nowrap',
                   textAlign: 'center',
                 }}
-                key={`lap-${i + 1}`}>{result.lapSpeeds[i] ? formatSpeed(result.lapSpeeds[i]) : '-'}</Table.Td> )}
+                key={`lap-${i + 1}`}>{result.lapSpeeds![i] ? formatSpeed(result.lapSpeeds![i]) : '-'}</Table.Td> )}
             {dataType === 'GAP' && (
               <Table.Td
                 style={{
@@ -85,7 +83,7 @@ export const LapsTable: React.FC<LapsTableProps> = ({
         ))}
       </Table.Tr>
     )
-  }), [filteredResults, athletes, dataType])
+  }), [results, athletes, dataType])
 
   const stickyColumnHeaders = <Table.Tr>
     <Table.Th>P<span className="mantine-visible-from-sm">osition</span></Table.Th>

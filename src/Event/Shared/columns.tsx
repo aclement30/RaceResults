@@ -1,6 +1,6 @@
 import type { Athlete, AthleteRaceResult, AthleteSerieResult } from '../../types/results'
 import { Badge, Tooltip } from '@mantine/core'
-import { formatTimeDuration, formatGapTime } from '../../utils/race-results'
+import { formatTimeDuration, formatGapTime, formatSpeed } from '../../utils/race-results'
 
 
 export const formatRacerPositionLabel = (position: number) => {
@@ -32,11 +32,21 @@ export const columns = {
   time: (row: Pick<AthleteRaceResult, 'status' | 'position' | 'finishTime' | 'finishGap'>, { showGapTime }: {
     showGapTime?: boolean
   }) => {
-    if (!['FINISHER', 'DNF'].includes(row.status)) return '-'
+    if (!['FINISHER', 'DNF'].includes(row.status) || row.status === 'DNF' && row.finishTime === 0) return '-'
 
     if (row.position === 1 || ( !showGapTime && row.status === 'FINISHER' && row.finishGap >= 0 )) return formatTimeDuration(row.finishTime)
     else if (row.status === 'DNF' || row.finishGap < 0) return `(${formatTimeDuration(row.finishTime)})`
     else return <Tooltip
         label={formatTimeDuration(row.finishTime)}><span>{formatGapTime(row.finishGap)}</span></Tooltip>
-  }
+  },
+  gap: (row: Pick<AthleteRaceResult, 'status' | 'finishGap'>) => {
+    if (!['FINISHER', 'DNF'].includes(row.status)) return '-'
+
+    return formatGapTime(row.finishGap)
+  },
+  avgSpeed: (row: Pick<AthleteRaceResult, 'status' | 'avgSpeed'>) => {
+    if (!['FINISHER', 'DNF'].includes(row.status)) return '-'
+
+    return row.avgSpeed ? formatSpeed(row.avgSpeed) : '-'
+  },
 }

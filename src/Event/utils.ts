@@ -1,5 +1,6 @@
-import type { Athlete, AthleteRaceResult } from '../types/results'
+import type { Athlete, AthleteRaceResult, EventSummary } from '../types/results'
 import { useMemo } from 'react'
+import { BC_UPGRADE_POINT_RULES } from '../config/upgrade-points'
 
 export const useCategoryResults = (results: AthleteRaceResult[], athletes: Record<string, Athlete>, searchValue?: string) => {
   const sortedResults = useMemo(() => {
@@ -41,4 +42,58 @@ export const useCategoryResults = (results: AthleteRaceResult[], athletes: Recor
   const isFiltered = filteredResults.length !== sortedResults.length
 
   return { filteredResults, sortedResults, isFiltered }
+}
+
+export const hasUpgradePoints = (event: EventSummary | null): 'UPGRADE' | 'SUBJECTIVE' | false => {
+  if (!event) return false
+  if (event.organizerAlias === 'GoodRideGravel') return false
+  if (event.series === 'WTNC2025') return 'SUBJECTIVE'
+  return 'UPGRADE'
+}
+
+const SANCTIONED_EVENT_TYPES = {
+  GRASSROOTS: 'Grassroots Race',
+  A: 'A-Race',
+  AA: 'AA-Race',
+  'AA-USA': 'AA-USA',
+  'CYCLING-CANADA': 'Cycling Canada',
+  'MASS-PARTICIPATION': 'Mass Participation Race',
+}
+
+type SanctionedEventType = keyof typeof SANCTIONED_EVENT_TYPES
+
+export const getSanctionedEventType = (event: EventSummary | null): SanctionedEventType | false => {
+  if (!event) return false
+  if (event.organizerAlias === 'GoodRideGravel') return 'MASS-PARTICIPATION'
+  if (event.series === 'WTNC2025') return 'GRASSROOTS'
+  if (event.series === 'BCProvincials') return 'AA'
+  return 'A'
+}
+
+export const getSanctionedEventTypeLabel = (eventType: SanctionedEventType): string => {
+  return SANCTIONED_EVENT_TYPES[eventType]
+}
+
+export const hasDoubleUpgradePoints = (eventType: SanctionedEventType): boolean => {
+  return ['AA', 'AA-USA', 'CYCLING-CANADA'].includes(eventType)
+}
+
+export const calculateBCUpgradePoints = ({ position, fieldSize, event }: {
+  position: number,
+  fieldSize: number,
+  event: EventSummary
+}): number | null => {
+  const eventType = getSanctionedEventType(event)
+  const isDouble = eventType && hasDoubleUpgradePoints(eventType)
+
+  // Compare fieldSize with position in BC_UPGRADE_POINT_RULES to get the number of points
+  const range = BC_UPGRADE_POINT_RULES.find((rule) => {
+    return fieldSize >= rule.fieldSize[0] && fieldSize <= rule.fieldSize[1]
+  })?.points
+
+  if (!range) return null
+
+  if (range && range[position - 1]) return range[position - 1] * ( isDouble ? 2 : 1 )
+
+  return 0
 }

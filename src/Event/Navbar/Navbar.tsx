@@ -15,7 +15,7 @@ type NavbarProps = {
 
 export const Navbar: React.FC<NavbarProps> = ({ eventYear, categories, selectedCategory }) => {
   const navigate = useNavigate()
-  const [_, setSearchParams] = useSearchParams()
+  const [searchParams, setSearchParams] = useSearchParams()
   const { closeNavbar } = useContext(AppContext)
 
   return (
@@ -39,7 +39,11 @@ export const Navbar: React.FC<NavbarProps> = ({ eventYear, categories, selectedC
             active={selectedCategory === cat.alias}
             onClick={() => {
               closeNavbar()
-              setSearchParams(new URLSearchParams({ category: cat.alias }))
+
+              const updatedParams = new URLSearchParams({ category: cat.alias })
+              if (searchParams.get('tab')) updatedParams.set('tab', searchParams.get('tab')!)
+
+              setSearchParams(updatedParams)
             }}
             label={cat.label}
           />

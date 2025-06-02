@@ -98,8 +98,14 @@ export const Serie: React.FC = () => {
             </Group>
 
             <div>
-              <Text
-                size="compact-md">{resultType === 'individual' ? 'Individual Series Results' : `${serieSummary.year} Series Team Results`}</Text>
+              <Text size="compact-md">
+                {resultType === 'individual' ? 'Individual Series Results' : `${serieSummary.year} Series Team Results`}
+                {selectedEventCategory && (
+                  <span className="mantine-hidden-from-md">&nbsp;-&nbsp;
+                    {selectedEventCategory?.label}
+                  </span>
+                )}
+              </Text>
             </div>
 
             <div className="mantine-hidden-from-sm" style={{ marginTop: '1rem' }}><OrganizerBadge
@@ -142,9 +148,7 @@ export const Serie: React.FC = () => {
 
             <Divider/>
 
-            {serieSummary.provider !== 'manual-import' && (
-              <Source sourceUrls={seriesResults[resultType!]!.sourceUrls}/>
-            )}
+            <Source sourceUrls={seriesResults[resultType!]!.sourceUrls}/>
           </>
         )}
       </AppShell.Main>

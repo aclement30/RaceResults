@@ -1,11 +1,16 @@
 import { Button, Group } from '@mantine/core'
-import type { EventSummary } from '../../types/results'
+import type { BaseCategory, EventSummary } from '../../types/results'
 import { useNavigate } from 'react-router'
 import { OrganizerBadge } from '../Shared/OrganizerBadge'
 import { useContext } from 'react'
 import { AppContext } from '../../AppContext'
 
-export const EventHeader = ({ event }: { event: EventSummary }) => {
+type EventHeaderProps = {
+  event: EventSummary
+  selectedCategory?: BaseCategory
+}
+
+export const EventHeader: React.FC<EventHeaderProps> = ({ event, selectedCategory }) => {
   const navigate = useNavigate()
   const { series } = useContext(AppContext)
 
@@ -31,13 +36,14 @@ export const EventHeader = ({ event }: { event: EventSummary }) => {
 
   return (
     <>
-      <Group justify="space-between" style={{ alignItems: 'center', marginTop: 5, flexWrap: 'nowrap' }}>
+      <Group justify="space-between" gap="xl" style={{ alignItems: 'center', marginTop: 5, flexWrap: 'nowrap' }}>
         <div style={{
           backgroundColor: '#dee2e6',
           padding: '2px 6px',
           display: 'inline-block',
           alignSelf: 'flex-start',
           fontWeight: 700,
+          textWrap: 'nowrap',
         }}>
           {event.date}
         </div>
@@ -48,7 +54,13 @@ export const EventHeader = ({ event }: { event: EventSummary }) => {
       </Group>
 
       <Group justify="space-between" style={{ alignItems: 'center', marginTop: 5, flexWrap: 'nowrap' }}>
-        <h3 style={{ marginTop: 0, marginBottom: 0 }}>{event.name}</h3>
+        <h3 style={{ marginTop: 0, marginBottom: 0 }}>{event.name}
+          {selectedCategory && (
+            <span className="mantine-hidden-from-md">&nbsp;-&nbsp;
+              {selectedCategory?.label}
+            </span>
+          )}
+        </h3>
 
         <div className="mantine-visible-from-sm">
           <OrganizerBadge organizerAlias={event.organizerAlias}/>

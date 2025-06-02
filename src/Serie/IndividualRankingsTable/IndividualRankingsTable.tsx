@@ -47,7 +47,7 @@ export const IndividualRankingsTable: React.FC<IndividualRankingsTableProps> = (
       <Table.Tr key={`ranking-${result.position}`} style={{ height: 42 }}>
         <Table.Td>{columns.position(result)}</Table.Td>
         <Table.Td>
-          {result.lastName}, {result.firstName}
+          {result.lastName.toUpperCase()}, {result.firstName}
           {athleteColumns.includes('team') && <Text size="sm" c="dimmed" hiddenFrom="sm">{result.team}</Text>}
         </Table.Td>
         {athleteColumns.includes('team') && <Table.Td visibleFrom="sm">{result.team}</Table.Td>}

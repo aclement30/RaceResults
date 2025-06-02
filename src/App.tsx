@@ -68,7 +68,6 @@ function App() {
               breakpoint: 'md',
               collapsed: { mobile: !opened },
             }}
-            footer={{ height: 32 }}
             padding="md"
           >
             <AppShell.Header

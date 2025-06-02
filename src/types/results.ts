@@ -6,7 +6,7 @@ export type EventSummary = {
   organizerAlias: string
   organizerOrg?: string
   organizerName: string
-  organizerEmail: string            // email
+  organizerEmail?: string            // email
   series?: string | null
   // timezone: string               // raceTimeZone
   flags?: Record<string, string>
@@ -74,12 +74,12 @@ export type Athlete = {
   bibNumber: number
   firstName: string       // FirstName
   lastName: string        // LastName
-  age: number             // Age
-  gender: 'M' | 'F' | 'X' // Gender
-  city: string            // City
-  state: string | null    // StateProv
-  license: string         // License
-  uciId: string           // UCIID
+  age?: number             // Age
+  gender?: 'M' | 'F' | 'X' // Gender
+  city?: string            // City
+  state?: string | null    // StateProv
+  license?: string         // License
+  uciId?: string           // UCIID
   // natCode: string      // NatCode
   team: string            // Team
 }
@@ -90,16 +90,16 @@ export type AthleteRaceResult = {
   // flr: number
   // interp: number[]
   // lastInterp: boolean
-  lapSpeeds: number[]
-  lapDurations: number[]   // (raceTimes)
-  lapTimes: number[]       // raceTimes
+  lapSpeeds?: number[]
+  lapDurations?: number[]   // (raceTimes)
+  lapTimes?: number[]       // raceTimes
   finishTime: number
   finishGap: number        // gapValue
   // raceSpeeds: number[]
   // raceTimes: number[]
   avgSpeed: number        // speed
   status: 'FINISHER' | 'DNF' | 'DNS' | 'OTL'
-  relegated: boolean
+  relegated?: boolean
 }
 
 export type BaseCategory = {
@@ -113,9 +113,9 @@ export type EventCategory = BaseCategory & {
   // pos: number[]
   // gapValue: number[]
   // iSort: number
-  laps: number
+  laps?: number
   results: AthleteRaceResult[]
-  primes: PrimeResult[]
+  primes?: PrimeResult[]
   starters?: number
   finishers?: number
   distanceUnit?: string
