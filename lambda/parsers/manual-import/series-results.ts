@@ -1,5 +1,5 @@
 import { parse } from 'csv-parse/sync'
-import type { ManualImportCategory, ManualImportEventSerieFile } from './types.ts'
+import type { ManualImportCategory, ManualImportSerieFile } from './types.ts'
 import type {
   AthleteSerieResult,
   SerieIndividualCategory,
@@ -13,7 +13,7 @@ import { fetchFile } from './aws-s3.ts'
 
 const logger = defaultLogger.child({ provider: 'manual-import' })
 
-export async function importSeriesResults(manualImportSerie: Omit<ManualImportEventSerieFile, 'files'>, sourceFiles: string[]) {
+export async function importSeriesResults(manualImportSerie: Omit<ManualImportSerieFile, 'files'>, sourceFiles: string[]) {
   const fileContents: Record<string, string> = {}
 
   logger.info(`Importing series results for ${manualImportSerie.name}...`)

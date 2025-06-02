@@ -1,12 +1,13 @@
-import type { ManualImportEventSerieFile } from './types.ts'
+import type { ManualImportBaseFile, ManualImportEventFile, ManualImportSerieFile } from './types.ts'
 import type { EventResults, EventSummary, SerieResults, SerieSummary } from '../../../src/types/results.ts'
 import { importSeriesResults } from './series-results.ts'
 import { writeEventsOrSeries, writeResults } from '../shared/utils.ts'
 import defaultLogger from '../shared/logger.ts'
+import { importEventResults } from './race-results.ts'
 
 const logger = defaultLogger.child({ provider: 'manual-import' })
 
-export const processEvents = async (eventFiles: ManualImportEventSerieFile[]) => {
+export const processEvents = async (eventFiles: ManualImportBaseFile[]) => {
   const raceEvents: Record<string, EventSummary[]> = {}
   const series: Record<string, SerieSummary[]> = {}
   const eventResults: Record<string, Record<string, EventResults>> = {}
@@ -15,10 +16,12 @@ export const processEvents = async (eventFiles: ManualImportEventSerieFile[]) =>
   const processedEvents = await Promise.allSettled(eventFiles.map(async (eventWithFiles) => {
     const { files, ...event } = eventWithFiles
 
-    if (event.type === 'series') {
-      return importSeriesResults(event, files)
+    if (event.type === 'event') {
+      return importEventResults(event as ManualImportEventFile, files!)
+    } else if (event.type === 'series') {
+      return importSeriesResults(event as ManualImportSerieFile, files!)
     } else {
-      throw new Error('Unsupported import file type: ' + event.type)
+      throw new Error('Unsupported event file type: ' + event.type)
     }
   }))
 
@@ -28,14 +31,13 @@ export const processEvents = async (eventFiles: ManualImportEventSerieFile[]) =>
 
       const { summary, results, type } = parseResult.value
 
-      // if (type === 'event') {
-      //   if (!raceEvents[targetYear]) raceEvents[targetYear] = []
-      //   if (!eventResults[targetYear]) eventResults[targetYear] = {}
-      //
-      //   raceEvents[targetYear] = raceEvents[targetYear].concat(summary as EventSummary)
-      //   eventResults[targetYear][summary.hash] = results as EventResults
-      // } else
-      if (type === 'series') {
+      if (type === 'event') {
+        if (!raceEvents[targetYear]) raceEvents[targetYear] = []
+        if (!eventResults[targetYear]) eventResults[targetYear] = {}
+
+        raceEvents[targetYear] = raceEvents[targetYear].concat(summary as EventSummary)
+        eventResults[targetYear][summary.hash] = results as EventResults
+      } else if (type === 'series') {
         if (!series[targetYear]) series[targetYear] = []
         if (!serieResults[targetYear]) serieResults[targetYear] = {}
 
@@ -43,7 +45,7 @@ export const processEvents = async (eventFiles: ManualImportEventSerieFile[]) =>
         serieResults[targetYear][summary.hash] = results as SerieResults
       }
     } else {
-      logger.error(parseResult.reason)
+      logger.error(`Error while processing event: ${parseResult.reason}`)
     }
   })
 
@@ -51,7 +53,7 @@ export const processEvents = async (eventFiles: ManualImportEventSerieFile[]) =>
   if (Object.keys(eventResults).length) await writeResults(eventResults, 'events')
   if (Object.keys(series).length) await writeEventsOrSeries(series, 'series')
   if (Object.keys(serieResults).length) await writeResults(serieResults, 'series')
-  
+
   return {
     events: raceEvents,
     series,
