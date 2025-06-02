@@ -7,6 +7,7 @@ import { Navbar } from './Navbar/Navbar'
 import { EventCard } from './EventCard/EventCard'
 import { SerieCard } from './SerieCard/SerieCard'
 import { useEventsAndSeries } from '../utils/useEventsAndSeries'
+import { Loader } from '../Loader/Loader'
 
 const today = new Date().toLocaleString('sv').slice(0, 10)
 
@@ -44,7 +45,12 @@ export const Events: React.FC = () => {
       <Navbar filters={filters}/>
 
       <AppShell.Main>
-        <LoadingOverlay visible={loading && !events.get(filters.year)} loaderProps={{ children: 'Loading events...' }}/>
+        <LoadingOverlay
+          visible={loading && !events.get(filters.year)} overlayProps={{ radius: 'sm', blur: 2 }}
+          loaderProps={{
+            children: <Loader text="Loading events..."/>,
+          }}
+        />
 
         {matchingSerie && <SerieCard serie={matchingSerie}/>}
 
@@ -64,7 +70,7 @@ export const Events: React.FC = () => {
           </>
         )}
 
-        {emptyEvents && (
+        {!loading && emptyEvents && (
           <Stack align="center" gap="xs" style={{ marginTop: '1rem', marginBottom: '2rem' }}>
             <Text c="dimmed" size="sm">
               No event found...

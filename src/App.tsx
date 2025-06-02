@@ -3,13 +3,15 @@ import { BrowserRouter, Route, Routes } from 'react-router'
 import '@mantine/core/styles.css'
 import './App.css'
 import { loadStartupData } from './utils/loadStartupData'
-import { AppShell, Burger, Group, LoadingOverlay, MantineProvider } from '@mantine/core'
+import { AppShell, LoadingOverlay, MantineProvider } from '@mantine/core'
 import { Events } from './Events/Events'
 import { useDisclosure } from '@mantine/hooks'
 import { Event } from './Event/Event'
 import { AppContext } from './AppContext'
 import type { EventSummary, SerieSummary } from './types/results'
 import { Serie } from './Serie/Serie'
+import { Header } from './Header/Header'
+import { Loader } from './Loader/Loader'
 
 function App() {
   const [opened, { toggle: toggleNavbar, close: closeNavbar }] = useDisclosure()
@@ -70,25 +72,14 @@ function App() {
             }}
             padding="md"
           >
-            <AppShell.Header
-              style={{
-                backgroundImage: 'url(/header-bg.png)',
-                backgroundPosition: 'top right',
-                backgroundRepeat: 'no-repeat',
-              }}>
-              <Group h="100%" px="md">
-                <Burger
-                  opened={opened}
-                  onClick={toggleNavbar}
-                  hiddenFrom="md"
-                  size="sm"
-                />
+            <Header/>
 
-                <h2 style={{ margin: 0, fontStyle: 'oblique' }}>BC Race Results</h2>
-              </Group>
-            </AppShell.Header>
-
-            <LoadingOverlay visible={loadingStartupData} loaderProps={{ children: 'Loading events...' }}/>
+            <LoadingOverlay
+              visible={loadingStartupData} overlayProps={{ radius: 'sm', blur: 2 }}
+              loaderProps={{
+                children: <Loader text="Loading events..."/>,
+              }}
+            />
 
             {!loadingStartupData && (
               <Routes>

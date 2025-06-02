@@ -69,13 +69,13 @@ export const ResultsTable: React.FC<ResultsTableProps> = ({
         {athleteColumns.includes('team') && <Table.Td visibleFrom="sm">{athlete.team}</Table.Td>}
         {athleteColumns.includes('city') && <Table.Td visibleFrom="lg">{columns.city(athlete)}</Table.Td>}
         {athleteColumns.includes('bibNumber') && <Table.Td>{columns.bibNumber(result)}</Table.Td>}
-        <Table.Td style={{ maxWidth: 100, whiteSpace: 'nowrap' }}>
+        <Table.Td style={{ maxWidth: 90, whiteSpace: 'nowrap' }}>
           <div style={{ cursor: 'pointer' }} onClick={() => toggleFinishTimes()}>
             {columns.time(result, { showGapTime: !showFinishTimes && !isFiltered })}
           </div>
         </Table.Td>
         {eventSummary.isTimeTrial && (
-          <Table.Td style={{ maxWidth: 100, whiteSpace: 'nowrap' }}>
+          <Table.Td style={{ maxWidth: 100, whiteSpace: 'nowrap' }} visibleFrom="sm">
             {columns.avgSpeed(result)}
           </Table.Td>
         )}
@@ -102,9 +102,9 @@ export const ResultsTable: React.FC<ResultsTableProps> = ({
             {athleteColumns.includes('team') && <Table.Th visibleFrom="sm">Team</Table.Th>}
             {athleteColumns.includes('city') && <Table.Th visibleFrom="lg">City</Table.Th>}
             {athleteColumns.includes('bibNumber') && <Table.Th style={{ width: 70 }}>Bib</Table.Th>}
-            <Table.Th style={{ width: 100 }}>Time</Table.Th>
+            <Table.Th style={{ width: 90 }}>Time</Table.Th>
             {eventSummary.isTimeTrial && (
-              <Table.Th style={{ width: 100 }}>Avg. Speed</Table.Th>
+              <Table.Th style={{ width: 100 }} visibleFrom="sm">Avg. Speed</Table.Th>
             )}
           </Table.Tr>
         </Table.Thead>

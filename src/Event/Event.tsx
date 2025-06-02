@@ -14,6 +14,7 @@ import { Navbar } from './Navbar/Navbar'
 import { useEventsAndSeries } from '../utils/useEventsAndSeries'
 import { Source } from './Shared/Source'
 import { PointsTable } from './PointsTable/PointsTable'
+import { Loader } from '../Loader/Loader'
 
 export const Event: React.FC = () => {
   const { events, loading } = useContext(AppContext)
@@ -52,6 +53,7 @@ export const Event: React.FC = () => {
       setEventResults(eventResults)
       eventResultsLastModifiedRef.current = lastModified
 
+      if (timerRef.current) clearTimeout(timerRef.current)
       timerRef.current = setTimeout(() => {
         fetchData(year, hash)
       }, 1000 * 30) // Refresh every minute
@@ -107,61 +109,78 @@ export const Event: React.FC = () => {
 
   return (
     <>
-      <LoadingOverlay visible={loading && !events.get(eventYear)} loaderProps={{ children: 'Loading event...' }}/>
+      <LoadingOverlay
+        visible={loading && !events.get(eventYear)} overlayProps={{ radius: 'sm', blur: 2 }}
+        loaderProps={{
+          children: <Loader text="Loading event..."/>,
+        }}
+      />
 
       <Navbar eventYear={eventYear} eventHash={eventHash} selectedCategory={selectedCategory}
               categories={eventSummary?.categories}/>
 
       <AppShell.Main>
-        <LoadingOverlay visible={loadingResults} loaderProps={{ children: 'Loading results...' }}/>
-
         {eventSummary && ( <EventHeader event={eventSummary} selectedCategory={selectedEventCategory}/> )}
 
-        <Divider my="md"/>
+        <div style={{ marginTop: '0.5rem' }}>
+          <LoadingOverlay
+            visible={loadingResults} overlayProps={{ radius: 'sm', blur: 2 }}
+            loaderProps={{
+              children: <Loader text="Loading event results..."/>,
+            }}
+          />
 
-        {eventResults && (
-          <>
-            <Tabs value={selectedTab} onChange={handleTabChamge}>
-              <Tabs.List>
-                <Tabs.Tab value="results" leftSection={<IconTrophy/>}>
-                  Results
+          <Tabs value={selectedTab} onChange={handleTabChamge}>
+            <Tabs.List>
+              <Tabs.Tab value="results" leftSection={<IconTrophy/>}>
+                Results
+              </Tabs.Tab>
+
+              {!!selectedEventCategory?.primes?.length && (
+                <Tabs.Tab value="primes" leftSection={<IconCoins/>}>
+                  Primes
                 </Tabs.Tab>
-                {!!selectedEventCategory?.primes?.length && (
-                  <Tabs.Tab value="primes" leftSection={<IconCoins/>}>
-                    Primes
-                  </Tabs.Tab>
-                )}
-                {selectedEventCategory?.laps && selectedEventCategory?.laps > 1 && (
-                  <Tabs.Tab value="laps" leftSection={<IconRotateClockwise/>}>
-                    Laps
-                  </Tabs.Tab>
-                )}
-                {!!upgradePoints && (
-                  <Tabs.Tab value="points" leftSection={<IconStars/>}>
-                    Points
-                  </Tabs.Tab>
-                )}
-              </Tabs.List>
+              )}
 
-              <Tabs.Panel value="results">
+              {selectedEventCategory?.laps && selectedEventCategory?.laps > 1 && (
+                <Tabs.Tab value="laps" leftSection={<IconRotateClockwise/>}>
+                  Laps
+                </Tabs.Tab>
+              )}
+
+              {!!upgradePoints && (
+                <Tabs.Tab value="points" leftSection={<IconStars/>}>
+                  Points
+                </Tabs.Tab>
+              )}
+            </Tabs.List>
+
+            <Tabs.Panel value="results">
+              {!!eventResults && (
                 <ResultsTable
                   eventSummary={eventSummary!}
                   results={sortedResults}
                   athletes={eventResults.athletes}
                   raceNotes={eventResults.raceNotes}
                 />
-              </Tabs.Panel>
+              )}
+            </Tabs.Panel>
 
+            {!!selectedEventCategory?.primes?.length && (
               <Tabs.Panel value="primes">
-                <PrimesTable primes={selectedEventCategory?.primes || []} athletes={eventResults.athletes}/>
+                <PrimesTable primes={selectedEventCategory?.primes || []} athletes={eventResults!.athletes}/>
               </Tabs.Panel>
+            )}
 
+            {selectedEventCategory?.laps && selectedEventCategory?.laps > 1 && (
               <Tabs.Panel value="laps">
                 <LapsTable lapCount={selectedEventCategory?.laps || 0}
                            results={sortedResults}
-                           athletes={eventResults.athletes}/>
+                           athletes={eventResults!.athletes}/>
               </Tabs.Panel>
+            )}
 
+            {!!upgradePoints && eventResults && (
               <Tabs.Panel value="points">
                 <PointsTable
                   eventSummary={eventSummary!}
@@ -169,10 +188,12 @@ export const Event: React.FC = () => {
                   athletes={eventResults.athletes}
                 />
               </Tabs.Panel>
-            </Tabs>
+            )}
+          </Tabs>
 
-            <Divider/>
+          <Divider/>
 
+          {!!eventResults && (
             <Text c="dimmed" size="sm" style={{ padding: '1rem 0' }}>
               Last Updated: {new Date(eventResults.lastUpdated).toLocaleDateString('en-CA', {
               year: 'numeric',
@@ -182,12 +203,12 @@ export const Event: React.FC = () => {
               minute: '2-digit',
             })}
             </Text>
+          )}
 
-            <Divider/>
+          <Divider/>
 
-            <Source sourceUrls={eventResults.sourceUrls}/>
-          </>
-        )}
+          <Source sourceUrls={eventResults?.sourceUrls}/>
+        </div>
       </AppShell.Main>
     </>
   )
