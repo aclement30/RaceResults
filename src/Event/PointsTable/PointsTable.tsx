@@ -1,6 +1,6 @@
 import type { Athlete, AthleteRaceResult } from '../../types/results'
-import { Alert, List, Table, Text, ThemeIcon } from '@mantine/core'
-import { useMemo } from 'react'
+import { Alert, Button, Group, List, Table, Text, ThemeIcon } from '@mantine/core'
+import { useMemo, useState } from 'react'
 import {
   calculateBCUpgradePoints,
   getSanctionedEventType,
@@ -9,7 +9,9 @@ import {
 } from '../utils'
 import type { EventSummary } from '../../types/results'
 import { columns } from '../Shared/columns'
-import { IconCircleCheck } from '@tabler/icons-react'
+import { IconCircleCheck, IconFileDownload } from '@tabler/icons-react'
+import { exportCSV } from '../../utils/exportCSV'
+import { showErrorMessage } from '../../utils/showErrorMessage'
 
 type PointsTableProps = {
   eventSummary: EventSummary
@@ -48,8 +50,13 @@ export const PointsTable: React.FC<PointsTableProps> = ({
   const sanctionedEventType = getSanctionedEventType(eventSummary)
   const doubleUpgradePoints = sanctionedEventType && hasDoubleUpgradePoints(sanctionedEventType)
   const eventTypeLabel = sanctionedEventType ? getSanctionedEventTypeLabel(sanctionedEventType) : null
+  const [loadingCsv, setLoadingCsv] = useState(false)
 
-  const rows = useMemo(() => results.filter(result => !!upgradePoints[result.bibNumber]).map((result) => {
+  const filteredResults = useMemo(() => {
+    return results.filter(result => !!upgradePoints[result.bibNumber])
+  }, [results, upgradePoints])
+
+  const rows = useMemo(() => filteredResults.map((result) => {
     const athlete = athletes[result.bibNumber]
 
     return (
@@ -67,7 +74,37 @@ export const PointsTable: React.FC<PointsTableProps> = ({
         <Table.Td style={{ textAlign: 'center' }}>{upgradePoints[result.bibNumber]}</Table.Td>
       </Table.Tr>
     )
-  }), [results, athletes, upgradePoints])
+  }), [filteredResults, athletes, upgradePoints])
+
+  const handleExportCSV = async () => {
+    const exportedRows = filteredResults.map((result) => {
+      const athlete = athletes[result.bibNumber]
+      return [
+        columns.position(result, { text: true }) as string,
+        `${athlete.lastName}, ${athlete.firstName}`,
+        athlete.team,
+        result.bibNumber,
+        upgradePoints[result.bibNumber],
+      ]
+    })
+
+    setLoadingCsv(true)
+
+    try {
+      await exportCSV(exportedRows, [
+        'Position',
+        'Name',
+        'Team',
+        'BibNumber',
+        'Points',
+      ], 'points')
+    } catch (error) {
+      // @ts-ignore
+      showErrorMessage({ title: 'CSV Export Error', message: error.message })
+    } finally {
+      setLoadingCsv(false)
+    }
+  }
 
   const PointExplanation = useMemo(() => {
     return (
@@ -91,6 +128,16 @@ export const PointsTable: React.FC<PointsTableProps> = ({
 
   return (
     <div style={{ width: '100%', marginTop: '1rem' }}>
+      <Group style={{ paddingBottom: '1rem', justifyContent: 'flex-end' }}>
+        <Button
+          variant="default"
+          leftSection={<IconFileDownload/>}
+          onClick={() => handleExportCSV()}
+          loading={loadingCsv}>
+          Download CSV
+        </Button>
+      </Group>
+
       <Table style={{ tableLayout: 'fixed' }} withTableBorder>
         <Table.Thead>
           <Table.Tr>

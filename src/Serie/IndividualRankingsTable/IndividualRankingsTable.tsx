@@ -7,6 +7,7 @@ import { formatRaceDate } from '../utils'
 import { AppContext } from '../../AppContext'
 import keyBy from 'lodash/keyBy'
 import { useNavigate } from 'react-router'
+import { useHighlightedAthlete } from '../../utils/useHighlightedAthlete'
 
 type IndividualRankingsTableProps = {
   serie: SerieSummary
@@ -42,16 +43,20 @@ export const IndividualRankingsTable: React.FC<IndividualRankingsTableProps> = (
     navigate(`/events/${event.year}/${event.hash}?category=${selectedCategory}`)
   }
 
+  const { highlightedBibNumber, highlightAthlete } = useHighlightedAthlete()
+
   const rows = useMemo(() => results.map((result) => {
     return (
-      <Table.Tr key={`ranking-${result.position}`} style={{ height: 42 }}>
+      <Table.Tr key={`ranking-${result.position}`} style={{ height: 42 }}
+                className={`result-row ${highlightedBibNumber && +highlightedBibNumber === result.bibNumber ? 'highlighted' : ''}`}>
         <Table.Td>{columns.position(result)}</Table.Td>
         <Table.Td>
           {result.lastName.toUpperCase()}, {result.firstName}
           {athleteColumns.includes('team') && <Text size="sm" c="dimmed" hiddenFrom="sm">{result.team}</Text>}
         </Table.Td>
         {athleteColumns.includes('team') && <Table.Td visibleFrom="sm">{result.team}</Table.Td>}
-        {athleteColumns.includes('bibNumber') && <Table.Td>{columns.bibNumber(result)}</Table.Td>}
+        {athleteColumns.includes('bibNumber') &&
+          <Table.Td>{columns.bibNumber(result, { onClick: highlightAthlete })}</Table.Td>}
         <Table.Td
           style={{
             textAlign: 'center',
@@ -65,7 +70,7 @@ export const IndividualRankingsTable: React.FC<IndividualRankingsTableProps> = (
         ))}
       </Table.Tr>
     )
-  }), [results])
+  }), [results, highlightedBibNumber])
 
   const stickyColumnHeaders = <Table.Tr>
     <Table.Th>P<span className="mantine-visible-from-sm">osition</span></Table.Th>

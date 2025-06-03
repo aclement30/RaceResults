@@ -1,9 +1,13 @@
 import type { Athlete, AthleteRaceResult, EventSummary } from '../../types/results'
-import { Blockquote, Divider, Table, Text } from '@mantine/core'
+import { Blockquote, Button, Divider, Group, Table, Text } from '@mantine/core'
 import { useMemo, useState } from 'react'
 import { useDisclosure } from '@mantine/hooks'
 import { columns } from '../Shared/columns'
 import { SearchField } from '../Shared/SearchField'
+import { useHighlightedAthlete } from '../../utils/useHighlightedAthlete'
+import { IconFileDownload } from '@tabler/icons-react'
+import { exportCSV } from '../../utils/exportCSV'
+import { showErrorMessage } from '../../utils/showErrorMessage'
 
 type ResultsTableProps = {
   eventSummary: EventSummary
@@ -20,6 +24,7 @@ export const ResultsTable: React.FC<ResultsTableProps> = ({
                                                           }) => {
   const [showFinishTimes, { toggle: toggleFinishTimes }] = useDisclosure()
   const [searchValue, setSearchValue] = useState('')
+  const [loadingCsv, setLoadingCsv] = useState(false)
 
   const filteredResults = useMemo(() => {
     if (!searchValue) return results
@@ -40,6 +45,8 @@ export const ResultsTable: React.FC<ResultsTableProps> = ({
     })
   }, [results, searchValue])
 
+  const { highlightedBibNumber, highlightAthlete } = useHighlightedAthlete()
+
   const isFiltered = filteredResults.length !== results.length
 
   const athleteColumns = useMemo(() => {
@@ -57,7 +64,8 @@ export const ResultsTable: React.FC<ResultsTableProps> = ({
     const athlete = athletes[result.bibNumber]
 
     return (
-      <Table.Tr key={`ranking-${result.bibNumber}`}>
+      <Table.Tr key={`ranking-${result.bibNumber}`}
+                className={`result-row ${highlightedBibNumber && +highlightedBibNumber === result.bibNumber ? 'highlighted' : ''}`}>
         <Table.Td>{columns.position(result)}</Table.Td>
         <Table.Td>
           {athlete.lastName}, {athlete.firstName}
@@ -68,7 +76,8 @@ export const ResultsTable: React.FC<ResultsTableProps> = ({
         </Table.Td>
         {athleteColumns.includes('team') && <Table.Td visibleFrom="sm">{athlete.team}</Table.Td>}
         {athleteColumns.includes('city') && <Table.Td visibleFrom="lg">{columns.city(athlete)}</Table.Td>}
-        {athleteColumns.includes('bibNumber') && <Table.Td>{columns.bibNumber(result)}</Table.Td>}
+        {athleteColumns.includes('bibNumber') &&
+          <Table.Td>{columns.bibNumber(result, { onClick: highlightAthlete })}</Table.Td>}
         <Table.Td style={{ maxWidth: 90, whiteSpace: 'nowrap' }}>
           <div style={{ cursor: 'pointer' }} onClick={() => toggleFinishTimes()}>
             {columns.time(result, { showGapTime: !showFinishTimes && !isFiltered })}
@@ -81,13 +90,57 @@ export const ResultsTable: React.FC<ResultsTableProps> = ({
         )}
       </Table.Tr>
     )
-  }), [filteredResults, athletes, showFinishTimes])
+  }), [filteredResults, athletes, showFinishTimes, highlightedBibNumber])
+
+  const handleExportCSV = async () => {
+    const exportedRows = filteredResults.map((result) => {
+      const athlete = athletes[result.bibNumber]
+      return [
+        columns.position(result, { text: true }) as string,
+        `${athlete.lastName}, ${athlete.firstName}`,
+        athlete.team,
+        athlete.city,
+        result.bibNumber,
+        columns.time(result, { showGapTime: false, text: true }) as string,
+        columns.gap(result, { text: true })?.replace('+ ', ''),
+        eventSummary.isTimeTrial ? columns.avgSpeed(result, { text: true }) : ''
+      ]
+    })
+
+    setLoadingCsv(true)
+
+    try {
+      await exportCSV(exportedRows, [
+        'Position',
+        'Name',
+        'Team',
+        'City',
+        'BibNumber',
+        'FinishTime',
+        'FinishGap',
+        ...( eventSummary.isTimeTrial ? ['AvgSpeed'] : [] )
+      ], 'results')
+    } catch (error) {
+      // @ts-ignore
+      showErrorMessage({ title: 'CSV Export Error', message: error.message })
+    } finally {
+      setLoadingCsv(false)
+    }
+  }
 
   return (
     <div style={{ width: '100%', marginTop: '1rem' }}>
-      <div style={{ paddingBottom: '1rem' }}>
+      <Group style={{ paddingBottom: '1rem' }}>
         <SearchField value={searchValue} onChange={setSearchValue}/>
-      </div>
+
+        <Button
+          variant="default"
+          leftSection={<IconFileDownload/>}
+          onClick={() => handleExportCSV()}
+          loading={loadingCsv}>
+          Download CSV
+        </Button>
+      </Group>
 
       <Table style={{ tableLayout: 'fixed' }} withTableBorder>
         <Table.Thead>

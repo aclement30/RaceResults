@@ -4,7 +4,7 @@ import { useParams, useSearchParams } from 'react-router'
 import type { EventResults, EventSummary } from '../types/results'
 import { ResultsTable } from './ResultsTable/ResultsTable'
 import { AppShell, Text, Divider, Tabs, LoadingOverlay } from '@mantine/core'
-import { IconCoins, IconRotateClockwise, IconStars, IconTrophy } from '@tabler/icons-react'
+import { IconCoins, IconStars, IconStopwatch, IconTrophy } from '@tabler/icons-react'
 import { EventHeader } from './EventHeader/EventHeader'
 import { LapsTable } from './LapsTable/LapsTable'
 import { PrimesTable } from './PrimesTable/PrimesTable'
@@ -143,7 +143,7 @@ export const Event: React.FC = () => {
               )}
 
               {selectedEventCategory?.laps && selectedEventCategory?.laps > 1 && (
-                <Tabs.Tab value="laps" leftSection={<IconRotateClockwise/>}>
+                <Tabs.Tab value="laps" leftSection={<IconStopwatch/>}>
                   Laps
                 </Tabs.Tab>
               )}

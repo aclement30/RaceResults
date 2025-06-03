@@ -19,6 +19,7 @@ export const SearchField: React.FC<SearchFieldProps> = ({ value, onChange }) => 
           style={{ display: value ? undefined : 'none' }}
         />
       }
+      style={{ flex: '1 1 auto' }}
     />
   )
 }

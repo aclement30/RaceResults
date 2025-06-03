@@ -1,9 +1,10 @@
 import { useCallback, useEffect, useState } from 'react'
 import { BrowserRouter, Route, Routes } from 'react-router'
 import '@mantine/core/styles.css'
+import '@mantine/notifications/styles.css'
 import './App.css'
 import { loadStartupData } from './utils/loadStartupData'
-import { AppShell, LoadingOverlay, MantineProvider } from '@mantine/core'
+import { AppShell, createTheme, LoadingOverlay, MantineProvider } from '@mantine/core'
 import { Events } from './Events/Events'
 import { useDisclosure } from '@mantine/hooks'
 import { Event } from './Event/Event'
@@ -12,6 +13,11 @@ import type { EventSummary, SerieSummary } from './types/results'
 import { Serie } from './Serie/Serie'
 import { Header } from './Header/Header'
 import { Loader } from './Loader/Loader'
+import { Notifications } from '@mantine/notifications'
+
+const theme = createTheme({
+  cursorType: 'pointer',
+})
 
 function App() {
   const [opened, { toggle: toggleNavbar, close: closeNavbar }] = useDisclosure()
@@ -62,7 +68,9 @@ function App() {
           toggleNavbar,
           closeNavbar,
         }}>
-        <MantineProvider>
+        <MantineProvider theme={theme}>
+          <Notifications/>
+
           <AppShell
             header={{ height: 60 }}
             navbar={{

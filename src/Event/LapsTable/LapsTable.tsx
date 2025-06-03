@@ -1,9 +1,12 @@
 import type { Athlete, AthleteRaceResult } from '../../types/results'
-import { SegmentedControl, Table } from '@mantine/core'
+import { Button, Group, SegmentedControl, Switch, Table } from '@mantine/core'
 import { useMemo, useState } from 'react'
 import { columns } from '../Shared/columns'
 import { formatGapTime, formatSpeed, formatTimeDuration } from '../../utils/race-results'
 import { ResponsiveTable } from '../Shared/ResponsiveTable'
+import { exportCSV } from '../../utils/exportCSV'
+import { showErrorMessage } from '../../utils/showErrorMessage'
+import { IconFileDownload } from '@tabler/icons-react'
 
 type LapsTableProps = {
   lapCount: number
@@ -11,12 +14,16 @@ type LapsTableProps = {
   athletes: Record<string, Athlete>
 }
 
+const valueGradientColors = ['#00FF00', '#33FF00', '#66FF00', '#99FF00', '#CCFF00', '#FFFF00', '#FFCC00', '#FF9900', '#FF6600', '#FF3300', '#FF0000']
+
 export const LapsTable: React.FC<LapsTableProps> = ({
                                                       lapCount,
                                                       results,
                                                       athletes,
                                                     }) => {
   const [dataType, setDataType] = useState<'TIME' | 'SPEED' | 'GAP'>('TIME')
+  const [loadingCsv, setLoadingCsv] = useState(false)
+  const [showColors, setShowColors] = useState(true)
 
   const lapGaps = useMemo(() => {
     const lapGaps: Record<string, Array<number | null>> = {}
@@ -34,6 +41,49 @@ export const LapsTable: React.FC<LapsTableProps> = ({
 
     return lapGaps
   }, [results])
+
+  const rankedValues = useMemo(() => {
+    let values: number[] = []
+
+    if (dataType === 'TIME') {
+      // @ts-ignore
+      values = results.map(result => result.lapDurations?.filter(time => time > 0)).flat()
+    } else if (dataType === 'SPEED') {
+      // @ts-ignore
+      values = results.map(result => result.lapSpeeds?.filter(time => time > 0)).flat()
+    } else if (dataType === 'GAP') {
+      // @ts-ignore
+      values = Object.values(lapGaps).flat().filter(gap => gap !== null && gap >= 0)
+    }
+
+    values = values.sort((a, b) => a - b)
+
+    const groupCount = 10
+    const groupSize = Math.ceil(values.length / groupCount)
+    const groups = []
+
+    for (let i = 0; i < groupCount; i++) {
+      const start = i * groupSize
+      const end = start + groupSize
+      const groupRange = values.slice(start, end)
+      groups.push([Math.min(...groupRange), Math.max(...groupRange)])
+    }
+
+    return groups
+  }, [results, dataType, lapGaps])
+
+  const getColorForValue = (value: number | undefined | null) => {
+    if (value === null || value === undefined || !showColors) return 'transparent'
+
+    for (let i = 0; i < rankedValues.length; i++) {
+      const [min, max] = rankedValues[i]
+      if (value >= min && value <= max) {
+        return valueGradientColors[i]
+      }
+    }
+
+    return 'transparent'
+  }
 
   const rows = useMemo(() => results.map((result) => {
     const athlete = athletes[result.bibNumber]
@@ -63,6 +113,7 @@ export const LapsTable: React.FC<LapsTableProps> = ({
                 style={{
                   whiteSpace: 'nowrap',
                   textAlign: 'center',
+                  backgroundColor: getColorForValue(result.lapDurations?.[i]),
                 }}
                 key={`lap-${i + 1}`}>{result.lapDurations![i] ? formatTimeDuration(result.lapDurations![i]) : '-'}</Table.Td> )}
             {dataType === 'SPEED' && (
@@ -70,6 +121,7 @@ export const LapsTable: React.FC<LapsTableProps> = ({
                 style={{
                   whiteSpace: 'nowrap',
                   textAlign: 'center',
+                  backgroundColor: getColorForValue(result.lapSpeeds?.[i]),
                 }}
                 key={`lap-${i + 1}`}>{result.lapSpeeds![i] ? formatSpeed(result.lapSpeeds![i]) : '-'}</Table.Td> )}
             {dataType === 'GAP' && (
@@ -77,13 +129,14 @@ export const LapsTable: React.FC<LapsTableProps> = ({
                 style={{
                   whiteSpace: 'nowrap',
                   textAlign: 'center',
+                  backgroundColor: getColorForValue(lapGaps[result.bibNumber][i]),
                 }}
                 key={`lap-${i + 1}`}>{lapGaps[result.bibNumber][i] !== null ? formatGapTime(lapGaps[result.bibNumber][i]!) : '-'}</Table.Td> )}
           </>
         ))}
       </Table.Tr>
     )
-  }), [results, athletes, dataType])
+  }), [results, athletes, dataType, showColors])
 
   const stickyColumnHeaders = <Table.Tr>
     <Table.Th>P<span className="mantine-visible-from-sm">osition</span></Table.Th>
@@ -103,20 +156,93 @@ export const LapsTable: React.FC<LapsTableProps> = ({
     ))}
   </Table.Tr>
 
+  const handleExportCSV = async () => {
+    const exportedColumns = ['Position', 'Name', 'Team', 'Bib']
+    if (dataType === 'TIME') exportedColumns.push('TotalTime')
+    else if (dataType === 'SPEED') exportedColumns.push('AvgSpeed')
+
+    Array(lapCount).fill(0).forEach((_, i) => {
+      exportedColumns.push(`Lap${i + 1}`)
+    })
+
+    const exportedRows = results.map((result) => {
+      const athlete = athletes[result.bibNumber]
+      const row: Array<string | number | null> = [
+        columns.position(result, { text: true }) as string,
+        `${athlete.lastName}, ${athlete.firstName}`,
+        athlete.team,
+        result.bibNumber,
+      ]
+      if (dataType === 'TIME') {
+        row.push(columns.time(result, { showGapTime: false, text: true }) as string)
+      } else if (dataType === 'SPEED') {
+        row.push(result.avgSpeed > 0 ? formatSpeed(result.avgSpeed) : null)
+      }
+
+      Array(lapCount).fill(0).forEach((_, i) => {
+        let value = null
+
+        if (dataType === 'TIME') {
+          value = result.lapDurations?.[i] ? formatTimeDuration(result.lapDurations[i]) : null
+        } else if (dataType === 'SPEED') {
+          value = result.lapSpeeds?.[i] ? formatSpeed(result.lapSpeeds![i]) : null
+        } else if (dataType === 'GAP') {
+          value = lapGaps[result.bibNumber][i] !== null ? formatGapTime(lapGaps[result.bibNumber][i]!).replace('+ ', '') : null
+        }
+
+        if (value === '-') row.push(null)
+        else row.push(value)
+      })
+
+      return row
+    })
+
+    setLoadingCsv(true)
+
+    try {
+      let filename = 'laps'
+      if (dataType === 'TIME') filename += '-time'
+      else if (dataType === 'SPEED') filename += '-speed'
+      else if (dataType === 'GAP') filename += '-gap'
+
+      await exportCSV(exportedRows, exportedColumns, filename)
+    } catch (error) {
+      // @ts-ignore
+      showErrorMessage({ title: 'CSV Export Error', message: error.message })
+    } finally {
+      setLoadingCsv(false)
+    }
+  }
+
   return (
     <div style={{ overflowX: 'auto' }}>
-      <div style={{ margin: '1rem 0' }}>
-        <SegmentedControl
-          value={dataType}
-          // @ts-ignore
-          onChange={(value) => setDataType(value as const)}
-          data={[
-            { label: 'Times', value: 'TIME' },
-            { label: 'Speed', value: 'SPEED' },
-            { label: 'Gaps', value: 'GAP' },
-          ]}
-        />
-      </div>
+      <Group style={{ marginTop: '1rem', paddingBottom: '1rem' }} justify="space-between">
+        <Group>
+          <SegmentedControl
+            value={dataType}
+            // @ts-ignore
+            onChange={(value) => setDataType(value as const)}
+            data={[
+              { label: 'Times', value: 'TIME' },
+              { label: 'Speed', value: 'SPEED' },
+              { label: 'Gaps', value: 'GAP' },
+            ]}
+          />
+          <Switch
+            checked={showColors}
+            onChange={(e) => setShowColors(e.currentTarget.checked)}
+            label="Show Colors"
+          />
+        </Group>
+
+        <Button
+          variant="default"
+          leftSection={<IconFileDownload/>}
+          onClick={() => handleExportCSV()}
+          loading={loadingCsv}>
+          Download CSV
+        </Button>
+      </Group>
 
       <ResponsiveTable stickyColumnHeaders={stickyColumnHeaders}
                        scrollableColumnHeaders={lapColumnHeaders}>{rows}</ResponsiveTable>
