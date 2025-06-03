@@ -56,11 +56,11 @@ export const formatDurationToSeconds = (duration: string): number => {
   } else if (duration.match(/^\d+:\d+$/)) {
     const [minutes, seconds] = duration.split(':').map(Number)
     return ( minutes * 60 ) + seconds
-  } else if (duration.match(/^\dh\d+'\d+"$/)) {
-    const [hours, minutes, seconds] = duration.split(/h|'|"/).map(s => s.trim())
+  } else if (duration.match(/^\dh\d+['’]\d+"$/)) {
+    const [hours, minutes, seconds] = duration.split(/h|'|’|"/).map(s => s.trim())
     return ( +hours * 3600 ) + ( +minutes * 60 ) + ( +seconds )
-  } else if (duration.match(/^\d+'\d+"$/)) {
-    const [minutes, seconds] = duration.split('\'').map(s => s.trim().replace('"', ''))
+  } else if (duration.match(/^\d+['’]\d+"$/)) {
+    const [minutes, seconds] = duration.split(/'|’/).map(s => s.trim().replace('"', ''))
     return ( +minutes * 60 ) + ( +seconds )
   } else if (duration.match(/^\d+"$/)) {
     const seconds = duration.replace('"', '').trim()
