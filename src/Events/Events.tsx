@@ -9,7 +9,7 @@ import { SerieCard } from './SerieCard/SerieCard'
 import { useEventsAndSeries } from '../utils/useEventsAndSeries'
 import { Loader } from '../Loader/Loader'
 
-const today = new Date().toLocaleString('sv').slice(0, 10)
+const today = new Date().toLocaleDateString('sv', { timeZone: 'America/Vancouver' }).slice(0, 10)
 
 export const Events: React.FC = () => {
   const [searchParams] = useSearchParams()
