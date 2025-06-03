@@ -1,11 +1,11 @@
-import type { Athlete, AthleteRaceResult } from '../../types/results'
+import type { Athlete, AthleteRaceResult, EventResults } from '../../types/results'
 import { Alert, Button, Group, List, Table, Text, ThemeIcon } from '@mantine/core'
 import { useMemo, useState } from 'react'
 import {
-  calculateBCUpgradePoints,
+  calculateBCUpgradePoints, calculateFieldSize,
   getSanctionedEventType,
   getSanctionedEventTypeLabel, hasDoubleUpgradePoints,
-  hasUpgradePoints
+  hasUpgradePoints, useCategoryResults
 } from '../utils'
 import type { EventSummary } from '../../types/results'
 import { columns } from '../Shared/columns'
@@ -15,27 +15,33 @@ import { showErrorMessage } from '../../utils/showErrorMessage'
 
 type PointsTableProps = {
   eventSummary: EventSummary
-  results: AthleteRaceResult[]
+  eventResults: EventResults
+  selectedCategory: string
   athletes: Record<string, Athlete>,
 }
 
 export const PointsTable: React.FC<PointsTableProps> = ({
                                                           eventSummary,
-                                                          results,
+                                                          eventResults,
+                                                          selectedCategory,
                                                           athletes,
                                                         }) => {
+  const {
+    sortedResults,
+  } = useCategoryResults(eventResults?.results[selectedCategory]?.results || [], eventResults?.athletes || {})
+
   const fieldSize = useMemo(() => {
-    return results.filter((result) => result.status !== 'DNS').length
-  }, [results])
+    return calculateFieldSize(eventResults, selectedCategory)
+  }, [eventResults, selectedCategory])
 
   const upgradePoints = useMemo(() => {
-    return results.reduce((acc, result) => {
+    return sortedResults.reduce((acc, result) => {
       let points: number | null = 0
 
       if (result.position > 0) {
         points = calculateBCUpgradePoints({
           position: result.position,
-          fieldSize,
+          fieldSize: fieldSize.starters,
           event: eventSummary,
         })
       }
@@ -44,7 +50,7 @@ export const PointsTable: React.FC<PointsTableProps> = ({
 
       return acc
     }, {} as Record<string, number | null>)
-  }, [results, athletes])
+  }, [sortedResults, athletes])
 
   const pointType = hasUpgradePoints(eventSummary)
   const sanctionedEventType = getSanctionedEventType(eventSummary)
@@ -53,8 +59,8 @@ export const PointsTable: React.FC<PointsTableProps> = ({
   const [loadingCsv, setLoadingCsv] = useState(false)
 
   const filteredResults = useMemo(() => {
-    return results.filter(result => !!upgradePoints[result.bibNumber])
-  }, [results, upgradePoints])
+    return sortedResults.filter(result => !!upgradePoints[result.bibNumber])
+  }, [sortedResults, upgradePoints])
 
   const rows = useMemo(() => filteredResults.map((result) => {
     const athlete = athletes[result.bibNumber]
@@ -119,12 +125,14 @@ export const PointsTable: React.FC<PointsTableProps> = ({
           </ThemeIcon>
         }
       >
-        <List.Item>Field Size: {fieldSize} {fieldSize < results.length && '(excluding DNS)'}</List.Item>
+        <List.Item>Field
+          Size: {fieldSize.starters} ({!!fieldSize.categories?.length && fieldSize.categories.join(' + ') + ', '}excluding
+          DNS)</List.Item>
         {eventTypeLabel && <List.Item>Event
           Type: {eventTypeLabel} {doubleUpgradePoints && '(double upgrade points)'}</List.Item>}
       </List>
     )
-  }, [fieldSize, results.length, eventTypeLabel, doubleUpgradePoints])
+  }, [fieldSize, sortedResults.length, eventTypeLabel, doubleUpgradePoints])
 
   return (
     <div style={{ width: '100%', marginTop: '1rem' }}>

@@ -1,6 +1,6 @@
-import type { Athlete, AthleteRaceResult, EventSummary } from '../types/results'
+import type { Athlete, AthleteRaceResult, EventResults, EventSummary } from '../types/results'
 import { useMemo } from 'react'
-import { BC_UPGRADE_POINT_RULES } from '../config/upgrade-points'
+import { BC_UPGRADE_POINT_RULES, COMBINED_RACE_CATEGORIES } from '../config/upgrade-points'
 
 export const useCategoryResults = (results: AthleteRaceResult[], athletes: Record<string, Athlete>, searchValue?: string) => {
   const sortedResults = useMemo(() => {
@@ -76,6 +76,30 @@ export const getSanctionedEventTypeLabel = (eventType: SanctionedEventType): str
 
 export const hasDoubleUpgradePoints = (eventType: SanctionedEventType): boolean => {
   return ['AA', 'AA-USA', 'CYCLING-CANADA'].includes(eventType)
+}
+
+export const calculateFieldSize = (eventResults: EventResults, category: string): {
+  starters: number,
+  categories?: string[]
+} => {
+  // Check if selected category has been combined with another category
+  if (COMBINED_RACE_CATEGORIES[eventResults.hash]) {
+    const index = COMBINED_RACE_CATEGORIES[eventResults.hash].findIndex((categories) => categories.includes(category))
+    if (index !== -1) {
+      // If combined, return the size of the first category in the combined categories
+      const combinedCategories = COMBINED_RACE_CATEGORIES[eventResults.hash][index]
+      const starters = combinedCategories.reduce((acc, cat) => {
+        return acc + ( eventResults.results[cat]?.results.filter((result) => result.status !== 'DNS').length || 0 )
+      }, 0)
+      const categories = combinedCategories.map((categoryAlias) => eventResults['results'][categoryAlias]?.label || categoryAlias)
+      return { starters, categories }
+    }
+  }
+
+  // If no combined categories, return the size of the selected category
+  const starters = eventResults.results[category]?.results.filter((result) => result.status !== 'DNS').length || 0
+
+  return { starters }
 }
 
 export const calculateBCUpgradePoints = ({ position, fieldSize, event }: {

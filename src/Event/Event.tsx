@@ -180,11 +180,12 @@ export const Event: React.FC = () => {
               </Tabs.Panel>
             )}
 
-            {!!upgradePoints && eventResults && (
+            {!!upgradePoints && eventResults && selectedCategory && (
               <Tabs.Panel value="points">
                 <PointsTable
                   eventSummary={eventSummary!}
-                  results={sortedResults}
+                  eventResults={eventResults}
+                  selectedCategory={selectedCategory}
                   athletes={eventResults.athletes}
                 />
               </Tabs.Panel>
