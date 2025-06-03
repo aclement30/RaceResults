@@ -6,7 +6,7 @@ export const Credit = () => {
 
     <Text c="dimmed" size="sm" style={{ paddingLeft: '1rem' }}>
       Created by&nbsp;
-      <Anchor href="http://www.alexandreclement.com" target="_blank">
+      <Anchor href="https://alexandreclement.com" target="_blank">
         Alexandre Clement
       </Anchor>
     </Text>
