@@ -43,7 +43,6 @@ export async function importSeriesResults(manualImportSerie: Omit<ManualImportSe
   }
 
   const individualResults: Record<string, SerieIndividualCategory> = {}
-  const combinedIndividualSourceUrls: string[] = []
 
   manualImportSerie.categories.individual?.forEach(importCategory => {
     const matchingFile = fileContents[importCategory.filename]
@@ -61,13 +60,11 @@ export async function importSeriesResults(manualImportSerie: Omit<ManualImportSe
       gender: categoryGender,
       results: categoryIndividualResults,
     }
-
-    combinedIndividualSourceUrls.push(importCategory.filename)
   })
 
   seriesResults.individual = {
     results: individualResults,
-    sourceUrls: combinedIndividualSourceUrls,
+    sourceUrls: manualImportSerie.sourceUrls || [],
   }
 
   seriesSummary.categories.individual = getBaseCategories(individualResults).sort(sortByCategory(manualImportSerie.organizer))
