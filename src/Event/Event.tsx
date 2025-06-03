@@ -16,6 +16,8 @@ import { Source } from './Shared/Source'
 import { PointsTable } from './PointsTable/PointsTable'
 import { Loader } from '../Loader/Loader'
 
+const today = new Date().toLocaleDateString('sv', { timeZone: 'America/Vancouver' }).slice(0, 10)
+
 export const Event: React.FC = () => {
   const { events, loading } = useContext(AppContext)
   const [eventSummary, setEventSummary] = useState<EventSummary | null>(null)
@@ -53,10 +55,12 @@ export const Event: React.FC = () => {
       setEventResults(eventResults)
       eventResultsLastModifiedRef.current = lastModified
 
-      if (timerRef.current) clearTimeout(timerRef.current)
-      timerRef.current = setTimeout(() => {
-        fetchData(year, hash)
-      }, 1000 * 30) // Refresh every minute
+      if (eventSummary?.date === today) {
+        if (timerRef.current) clearTimeout(timerRef.current)
+        timerRef.current = setTimeout(() => {
+          fetchData(year, hash)
+        }, 1000 * 30) // Refresh every minute
+      }
     } catch (error) {
       if (error instanceof FetchError && error.type === FETCH_ERROR_TYPE.NotModified) {
         // If the results file is not modified, we can skip updating
