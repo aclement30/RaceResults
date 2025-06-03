@@ -13,7 +13,7 @@ export function formatGapTime(seconds: number): string {
 
   if (seconds >= 3600) {
     // Response format should be hh mm'ss"
-    // const minutes = Math.floor((seconds % 3600) / 60)
+    const minutes = Math.floor(( seconds % 3600 ) / 60)
     const formattedMinutes = minutes < 10 ? `0${minutes}` : minutes
     const formattedSeconds = remainingSeconds < 10 ? `0${remainingSeconds}` : remainingSeconds
 
