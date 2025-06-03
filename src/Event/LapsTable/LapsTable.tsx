@@ -232,6 +232,7 @@ export const LapsTable: React.FC<LapsTableProps> = ({
             checked={showColors}
             onChange={(e) => setShowColors(e.currentTarget.checked)}
             label="Show Colors"
+            visibleFrom="sm"
           />
         </Group>
 
@@ -239,7 +240,9 @@ export const LapsTable: React.FC<LapsTableProps> = ({
           variant="default"
           leftSection={<IconFileDownload/>}
           onClick={() => handleExportCSV()}
-          loading={loadingCsv}>
+          loading={loadingCsv}
+          visibleFrom="sm"
+        >
           Download CSV
         </Button>
       </Group>

@@ -128,7 +128,7 @@ export const PointsTable: React.FC<PointsTableProps> = ({
 
   return (
     <div style={{ width: '100%', marginTop: '1rem' }}>
-      <Group style={{ paddingBottom: '1rem', justifyContent: 'flex-end' }}>
+      <Group style={{ paddingBottom: '1rem', justifyContent: 'flex-end' }} visibleFrom="sm">
         <Button
           variant="default"
           leftSection={<IconFileDownload/>}

@@ -137,7 +137,9 @@ export const ResultsTable: React.FC<ResultsTableProps> = ({
           variant="default"
           leftSection={<IconFileDownload/>}
           onClick={() => handleExportCSV()}
-          loading={loadingCsv}>
+          loading={loadingCsv}
+          visibleFrom="sm"
+        >
           Download CSV
         </Button>
       </Group>

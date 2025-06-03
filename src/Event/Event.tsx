@@ -131,7 +131,7 @@ export const Event: React.FC = () => {
           />
 
           <Tabs value={selectedTab} onChange={handleTabChamge}>
-            <Tabs.List>
+            <Tabs.List style={{ overflowX: 'auto', flexWrap: 'nowrap' }}>
               <Tabs.Tab value="results" leftSection={<IconTrophy/>}>
                 Results
               </Tabs.Tab>
