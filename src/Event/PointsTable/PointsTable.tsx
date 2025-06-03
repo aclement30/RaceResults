@@ -1,4 +1,4 @@
-import type { Athlete, AthleteRaceResult, EventResults } from '../../types/results'
+import type { Athlete, EventResults } from '../../types/results'
 import { Alert, Button, Group, List, Table, Text, ThemeIcon } from '@mantine/core'
 import { useMemo, useState } from 'react'
 import {
