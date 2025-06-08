@@ -38,8 +38,8 @@ export type CrossMgrEventResultPayload = {
   raceNotes: string
   raceStartTime: number
   timestamp: [string, number]
-  data: Record<string, CrossMgrResultRow>
-  catDetails: CrossMgrRaceCategory[]
+  data?: Record<string, CrossMgrResultRow>
+  catDetails?: CrossMgrRaceCategory[]
   flags: Record<string, string>
   gpsPoints: number[][]
   courseCoordinates: number[]
