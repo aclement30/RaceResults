@@ -48,8 +48,10 @@ function shapeCrossMgrEventInfoAndResults(payloads: CrossMgrEventResultPayload[]
   }
 
   const combinedAthleteData = payloads.reduce((acc, payload) => {
+    if (!payload.data) return acc
+
     Object.keys(payload.data).forEach((bibNumber) => {
-      acc[bibNumber] = payload.data[bibNumber]
+      acc![bibNumber] = payload.data![bibNumber]
     })
 
     return acc
@@ -66,6 +68,8 @@ function shapeCrossMgrEventInfoAndResults(payloads: CrossMgrEventResultPayload[]
   }, [] as CrossMgrEventResultPayload['primes'])
 
   const combinedEventCategories = payloads.reduce((acc, payload) => {
+    if (!payload.catDetails) return acc
+
     payload.catDetails.forEach((cat) => {
       const categoryName = transformCategory(cat.name, eventSummary)
       const categoryGender = cat.gender === 'Men' ? 'M' : cat.gender === 'Women' ? 'F' : 'X'
@@ -73,7 +77,7 @@ function shapeCrossMgrEventInfoAndResults(payloads: CrossMgrEventResultPayload[]
 
       if (cat.name !== 'All') {
         const athleteRaceResults: AthleteRaceResult[] = cat.pos.map((bibNumber, index) => {
-          const athleteData = combinedAthleteData[bibNumber]
+          const athleteData = combinedAthleteData![bibNumber]
 
           if (!athleteData) {
             console.log('Error: cannot find athlete data for bib #' + bibNumber, `(category: ${cat.name})`)
@@ -104,10 +108,10 @@ function shapeCrossMgrEventInfoAndResults(payloads: CrossMgrEventResultPayload[]
             lapSpeeds: athleteData.lapSpeeds,
             lapDurations,
             lapTimes: athleteData.raceTimes,
-            avgSpeed: +( athleteData.speed.replace('km/h', '').trim() ),
+            avgSpeed: +(athleteData.speed.replace('km/h', '').trim()),
             status: athleteData.status.toUpperCase() as 'FINISHER' | 'DNF' | 'DNS' | 'OTL',
             relegated: athleteData.relegated,
-            finishTime: athleteData.lastTime - ( athleteData.raceTimes?.[0] || 0 ),
+            finishTime: athleteData.lastTime - (athleteData.raceTimes?.[0] || 0),
             finishGap,
           }
         })
@@ -143,8 +147,10 @@ function shapeCrossMgrEventInfoAndResults(payloads: CrossMgrEventResultPayload[]
   }, {} as Record<string, EventCategory>)
 
   const combinedAthletes = payloads.reduce((acc, payload) => {
+    if (!payload.data) return acc
+
     Object.keys(payload.data).forEach((bibNumber) => {
-      const resultRow = payload.data[bibNumber]
+      const resultRow = payload.data![bibNumber]
       const racerGender = resultRow.Gender === 'Men' ? 'M' : resultRow.Gender === 'Women' ? 'F' : 'X'
 
       acc[bibNumber] = {
@@ -170,13 +176,13 @@ function shapeCrossMgrEventInfoAndResults(payloads: CrossMgrEventResultPayload[]
   }, '')
 
   const baseCategories = Object.values(combinedEventCategories)
-    .map((cat: EventCategory) => ( {
+    .map((cat: EventCategory) => ({
       alias: cat.alias,
       label: cat.label,
       startOffset: cat.startOffset,
       gender: cat.gender,
       laps: cat.laps,
-    } ))
+    }))
     .sort(sortByCategory)
 
   return {
