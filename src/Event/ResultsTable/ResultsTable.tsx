@@ -1,4 +1,4 @@
-import type { Athlete, AthleteRaceResult, EventSummary } from '../../types/results'
+import type { EventAthlete, AthleteRaceResult, EventSummary } from '../../types/results'
 import { Blockquote, Button, Divider, Group, Table, Text } from '@mantine/core'
 import { useMemo, useState } from 'react'
 import { useDisclosure } from '@mantine/hooks'
@@ -12,7 +12,7 @@ import { showErrorMessage } from '../../utils/showErrorMessage'
 type ResultsTableProps = {
   eventSummary: EventSummary
   results: AthleteRaceResult[]
-  athletes: Record<string, Athlete>,
+  athletes: Record<string, EventAthlete>,
   raceNotes: string | null
 }
 
@@ -35,9 +35,9 @@ export const ResultsTable: React.FC<ResultsTableProps> = ({
       if (isNaN(+searchValueLower)) {
         const { firstName, lastName, team } = athletes[raceResult.bibNumber]
         const fullName = `${firstName} ${lastName}`.toLowerCase()
-        const teamLower = team.toLowerCase()
+        const teamLower = team?.toLowerCase()
 
-        return fullName.includes(searchValueLower) || teamLower.includes(searchValueLower)
+        return fullName.includes(searchValueLower) || teamLower?.includes(searchValueLower)
       } else {
         const bibNumber = +searchValueLower
         return raceResult.bibNumber.toString().startsWith(bibNumber.toString())
@@ -77,7 +77,7 @@ export const ResultsTable: React.FC<ResultsTableProps> = ({
         {athleteColumns.includes('team') && <Table.Td visibleFrom="sm">{athlete.team}</Table.Td>}
         {athleteColumns.includes('city') && <Table.Td visibleFrom="lg">{columns.city(athlete)}</Table.Td>}
         {athleteColumns.includes('bibNumber') &&
-          <Table.Td>{columns.bibNumber(result, { onClick: highlightAthlete })}</Table.Td>}
+            <Table.Td>{columns.bibNumber(result, { onClick: highlightAthlete })}</Table.Td>}
         <Table.Td style={{ maxWidth: 100, whiteSpace: 'nowrap' }}>
           <div style={{ cursor: 'pointer' }} onClick={() => toggleFinishTimes()}>
             {columns.time(result, { showGapTime: !showFinishTimes && !isFiltered })}
@@ -118,7 +118,7 @@ export const ResultsTable: React.FC<ResultsTableProps> = ({
         'BibNumber',
         'FinishTime',
         'FinishGap',
-        ...( eventSummary.isTimeTrial ? ['AvgSpeed'] : [] )
+        ...(eventSummary.isTimeTrial ? ['AvgSpeed'] : [])
       ], 'results')
     } catch (error) {
       // @ts-ignore

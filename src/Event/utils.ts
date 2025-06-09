@@ -1,8 +1,8 @@
-import type { Athlete, AthleteRaceResult, EventResults, EventSummary } from '../types/results'
 import { useMemo } from 'react'
+import type { EventAthlete, AthleteRaceResult, EventResults, EventSummary } from '../types/results'
 import { BC_UPGRADE_POINT_RULES, COMBINED_RACE_CATEGORIES } from '../config/upgrade-points'
 
-export const useCategoryResults = (results: AthleteRaceResult[], athletes: Record<string, Athlete>, searchValue?: string) => {
+export const useCategoryResults = (results: AthleteRaceResult[], athletes: Record<string, EventAthlete>, searchValue?: string) => {
   const sortedResults = useMemo(() => {
     const finishers = results.filter((result) => result.status === 'FINISHER')
 
@@ -29,9 +29,9 @@ export const useCategoryResults = (results: AthleteRaceResult[], athletes: Recor
       if (isNaN(+searchValueLower)) {
         const { firstName, lastName, team } = athletes[raceResult.bibNumber]
         const fullName = `${firstName} ${lastName}`.toLowerCase()
-        const teamLower = team.toLowerCase()
+        const teamLower = team?.toLowerCase()
 
-        return fullName.includes(searchValueLower) || teamLower.includes(searchValueLower)
+        return fullName.includes(searchValueLower) || teamLower?.includes(searchValueLower)
       } else {
         const bibNumber = +searchValueLower
         return raceResult.bibNumber.toString().startsWith(bibNumber.toString())
@@ -66,24 +66,26 @@ const SANCTIONED_EVENT_TYPES = {
 
 type SanctionedEventType = keyof typeof SANCTIONED_EVENT_TYPES
 
-export const getSanctionedEventType = (event: EventSummary | null): SanctionedEventType | false => {
-  if (!event) return false
+export const getSanctionedEventType = (event: EventSummary | null): SanctionedEventType | null => {
+  if (!event) return null
 
   if (event.organizerAlias === 'GoodRideGravel') return 'MASS-PARTICIPATION'
-  if (event.series === 'WTNC2025') return 'GRASSROOTS'
-  if (event.series === 'WTNC2024') return 'A'
-  if (event.series === 'BCProvincials') return 'AA'
-  if (event.series === 'SpringSeries') return 'A'
-  if (event.series === 'LMCX2024') return 'A'
+  if (event.serie === 'WTNC2025') return 'GRASSROOTS'
+  if (event.serie === 'WTNC2024') return 'A'
+  if (event.serie === 'BCProvincials') return 'AA'
+  if (event.serie === 'SpringSeries') return 'A'
+  if (event.serie === 'LMCX2024') return 'A'
   if (event.organizerAlias === 'LocalRide') return 'A'
   if (event.organizerAlias === 'ShimsRide') return 'A'
   if (event.organizerAlias === 'Concord') return 'A'
   if (event.organizerAlias === 'EscapeVelocity' && event.name.includes('Seymour Challenge')) return 'A'
 
-  return false
+  return null
 }
 
-export const getSanctionedEventTypeLabel = (eventType: SanctionedEventType): string => {
+export const getSanctionedEventTypeLabel = (eventType: SanctionedEventType | null): string => {
+  if (!eventType || !SANCTIONED_EVENT_TYPES[eventType]) return 'Unknown'
+
   return SANCTIONED_EVENT_TYPES[eventType]
 }
 

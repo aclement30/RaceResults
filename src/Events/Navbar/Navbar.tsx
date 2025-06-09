@@ -21,7 +21,7 @@ export const Navbar: React.FC<NavbarProps> = ({ filters }) => {
   const yearSeriesFilters = useMemo(() => {
     const yearEvents = events.get(filters.year)?.filter(({ year }) => year === filters.year) || []
 
-    return [...new Set(yearEvents.map(({ series }) => series).filter(Boolean) || [])]
+    return [...new Set(yearEvents.map(({ serie }) => serie).filter(Boolean) || [])]
   }, [filters.year, events])
 
   const yearSeriesWithNoEvents = useMemo(() => {

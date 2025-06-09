@@ -1,3 +1,12 @@
+export const BC_SANCTIONED_EVENT_TYPES = {
+  GRASSROOTS: 'Grassroots Race',
+  A: 'A-Race',
+  AA: 'AA-Race',
+  'AA-USA': 'AA-USA',
+  'CYCLING-CANADA': 'Cycling Canada',
+  'MASS-PARTICIPATION': 'Mass Participation Race',
+}
+
 export const BC_UPGRADE_POINT_RULES = [
   { fieldSize: [1, 3], points: [8] },
   { fieldSize: [4, 5], points: [8, 6] },

@@ -8,14 +8,13 @@ import {
 import { fromCognitoIdentityPool } from '@aws-sdk/credential-providers'
 import type { EventResults, EventSummary, SerieResults, SerieSummary } from '../types/results'
 
-const S3_BUCKET = 'cycling-race-results'
-const AWS_REGION = 'us-west-2'
-const AWS_POOL_ID = 'us-west-2:d4056c4b-05d2-4f3f-930c-ba3e95cb2153'
+const { VITE_AWS_REGION, VITE_AWS_POOL_ID, VITE_RR_S3_BUCKET } = import.meta.env || {}
 
 const s3Client = new S3Client({
-  region: AWS_REGION, credentials: fromCognitoIdentityPool({
-    clientConfig: { region: AWS_REGION },
-    identityPoolId: AWS_POOL_ID,
+  region: VITE_AWS_REGION,
+  credentials: fromCognitoIdentityPool({
+    clientConfig: { region: VITE_AWS_REGION },
+    identityPoolId: VITE_AWS_POOL_ID,
   }),
 })
 
@@ -50,7 +49,7 @@ export class FetchError<const T> extends Error {
 export async function fetchDirectoryFiles(directory: string): Promise<{ files: AwsFiles, subdirectories: string[] }> {
   const response = await s3Client.send(
     new ListObjectsCommand({
-      Bucket: S3_BUCKET,
+      Bucket: VITE_RR_S3_BUCKET,
       Delimiter: '/',
       Prefix: directory,
     })
@@ -79,7 +78,7 @@ export async function fetchFile(filename: string, options?: FetchFileOptions): P
   try {
     const response = await s3Client.send(
       new GetObjectCommand({
-        Bucket: S3_BUCKET,
+        Bucket: VITE_RR_S3_BUCKET,
         Key: filename,
         IfModifiedSince: options?.ifModifiedSince || undefined,
       }),

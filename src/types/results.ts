@@ -1,13 +1,22 @@
+import { BC_SANCTIONED_EVENT_TYPES } from '../config/upgrade-points.ts'
+
+export type SanctionedEventType = keyof typeof BC_SANCTIONED_EVENT_TYPES
+
 export type EventSummary = {
   hash: string
   name: string
   date: string
   year: number
+  type: 'event'
   organizerAlias: string
   organizerOrg?: string
   organizerName: string
   organizerEmail?: string            // email
-  series?: string | null
+  sanctionedEventType: SanctionedEventType | null
+  hasUpgradePoints: 'UPGRADE' | 'SUBJECTIVE' | false
+  isDoubleUpgradePoints: boolean
+  serie?: string | null
+  // series?: string | null // deprecated, use `serie` instead
   // timezone: string               // raceTimeZone
   flags?: Record<string, string>
   isTimeTrial: boolean
@@ -17,7 +26,7 @@ export type EventSummary = {
 
 export type EventResults = {
   hash: string
-  athletes: Record<string, Athlete>
+  athletes: Record<string, EventAthlete>
   results: Record<string, EventCategory>
   sourceUrls: string[]
   raceNotes: string
@@ -70,18 +79,14 @@ export type PrimeResult = {
   // winnerInfo: string
 }
 
-export type Athlete = {
+export type EventAthlete = {
   bibNumber: number
-  firstName: string       // FirstName
-  lastName: string        // LastName
-  age?: number             // Age
-  gender?: 'M' | 'F' | 'X' // Gender
-  city?: string            // City
-  state?: string | null    // StateProv
-  license?: string         // License
-  uciId?: string           // UCIID
-  // natCode: string      // NatCode
-  team: string            // Team
+  firstName: string
+  lastName: string
+  city: string | null
+  province: string | null
+  uciId: string | null
+  team: string | null
 }
 
 export type AthleteRaceResult = {
@@ -92,7 +97,8 @@ export type AthleteRaceResult = {
   // lastInterp: boolean
   lapSpeeds?: number[]
   lapDurations?: number[]   // (raceTimes)
-  lapTimes?: number[]       // raceTimes
+  lapGaps?: Array<number | null> // gaps between laps, if applicable
+  // lapTimes?: number[]       // raceTimes
   finishTime: number
   finishGap: number        // gapValue
   // raceSpeeds: number[]
@@ -100,6 +106,7 @@ export type AthleteRaceResult = {
   avgSpeed: number        // speed
   status: 'FINISHER' | 'DNF' | 'DNS' | 'OTL'
   relegated?: boolean
+  upgradePoints?: number | null
 }
 
 export type BaseCategory = {
@@ -121,6 +128,8 @@ export type EventCategory = BaseCategory & {
   distanceUnit?: string
   lapDistance?: number
   raceDistance?: number
+  fieldSize?: number              // combined field size, used for upgrade points calculation
+  combinedCategories?: string[] | null   // aliases of combined categories, if applicable
 }
 
 export type SerieSummary = {
@@ -128,6 +137,7 @@ export type SerieSummary = {
   alias: string
   name: string
   year: number
+  type: 'serie'
   organizerAlias: string
   provider: string
   categories: {
@@ -154,9 +164,9 @@ export type AthleteSerieResult = {
   bibNumber?: number
   firstName: string
   lastName: string
-  license?: string
-  uciId?: string
-  team?: string
+  // license?: string
+  uciId: string | null
+  team: string | null
   totalPoints: number
   racePoints: Record<string, number>
 }

@@ -28,7 +28,7 @@ export const Events: React.FC = () => {
     let filteredEvents = yearEvents
 
     if (filters.serie) {
-      filteredEvents = filteredEvents.filter((event) => event.series === filters.serie)
+      filteredEvents = filteredEvents.filter((event) => event.serie === filters.serie)
     }
 
     return filteredEvents

@@ -1,15 +1,12 @@
-import type { Athlete, EventResults } from '../../types/results'
 import { Alert, Button, Group, List, Table, Text, ThemeIcon } from '@mantine/core'
 import { useMemo, useState } from 'react'
+import { IconCircleCheck, IconFileDownload } from '@tabler/icons-react'
 import {
-  calculateBCUpgradePoints, calculateFieldSize,
-  getSanctionedEventType,
-  getSanctionedEventTypeLabel, hasDoubleUpgradePoints,
+  getSanctionedEventTypeLabel,
   hasUpgradePoints, useCategoryResults
 } from '../utils'
-import type { EventSummary } from '../../types/results'
+import type { EventSummary, EventAthlete, EventResults } from '../../types/results'
 import { columns } from '../Shared/columns'
-import { IconCircleCheck, IconFileDownload } from '@tabler/icons-react'
 import { exportCSV } from '../../utils/exportCSV'
 import { showErrorMessage } from '../../utils/showErrorMessage'
 
@@ -17,7 +14,7 @@ type PointsTableProps = {
   eventSummary: EventSummary
   eventResults: EventResults
   selectedCategory: string
-  athletes: Record<string, Athlete>,
+  athletes: Record<string, EventAthlete>,
 }
 
 export const PointsTable: React.FC<PointsTableProps> = ({
@@ -30,37 +27,13 @@ export const PointsTable: React.FC<PointsTableProps> = ({
     sortedResults,
   } = useCategoryResults(eventResults?.results[selectedCategory]?.results || [], eventResults?.athletes || {})
 
-  const fieldSize = useMemo(() => {
-    return calculateFieldSize(eventResults, selectedCategory)
-  }, [eventResults, selectedCategory])
-
-  const upgradePoints = useMemo(() => {
-    return sortedResults.reduce((acc, result) => {
-      let points: number | null = 0
-
-      if (result.position > 0) {
-        points = calculateBCUpgradePoints({
-          position: result.position,
-          fieldSize: fieldSize.starters,
-          event: eventSummary,
-        })
-      }
-
-      acc[result.bibNumber] = points
-
-      return acc
-    }, {} as Record<string, number | null>)
-  }, [sortedResults, athletes])
-
   const pointType = hasUpgradePoints(eventSummary)
-  const sanctionedEventType = getSanctionedEventType(eventSummary)
-  const doubleUpgradePoints = sanctionedEventType && hasDoubleUpgradePoints(sanctionedEventType)
-  const eventTypeLabel = sanctionedEventType ? getSanctionedEventTypeLabel(sanctionedEventType) : null
+  const eventTypeLabel = getSanctionedEventTypeLabel(eventSummary.sanctionedEventType)
   const [loadingCsv, setLoadingCsv] = useState(false)
 
   const filteredResults = useMemo(() => {
-    return sortedResults.filter(result => !!upgradePoints[result.bibNumber])
-  }, [sortedResults, upgradePoints])
+    return sortedResults.filter(result => !!result.upgradePoints)
+  }, [sortedResults])
 
   const rows = useMemo(() => filteredResults.map((result) => {
     const athlete = athletes[result.bibNumber]
@@ -77,10 +50,10 @@ export const PointsTable: React.FC<PointsTableProps> = ({
         </Table.Td>
         <Table.Td visibleFrom="sm">{athlete.team}</Table.Td>
         <Table.Td>{columns.bibNumber(result)}</Table.Td>
-        <Table.Td style={{ textAlign: 'center' }}>{upgradePoints[result.bibNumber]}</Table.Td>
+        <Table.Td style={{ textAlign: 'center' }}>{result.upgradePoints}</Table.Td>
       </Table.Tr>
     )
-  }), [filteredResults, athletes, upgradePoints])
+  }), [filteredResults, athletes])
 
   const handleExportCSV = async () => {
     const exportedRows = filteredResults.map((result) => {
@@ -90,7 +63,7 @@ export const PointsTable: React.FC<PointsTableProps> = ({
         `${athlete.lastName}, ${athlete.firstName}`,
         athlete.team,
         result.bibNumber,
-        upgradePoints[result.bibNumber],
+        result.upgradePoints,
       ]
     })
 
@@ -105,8 +78,7 @@ export const PointsTable: React.FC<PointsTableProps> = ({
         'Points',
       ], 'points')
     } catch (error) {
-      // @ts-ignore
-      showErrorMessage({ title: 'CSV Export Error', message: error.message })
+      showErrorMessage({ title: 'CSV Export Error', message: (error as any).message })
     } finally {
       setLoadingCsv(false)
     }
@@ -126,13 +98,13 @@ export const PointsTable: React.FC<PointsTableProps> = ({
         }
       >
         <List.Item>Field
-          Size: {fieldSize.starters} ({!!fieldSize.categories?.length && fieldSize.categories.join(' + ') + ', '}excluding
+          Size: {eventResults.results[selectedCategory].fieldSize} ({eventResults.results[selectedCategory].combinedCategories?.map(cat => eventResults.results[cat].label).join(' + ') + ', '}excluding
           DNS)</List.Item>
         {eventTypeLabel && <List.Item>Event
-          Type: {eventTypeLabel} {doubleUpgradePoints && '(double upgrade points)'}</List.Item>}
+            Type: {eventTypeLabel} {eventSummary.isDoubleUpgradePoints && '(double upgrade points)'}</List.Item>}
       </List>
     )
-  }, [fieldSize, sortedResults.length, eventTypeLabel, doubleUpgradePoints])
+  }, [sortedResults.length, eventTypeLabel, eventSummary])
 
   return (
     <div style={{ width: '100%', marginTop: '1rem' }}>

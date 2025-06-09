@@ -30,7 +30,7 @@ export const IndividualRankingsTable: React.FC<IndividualRankingsTableProps> = (
 
   const serieEventsByDate = useMemo(() => {
     const yearEvents = events.get(serie.year) || []
-    return keyBy(yearEvents.filter((e) => e.series === serie.alias), 'date')
+    return keyBy(yearEvents.filter((e) => e.serie === serie.alias), 'date')
   }, [events, serie])
 
   const athleteColumns = ['name']

@@ -1,4 +1,4 @@
-import type { Athlete, AthleteRaceResult, AthleteSerieResult } from '../../types/results'
+import type { EventAthlete, AthleteRaceResult, AthleteSerieResult } from '../../types/results'
 import { Badge, Tooltip } from '@mantine/core'
 import { formatTimeDuration, formatGapTime, formatSpeed } from '../../utils/race-results'
 
@@ -24,8 +24,8 @@ export const columns = {
   position: (row: Pick<AthleteRaceResult, 'status' | 'position'>, { text }: ColumnOptions = {}) => {
     return row.status === 'FINISHER' ? formatRacerPositionLabel(row.position, text) : row.status
   },
-  city: (row: Pick<Athlete, 'city' | 'state'>) => {
-    return [row.city, row.state].filter(Boolean).join(', ')
+  city: (row: Pick<EventAthlete, 'city' | 'province'>) => {
+    return [row.city, row.province].filter(Boolean).join(', ')
   },
   bibNumber: (row: Pick<AthleteRaceResult | AthleteSerieResult, 'bibNumber'> | {
     bibNumber: number

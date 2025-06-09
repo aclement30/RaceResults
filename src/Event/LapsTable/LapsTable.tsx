@@ -1,4 +1,4 @@
-import type { Athlete, AthleteRaceResult } from '../../types/results'
+import type { EventAthlete, AthleteRaceResult } from '../../types/results'
 import { Button, Group, SegmentedControl, Switch, Table } from '@mantine/core'
 import { useMemo, useState } from 'react'
 import { columns } from '../Shared/columns'
@@ -11,7 +11,7 @@ import { IconFileDownload } from '@tabler/icons-react'
 type LapsTableProps = {
   lapCount: number
   results: AthleteRaceResult[]
-  athletes: Record<string, Athlete>
+  athletes: Record<string, EventAthlete>
 }
 
 const valueGradientColors = ['#00FF00', '#33FF00', '#66FF00', '#99FF00', '#CCFF00', '#FFFF00', '#FFCC00', '#FF9900', '#FF6600', '#FF3300', '#FF0000']
@@ -25,23 +25,6 @@ export const LapsTable: React.FC<LapsTableProps> = ({
   const [loadingCsv, setLoadingCsv] = useState(false)
   const [showColors, setShowColors] = useState(true)
 
-  const lapGaps = useMemo(() => {
-    const lapGaps: Record<string, Array<number | null>> = {}
-
-    for (let i = 1; i < lapCount + 1; i++) {
-      const firstRiderPastTheLine = results.reduce((prev, curr) => !curr.lapTimes![i] || prev.lapTimes![i] < curr.lapTimes![i] ? prev : curr)
-
-      results.forEach(({ bibNumber, lapTimes }) => {
-        const riderGapInCurrentLap = lapTimes![i] ? lapTimes![i] - firstRiderPastTheLine.lapTimes![i] : null
-
-        if (!lapGaps.hasOwnProperty(bibNumber)) lapGaps[bibNumber] = []
-        lapGaps[bibNumber].push(riderGapInCurrentLap)
-      })
-    }
-
-    return lapGaps
-  }, [results])
-
   const rankedValues = useMemo(() => {
     let values: number[] = []
 
@@ -53,7 +36,7 @@ export const LapsTable: React.FC<LapsTableProps> = ({
       values = results.map(result => result.lapSpeeds?.filter(time => time > 0)).flat()
     } else if (dataType === 'GAP') {
       // @ts-ignore
-      values = Object.values(lapGaps).flat().filter(gap => gap !== null && gap >= 0)
+      values = results.map(result => result.lapGaps?.filter(gap => gap !== null && gap >= 0)).flat()
     }
 
     values = values.sort((a, b) => a - b)
@@ -70,7 +53,7 @@ export const LapsTable: React.FC<LapsTableProps> = ({
     }
 
     return groups
-  }, [results, dataType, lapGaps])
+  }, [results, dataType])
 
   const getColorForValue = (value: number | undefined | null) => {
     if (value === null || value === undefined || !showColors) return 'transparent'
@@ -115,7 +98,7 @@ export const LapsTable: React.FC<LapsTableProps> = ({
                   textAlign: 'center',
                   backgroundColor: getColorForValue(result.lapDurations?.[i]),
                 }}
-                key={`lap-${i + 1}`}>{result.lapDurations![i] ? formatTimeDuration(result.lapDurations![i]) : '-'}</Table.Td> )}
+                key={`lap-${i + 1}`}>{result.lapDurations?.[i] ? formatTimeDuration(result.lapDurations![i]) : '-'}</Table.Td> )}
             {dataType === 'SPEED' && (
               <Table.Td
                 style={{
@@ -123,15 +106,15 @@ export const LapsTable: React.FC<LapsTableProps> = ({
                   textAlign: 'center',
                   backgroundColor: getColorForValue(result.lapSpeeds?.[i]),
                 }}
-                key={`lap-${i + 1}`}>{result.lapSpeeds![i] ? formatSpeed(result.lapSpeeds![i]) : '-'}</Table.Td> )}
+                key={`lap-${i + 1}`}>{result.lapSpeeds?.[i] ? formatSpeed(result.lapSpeeds![i]) : '-'}</Table.Td> )}
             {dataType === 'GAP' && (
               <Table.Td
                 style={{
                   whiteSpace: 'nowrap',
                   textAlign: 'center',
-                  backgroundColor: getColorForValue(lapGaps[result.bibNumber][i]),
+                  backgroundColor: getColorForValue(result.lapGaps?.[i]),
                 }}
-                key={`lap-${i + 1}`}>{lapGaps[result.bibNumber][i] !== null ? formatGapTime(lapGaps[result.bibNumber][i]!) : '-'}</Table.Td> )}
+                key={`lap-${i + 1}`}>{result.lapGaps?.[i] !== null ? formatGapTime(result.lapGaps![i]) : '-'}</Table.Td> )}
           </>
         ))}
       </Table.Tr>
@@ -187,7 +170,7 @@ export const LapsTable: React.FC<LapsTableProps> = ({
         } else if (dataType === 'SPEED') {
           value = result.lapSpeeds?.[i] ? formatSpeed(result.lapSpeeds![i]) : null
         } else if (dataType === 'GAP') {
-          value = lapGaps[result.bibNumber][i] !== null ? formatGapTime(lapGaps[result.bibNumber][i]!).replace('+ ', '') : null
+          value = result.lapGaps?.[i] !== null ? formatGapTime(result.lapGaps![i]).replace('+ ', '') : null
         }
 
         if (value === '-') row.push(null)

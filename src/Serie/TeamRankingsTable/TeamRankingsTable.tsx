@@ -32,7 +32,7 @@ export const TeamRankingsTable: React.FC<TeamRankingsTableProps> = ({
 
   const serieEventsByDate = useMemo(() => {
     const yearEvents = events.get(serie.year) || []
-    return keyBy(yearEvents.filter((e) => e.series === serie.alias), 'date')
+    return keyBy(yearEvents.filter((e) => e.serie === serie.alias), 'date')
   }, [events, serie])
 
   const handleSelectTeam = (teamName: string) => {

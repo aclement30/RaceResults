@@ -1,11 +1,11 @@
-import type { Athlete, PrimeResult } from '../../types/results'
+import type { EventAthlete, PrimeResult } from '../../types/results'
 import { Table, Text } from '@mantine/core'
 import { useMemo } from 'react'
 import { columns } from '../Shared/columns'
 
 type PrimesTableProps = {
   primes: PrimeResult[]
-  athletes: Record<string, Athlete>,
+  athletes: Record<string, EventAthlete>,
 }
 
 export const PrimesTable: React.FC<PrimesTableProps> = ({

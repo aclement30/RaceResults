@@ -76,16 +76,16 @@ export const EventHeader: React.FC<EventHeaderProps> = ({ event, selectedCategor
       {/*  </div>*/}
       {/*</Group>*/}
 
-      {event.series && (
+      {event.serie && (
         <Button
           variant="transparent" size="compact-sm" c="dimmed"
           style={{
             paddingLeft: 0, display: 'inline-block',
             alignSelf: 'flex-start',
           }}
-          onClick={() => navigate(`/events?year=${event.year}&series=${event.series}`)}
+          onClick={() => navigate(`/events?year=${event.year}&series=${event.serie}`)}
         >
-          {getSerieLabel(event.series)}
+          {getSerieLabel(event.serie)}
         </Button>
       )}
     </>

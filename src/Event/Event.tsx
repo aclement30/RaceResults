@@ -8,7 +8,7 @@ import { IconCoins, IconStars, IconStopwatch, IconTrophy } from '@tabler/icons-r
 import { EventHeader } from './EventHeader/EventHeader'
 import { LapsTable } from './LapsTable/LapsTable'
 import { PrimesTable } from './PrimesTable/PrimesTable'
-import { hasUpgradePoints, useCategoryResults } from './utils'
+import { useCategoryResults } from './utils'
 import { FETCH_ERROR_TYPE, FetchError, fetchEventResults } from '../utils/aws-s3'
 import { Navbar } from './Navbar/Navbar'
 import { useEventsAndSeries } from '../utils/useEventsAndSeries'
@@ -97,8 +97,6 @@ export const Event: React.FC = () => {
     sortedResults,
   } = useCategoryResults(selectedEventCategory?.results || [], eventResults?.athletes || {})
 
-  const upgradePoints = hasUpgradePoints(eventSummary)
-
   const handleTabChamge = (tab: string | null) => {
     if (!tab) {
       setSearchParams(new URLSearchParams({ category: selectedEventCategory!.alias }))
@@ -108,7 +106,7 @@ export const Event: React.FC = () => {
   }
 
   if (!selectedEvent) {
-    return ( 'NO EVENT FOUND' )
+    return ('NO EVENT FOUND')
   }
 
   return (
@@ -124,7 +122,7 @@ export const Event: React.FC = () => {
               categories={eventSummary?.categories}/>
 
       <AppShell.Main>
-        {eventSummary && ( <EventHeader event={eventSummary} selectedCategory={selectedEventCategory}/> )}
+        {eventSummary && (<EventHeader event={eventSummary} selectedCategory={selectedEventCategory}/>)}
 
         <div style={{ marginTop: '0.5rem' }}>
           <LoadingOverlay
@@ -152,7 +150,7 @@ export const Event: React.FC = () => {
                 </Tabs.Tab>
               )}
 
-              {!!upgradePoints && (
+              {!!eventSummary?.hasUpgradePoints && (
                 <Tabs.Tab value="points" leftSection={<IconStars/>}>
                   Points
                 </Tabs.Tab>
@@ -184,7 +182,7 @@ export const Event: React.FC = () => {
               </Tabs.Panel>
             )}
 
-            {!!upgradePoints && eventResults && selectedCategory && (
+            {!!eventSummary?.hasUpgradePoints && eventResults && selectedCategory && (
               <Tabs.Panel value="points">
                 <PointsTable
                   eventSummary={eventSummary!}
