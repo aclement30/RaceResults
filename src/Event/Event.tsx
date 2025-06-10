@@ -4,16 +4,15 @@ import { useParams, useSearchParams } from 'react-router'
 import type { EventResults, EventSummary } from '../types/results'
 import { ResultsTable } from './ResultsTable/ResultsTable'
 import { AppShell, Text, Divider, Tabs, LoadingOverlay } from '@mantine/core'
-import { IconCoins, IconStars, IconStopwatch, IconTrophy } from '@tabler/icons-react'
+import { IconCoins, IconStopwatch, IconTrophy } from '@tabler/icons-react'
 import { EventHeader } from './EventHeader/EventHeader'
 import { LapsTable } from './LapsTable/LapsTable'
 import { PrimesTable } from './PrimesTable/PrimesTable'
-import { hasUpgradePoints, useCategoryResults } from './utils'
+import { useCategoryResults } from './utils'
 import { FETCH_ERROR_TYPE, FetchError, fetchEventResults } from '../utils/aws-s3'
 import { Navbar } from './Navbar/Navbar'
 import { useEventsAndSeries } from '../utils/useEventsAndSeries'
 import { Source } from './Shared/Source'
-import { PointsTable } from './PointsTable/PointsTable'
 import { Loader } from '../Loader/Loader'
 
 const today = new Date().toLocaleDateString('sv', { timeZone: 'America/Vancouver' }).slice(0, 10)
@@ -97,7 +96,7 @@ export const Event: React.FC = () => {
     sortedResults,
   } = useCategoryResults(selectedEventCategory?.results || [], eventResults?.athletes || {})
 
-  const upgradePoints = hasUpgradePoints(eventSummary)
+  // const upgradePoints = hasUpgradePoints(eventSummary)
 
   const handleTabChamge = (tab: string | null) => {
     if (!tab) {
@@ -152,11 +151,11 @@ export const Event: React.FC = () => {
                 </Tabs.Tab>
               )}
 
-              {!!upgradePoints && (
-                <Tabs.Tab value="points" leftSection={<IconStars/>}>
-                  Points
-                </Tabs.Tab>
-              )}
+              {/*{!!upgradePoints && (*/}
+              {/*  <Tabs.Tab value="points" leftSection={<IconStars/>}>*/}
+              {/*    Points*/}
+              {/*  </Tabs.Tab>*/}
+              {/*)}*/}
             </Tabs.List>
 
             <Tabs.Panel value="results">
@@ -184,16 +183,16 @@ export const Event: React.FC = () => {
               </Tabs.Panel>
             )}
 
-            {!!upgradePoints && eventResults && selectedCategory && (
-              <Tabs.Panel value="points">
-                <PointsTable
-                  eventSummary={eventSummary!}
-                  eventResults={eventResults}
-                  selectedCategory={selectedCategory}
-                  athletes={eventResults.athletes}
-                />
-              </Tabs.Panel>
-            )}
+            {/*{!!upgradePoints && eventResults && selectedCategory && (*/}
+            {/*  <Tabs.Panel value="points">*/}
+            {/*    <PointsTable*/}
+            {/*      eventSummary={eventSummary!}*/}
+            {/*      eventResults={eventResults}*/}
+            {/*      selectedCategory={selectedCategory}*/}
+            {/*      athletes={eventResults.athletes}*/}
+            {/*    />*/}
+            {/*  </Tabs.Panel>*/}
+            {/*)}*/}
           </Tabs>
 
           <Divider/>
