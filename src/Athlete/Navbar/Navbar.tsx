@@ -4,7 +4,7 @@ import { AppContext } from '../../AppContext'
 import { Credit } from '../../Shared/Credit'
 import { AthleteSearchField } from '../../Shared/AthleteSearchField'
 import { useNavigator } from '../../utils/useNavigator'
-import { IconFlag3, IconTrendingUp, IconUser, IconUsersGroup } from '@tabler/icons-react'
+import { IconTrendingUp, IconUser, IconUsersGroup } from '@tabler/icons-react'
 import { NavLink as RouterNavLink } from 'react-router'
 import cx from 'clsx'
 
