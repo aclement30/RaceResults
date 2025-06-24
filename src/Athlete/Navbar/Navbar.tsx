@@ -144,20 +144,20 @@ export const Navbar = () => {
           onClick={() => closeNavbar()}
         />
 
-        <NavLink
-          renderRoot={({ className, ...others }) => (
-            <RouterNavLink
-              to="/athletes/list/points-collectors"
-              className={({ isActive }) =>
-                cx(className, { 'active-class': isActive })
-              }
-              {...others}
-            />
-          )}
-          label="Points Collectors"
-          leftSection={<IconFlag3/>}
-          onClick={() => closeNavbar()}
-        />
+        {/*<NavLink*/}
+        {/*  renderRoot={({ className, ...others }) => (*/}
+        {/*    <RouterNavLink*/}
+        {/*      to="/athletes/list/points-collectors"*/}
+        {/*      className={({ isActive }) =>*/}
+        {/*        cx(className, { 'active-class': isActive })*/}
+        {/*      }*/}
+        {/*      {...others}*/}
+        {/*    />*/}
+        {/*  )}*/}
+        {/*  label="Points Collectors"*/}
+        {/*  leftSection={<IconFlag3/>}*/}
+        {/*  onClick={() => closeNavbar()}*/}
+        {/*/>*/}
       </div>
 
       <Credit/>
