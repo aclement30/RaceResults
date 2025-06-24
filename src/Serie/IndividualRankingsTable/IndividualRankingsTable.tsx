@@ -2,7 +2,7 @@ import type { AthleteSerieResult, EventSummary, SerieSummary } from '../../types
 import { Anchor, Table, Text } from '@mantine/core'
 import { useContext, useMemo } from 'react'
 import { formatRacerPositionLabel, columns as sharedColumns } from '../../Event/Shared/columns'
-import { ResponsiveTable } from '../../Event/Shared/ResponsiveTable'
+import { ResponsiveTable } from '../../Shared/ResponsiveTable'
 import { formatRaceDate } from '../utils'
 import { AppContext } from '../../AppContext'
 import keyBy from 'lodash/keyBy'
@@ -21,12 +21,12 @@ export const columns = {
 }
 
 export const IndividualRankingsTable: React.FC<IndividualRankingsTableProps> = ({
-                                                                                  serie,
-                                                                                  selectedCategory,
-                                                                                  results,
-                                                                                }) => {
+  serie,
+  selectedCategory,
+  results,
+}) => {
   const navigate = useNavigate()
-  const { events } = useContext(AppContext)
+  const { events, findAthlete } = useContext(AppContext)
 
   const serieEventsByDate = useMemo(() => {
     const yearEvents = events.get(serie.year) || []
@@ -39,6 +39,10 @@ export const IndividualRankingsTable: React.FC<IndividualRankingsTableProps> = (
 
   const racePointColumns = results?.[0] && Object.keys(results[0].racePoints).sort() || []
 
+  const showAthleteProfile = (athleteUciId: string) => {
+    navigate(`/athletes/${athleteUciId}`)
+  }
+
   const handleSelectEvent = (event: EventSummary) => {
     navigate(`/events/${event.year}/${event.hash}?category=${selectedCategory}`)
   }
@@ -46,15 +50,18 @@ export const IndividualRankingsTable: React.FC<IndividualRankingsTableProps> = (
   const { highlightedBibNumber, highlightAthlete } = useHighlightedAthlete()
 
   const rows = useMemo(() => results.map((result) => {
+    const athleteProfile = findAthlete(result)
+    const team = result.team || athleteProfile?.team?.[serie.year]?.name
+
     return (
       <Table.Tr key={`ranking-${result.position}`} style={{ height: 42 }}
                 className={`result-row ${highlightedBibNumber && +highlightedBibNumber === result.bibNumber ? 'highlighted' : ''}`}>
         <Table.Td>{columns.position(result)}</Table.Td>
         <Table.Td>
-          {result.lastName.toUpperCase()}, {result.firstName}
+          {columns.name(athleteProfile || result, { onClick: showAthleteProfile })}
           {athleteColumns.includes('team') && <Text size="sm" c="dimmed" hiddenFrom="sm">{result.team}</Text>}
         </Table.Td>
-        {athleteColumns.includes('team') && <Table.Td visibleFrom="sm">{result.team}</Table.Td>}
+        <Table.Td visibleFrom="sm">{team}</Table.Td>
         {athleteColumns.includes('bibNumber') &&
           <Table.Td>{columns.bibNumber(result, { onClick: highlightAthlete })}</Table.Td>}
         <Table.Td
@@ -75,7 +82,7 @@ export const IndividualRankingsTable: React.FC<IndividualRankingsTableProps> = (
   const stickyColumnHeaders = <Table.Tr>
     <Table.Th>P<span className="mantine-visible-from-sm">osition</span></Table.Th>
     <Table.Th>Name</Table.Th>
-    {athleteColumns.includes('team') && <Table.Th visibleFrom="sm">Team</Table.Th>}
+    <Table.Th visibleFrom="sm">Team</Table.Th>
     {athleteColumns.includes('bibNumber') && <Table.Th>Bib</Table.Th>}
     <Table.Th style={{
       borderInlineStart: 'calc(0.0625rem * var(--mantine-scale)) solid var(--table-border-color)',

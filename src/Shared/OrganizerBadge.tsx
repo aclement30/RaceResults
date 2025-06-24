@@ -1,4 +1,4 @@
-import { ORGANIZERS } from '../../config/organizers'
+import { ORGANIZERS } from '../config/organizers'
 import { Badge } from '@mantine/core'
 
 function getOrganizerLabel(organizer: string): string {

@@ -3,7 +3,7 @@ import { Anchor, Table } from '@mantine/core'
 import { useContext, useMemo } from 'react'
 import { formatRacerPositionLabel } from '../../Event/Shared/columns'
 import { useNavigate, useSearchParams } from 'react-router'
-import { ResponsiveTable } from '../../Event/Shared/ResponsiveTable'
+import { ResponsiveTable } from '../../Shared/ResponsiveTable'
 import { formatRaceDate } from '../utils'
 import { AppContext } from '../../AppContext'
 import keyBy from 'lodash/keyBy'
@@ -22,10 +22,10 @@ export const columns = {
 }
 
 export const TeamRankingsTable: React.FC<TeamRankingsTableProps> = ({
-                                                                      serie,
-                                                                      selectedCategory,
-                                                                      results,
-                                                                    }) => {
+  serie,
+  selectedCategory,
+  results,
+}) => {
   const navigate = useNavigate()
   const [searchParams] = useSearchParams()
   const { events } = useContext(AppContext)

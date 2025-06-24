@@ -1,5 +1,7 @@
 import { createContext } from 'react'
 import type { EventSummary, SerieSummary } from './types/results'
+import type { Athlete } from './types/athletes'
+import type { Team } from './types/team'
 
 export const AppContext = createContext({
   years: [] as number[],
@@ -11,6 +13,16 @@ export const AppContext = createContext({
   series: new Map<number, SerieSummary[]>(),
   setSeries: (_: SerieSummary[], __: number) => {
   },
+  athletes: new Map<string, Athlete>(),
+  findAthlete: (_: { firstName?: string, lastName?: string, uciId?: string }) => null as Athlete | null,
+  // setAthletes: (_: Record<string, Athlete>) => {
+  // },
+  teams: new Map<number, Team>(),
+  findTeam: (_: { id?: number, name?: string }): Team | null => null,
+  favoriteAthletes: [] as string[],
+  toggleFavoriteAthlete: (_: string) => {},
+  favoriteTeams: [] as number[],
+  toggleFavoriteTeam: (_: number) => {},
   loading: true,
   setLoading: (_: boolean) => {
   },

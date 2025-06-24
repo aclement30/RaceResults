@@ -19,18 +19,26 @@ export const ORGANIZERS: Record<string, { label: string, color: string, textColo
     label: 'Local Ride',
     color: '#3886c7'
   },
+  'RevoRacing': {
+    label: 'Revo Racing',
+    color: '#52b0af',
+  },
   'RideForWater': {
     label: 'Ride For Water',
     color: '#02b9d0',
+  },
+  'ShimsRide': {
+    label: 'Shim\'s Ride',
+    color: '#de0112',
   },
   'Thrashers': {
     label: 'Thrashers',
     color: '#ffed29',
     textColor: 'black',
   },
-  'ShimsRide': {
-    label: 'Shim\'s Ride',
-    color: '#de0112',
+  'TourDeBloom': {
+    label: 'Tour de Bloom',
+    color: '#68bb45',
   },
   'UnitedVelo': {
     label: 'United Velo',

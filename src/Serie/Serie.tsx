@@ -7,11 +7,11 @@ import { useCategoryResults } from './utils'
 import { fetchSeriesResults } from '../utils/aws-s3'
 import { IndividualRankingsTable } from './IndividualRankingsTable/IndividualRankingsTable'
 import { Navbar } from './Navbar/Navbar'
-import { OrganizerBadge } from '../Event/Shared/OrganizerBadge'
+import { OrganizerBadge } from '../Shared/OrganizerBadge'
 import { TeamRankingsTable } from './TeamRankingsTable/TeamRankingsTable'
 import { useEventsAndSeries } from '../utils/useEventsAndSeries'
-import { Source } from '../Event/Shared/Source'
-import { SearchField } from '../Event/Shared/SearchField'
+import { Source } from '../Shared/Source'
+import { SearchField } from '../Shared/SearchField'
 
 export const Serie: React.FC = () => {
   const { series, loading, } = useContext(AppContext)
@@ -29,7 +29,10 @@ export const Serie: React.FC = () => {
   const selectedCategory = searchParams.get('category') || serieSummary?.categories[resultType!]?.[0].alias!
   const selectedTeam = searchParams.get('team')
 
-  const selectedSeries = useMemo(() => series.get(serieYear)?.find(({ hash }) => hash === params.hash!), [series, params])
+  const selectedSeries = useMemo(() => series.get(serieYear)?.find(({ hash }) => hash === params.hash!), [
+    series,
+    params
+  ])
 
   useEventsAndSeries(serieYear)
 
@@ -77,7 +80,7 @@ export const Serie: React.FC = () => {
   } = useCategoryResults(selectedEventCategory?.results || [], searchValue)
 
   if (!selectedSeries) {
-    return ( 'NO SERIES FOUND' )
+    return ('NO SERIES FOUND')
   }
 
   return (

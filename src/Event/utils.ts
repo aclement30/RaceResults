@@ -1,8 +1,10 @@
 import { useMemo } from 'react'
-import type { EventAthlete, AthleteRaceResult, EventResults, EventSummary } from '../types/results'
-import { BC_UPGRADE_POINT_RULES, COMBINED_RACE_CATEGORIES } from '../config/upgrade-points'
+import type { EventAthlete, AthleteRaceResult, EventCategory } from '../types/results'
 
-export const useCategoryResults = (results: AthleteRaceResult[], athletes: Record<string, EventAthlete>, searchValue?: string) => {
+export const useCategoryResults = (
+  results: AthleteRaceResult[], athletes: Record<string, EventAthlete>,
+  searchValue?: string
+) => {
   const sortedResults = useMemo(() => {
     const finishers = results.filter((result) => result.status === 'FINISHER')
 
@@ -27,14 +29,14 @@ export const useCategoryResults = (results: AthleteRaceResult[], athletes: Recor
 
     return sortedResults.filter((raceResult) => {
       if (isNaN(+searchValueLower)) {
-        const { firstName, lastName, team } = athletes[raceResult.bibNumber]
+        const { firstName, lastName, team } = athletes[raceResult.athleteId]
         const fullName = `${firstName} ${lastName}`.toLowerCase()
         const teamLower = team?.toLowerCase()
 
         return fullName.includes(searchValueLower) || teamLower?.includes(searchValueLower)
       } else {
         const bibNumber = +searchValueLower
-        return raceResult.bibNumber.toString().startsWith(bibNumber.toString())
+        return raceResult.bibNumber?.toString().startsWith(bibNumber.toString())
       }
     })
   }, [sortedResults, searchValue])
@@ -42,17 +44,6 @@ export const useCategoryResults = (results: AthleteRaceResult[], athletes: Recor
   const isFiltered = filteredResults.length !== sortedResults.length
 
   return { filteredResults, sortedResults, isFiltered }
-}
-
-export const hasUpgradePoints = (event: EventSummary | null): 'UPGRADE' | 'SUBJECTIVE' | false => {
-  const eventType = getSanctionedEventType(event)
-
-  if (!eventType) return false
-
-  if (['A', 'AA', 'AA-USA', 'CYCLING-CANADA'].includes(eventType)) return 'UPGRADE'
-  if (eventType === 'GRASSROOTS') return 'SUBJECTIVE'
-
-  return false
 }
 
 const SANCTIONED_EVENT_TYPES = {
@@ -66,23 +57,6 @@ const SANCTIONED_EVENT_TYPES = {
 
 type SanctionedEventType = keyof typeof SANCTIONED_EVENT_TYPES
 
-export const getSanctionedEventType = (event: EventSummary | null): SanctionedEventType | null => {
-  if (!event) return null
-
-  if (event.organizerAlias === 'GoodRideGravel') return 'MASS-PARTICIPATION'
-  if (event.serie === 'WTNC2025') return 'GRASSROOTS'
-  if (event.serie === 'WTNC2024') return 'A'
-  if (event.serie === 'BCProvincials') return 'AA'
-  if (event.serie === 'SpringSeries') return 'A'
-  if (event.serie === 'LMCX2024') return 'A'
-  if (event.organizerAlias === 'LocalRide') return 'A'
-  if (event.organizerAlias === 'ShimsRide') return 'A'
-  if (event.organizerAlias === 'Concord') return 'A'
-  if (event.organizerAlias === 'EscapeVelocity' && event.name.includes('Seymour Challenge')) return 'A'
-
-  return null
-}
-
 export const getSanctionedEventTypeLabel = (eventType: SanctionedEventType | null): string => {
   if (!eventType || !SANCTIONED_EVENT_TYPES[eventType]) return 'Unknown'
 
@@ -93,46 +67,28 @@ export const hasDoubleUpgradePoints = (eventType: SanctionedEventType): boolean 
   return ['AA', 'AA-USA', 'CYCLING-CANADA'].includes(eventType)
 }
 
-export const calculateFieldSize = (eventResults: EventResults, category: string): {
-  starters: number,
-  categories?: string[]
-} => {
-  // Check if selected category has been combined with another category
-  if (COMBINED_RACE_CATEGORIES[eventResults.hash]) {
-    const index = COMBINED_RACE_CATEGORIES[eventResults.hash].findIndex((categories) => categories.includes(category))
-    if (index !== -1) {
-      // If combined, return the size of the first category in the combined categories
-      const combinedCategories = COMBINED_RACE_CATEGORIES[eventResults.hash][index]
-      const starters = combinedCategories.reduce((acc, cat) => {
-        return acc + (eventResults.results[cat]?.results.filter((result) => result.status !== 'DNS').length || 0)
-      }, 0)
-      const categories = combinedCategories.map((categoryAlias) => eventResults['results'][categoryAlias]?.label || categoryAlias)
-      return { starters, categories }
-    }
-  }
+export const getCategoriesWithLabels = (
+  categories: string[] | null | undefined,
+  allEventCategories: Record<string, EventCategory>
+): Record<string, string> => {
+  if (!categories || !allEventCategories) return {}
 
-  // If no combined categories, return the size of the selected category
-  const starters = eventResults.results[category]?.results.filter((result) => result.status !== 'DNS').length || 0
-
-  return { starters }
+  return categories.reduce((acc, alias) => {
+    const category = allEventCategories[alias]
+    acc[alias] = category?.label || alias
+    return acc
+  }, {} as Record<string, string>)
 }
 
-export const calculateBCUpgradePoints = ({ position, fieldSize, event }: {
-  position: number,
-  fieldSize: number,
-  event: EventSummary
-}): number | null => {
-  const eventType = getSanctionedEventType(event)
-  const isDouble = eventType && hasDoubleUpgradePoints(eventType)
-
-  // Compare fieldSize with position in BC_UPGRADE_POINT_RULES to get the number of points
-  const range = BC_UPGRADE_POINT_RULES.find((rule) => {
-    return fieldSize >= rule.fieldSize[0] && fieldSize <= rule.fieldSize[1]
-  })?.points
-
-  if (!range) return null
-
-  if (range && range[position - 1]) return range[position - 1] * (isDouble ? 2 : 1)
-
-  return 0
+export const getSerieLabel = (serieAlias: string | null | undefined): string | undefined => {
+  switch (serieAlias) {
+    case 'BCProvincials':
+      return 'BC Provincials'
+    case 'SpringSeries':
+      return 'Spring Series'
+    case 'TourDeBloom':
+      return 'Tour de Bloom'
+    default:
+      return serieAlias || undefined
+  }
 }

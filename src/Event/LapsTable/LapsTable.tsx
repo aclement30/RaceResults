@@ -1,12 +1,14 @@
 import type { EventAthlete, AthleteRaceResult } from '../../types/results'
 import { Button, Group, SegmentedControl, Switch, Table } from '@mantine/core'
-import { useMemo, useState } from 'react'
+import { useContext, useMemo, useState } from 'react'
 import { columns } from '../Shared/columns'
 import { formatGapTime, formatSpeed, formatTimeDuration } from '../../utils/race-results'
-import { ResponsiveTable } from '../Shared/ResponsiveTable'
+import { ResponsiveTable } from '../../Shared/ResponsiveTable'
 import { exportCSV } from '../../utils/exportCSV'
 import { showErrorMessage } from '../../utils/showErrorMessage'
 import { IconFileDownload } from '@tabler/icons-react'
+import { AppContext } from '../../AppContext'
+import { useNavigate } from 'react-router'
 
 type LapsTableProps = {
   lapCount: number
@@ -14,16 +16,34 @@ type LapsTableProps = {
   athletes: Record<string, EventAthlete>
 }
 
-const valueGradientColors = ['#00FF00', '#33FF00', '#66FF00', '#99FF00', '#CCFF00', '#FFFF00', '#FFCC00', '#FF9900', '#FF6600', '#FF3300', '#FF0000']
+const valueGradientColors = [
+  '#00FF00',
+  '#33FF00',
+  '#66FF00',
+  '#99FF00',
+  '#CCFF00',
+  '#FFFF00',
+  '#FFCC00',
+  '#FF9900',
+  '#FF6600',
+  '#FF3300',
+  '#FF0000'
+]
 
 export const LapsTable: React.FC<LapsTableProps> = ({
-                                                      lapCount,
-                                                      results,
-                                                      athletes,
-                                                    }) => {
+  lapCount,
+  results,
+  athletes,
+}) => {
+  const { findAthlete } = useContext(AppContext)
+  const navigate = useNavigate()
   const [dataType, setDataType] = useState<'TIME' | 'SPEED' | 'GAP'>('TIME')
   const [loadingCsv, setLoadingCsv] = useState(false)
   const [showColors, setShowColors] = useState(true)
+
+  const showAthleteProfile = (athleteUciId: string) => {
+    navigate(`/athletes/${athleteUciId}`)
+  }
 
   const rankedValues = useMemo(() => {
     let values: number[] = []
@@ -69,11 +89,16 @@ export const LapsTable: React.FC<LapsTableProps> = ({
   }
 
   const rows = useMemo(() => results.map((result) => {
-    const athlete = athletes[result.bibNumber]
+    const eventAthlete = athletes[result.athleteId]
+    const athleteProfile = findAthlete(eventAthlete)
+
     return (
       <Table.Tr key={result.bibNumber} style={{ height: 42 }}>
         <Table.Td>{columns.position(result)}</Table.Td>
-        <Table.Td>{athlete.lastName}, {athlete.firstName.substring(0, 1)}.</Table.Td>
+        <Table.Td> {columns.name(athleteProfile || eventAthlete, {
+          onClick: showAthleteProfile,
+          short: true
+        })}</Table.Td>
         <Table.Td>{columns.bibNumber(result)}</Table.Td>
         {dataType === 'TIME' && (
           <Table.Td style={{
@@ -87,7 +112,7 @@ export const LapsTable: React.FC<LapsTableProps> = ({
             borderInlineStart: 'calc(0.0625rem * var(--mantine-scale)) solid var(--table-border-color)',
             textAlign: 'center',
             fontWeight: 'bold',
-          }}>{result.avgSpeed > 0 ? formatSpeed(result.avgSpeed) : '-'}</Table.Td>
+          }}>{result.avgSpeed && result.avgSpeed > 0 ? formatSpeed(result.avgSpeed) : '-'}</Table.Td>
         )}
         {Array(lapCount).fill(0).map((_, i) => (
           <>
@@ -98,7 +123,7 @@ export const LapsTable: React.FC<LapsTableProps> = ({
                   textAlign: 'center',
                   backgroundColor: getColorForValue(result.lapDurations?.[i]),
                 }}
-                key={`lap-${i + 1}`}>{result.lapDurations?.[i] ? formatTimeDuration(result.lapDurations![i]) : '-'}</Table.Td> )}
+                key={`lap-${i + 1}`}>{result.lapDurations?.[i] ? formatTimeDuration(result.lapDurations![i]) : '-'}</Table.Td>)}
             {dataType === 'SPEED' && (
               <Table.Td
                 style={{
@@ -106,7 +131,7 @@ export const LapsTable: React.FC<LapsTableProps> = ({
                   textAlign: 'center',
                   backgroundColor: getColorForValue(result.lapSpeeds?.[i]),
                 }}
-                key={`lap-${i + 1}`}>{result.lapSpeeds?.[i] ? formatSpeed(result.lapSpeeds![i]) : '-'}</Table.Td> )}
+                key={`lap-${i + 1}`}>{result.lapSpeeds?.[i] ? formatSpeed(result.lapSpeeds![i]) : '-'}</Table.Td>)}
             {dataType === 'GAP' && (
               <Table.Td
                 style={{
@@ -114,7 +139,7 @@ export const LapsTable: React.FC<LapsTableProps> = ({
                   textAlign: 'center',
                   backgroundColor: getColorForValue(result.lapGaps?.[i]),
                 }}
-                key={`lap-${i + 1}`}>{result.lapGaps?.[i] !== null ? formatGapTime(result.lapGaps![i]) : '-'}</Table.Td> )}
+                key={`lap-${i + 1}`}>{result.lapGaps?.[i] !== null ? formatGapTime(result.lapGaps![i]) : '-'}</Table.Td>)}
           </>
         ))}
       </Table.Tr>
@@ -125,11 +150,11 @@ export const LapsTable: React.FC<LapsTableProps> = ({
     <Table.Th>P<span className="mantine-visible-from-sm">osition</span></Table.Th>
     <Table.Th>Name</Table.Th>
     <Table.Th>Bib</Table.Th>
-    {dataType !== 'GAP' && ( <Table.Th style={{
+    {dataType !== 'GAP' && (<Table.Th style={{
       whiteSpace: 'nowrap',
       textAlign: 'center',
       borderInlineStart: 'calc(0.0625rem * var(--mantine-scale)) solid var(--table-border-color)',
-    }}>{dataType === 'TIME' ? 'Total Time' : 'Avg Speed'}</Table.Th> )}
+    }}>{dataType === 'TIME' ? 'Total Time' : 'Avg Speed'}</Table.Th>)}
   </Table.Tr>
 
   const lapColumnHeaders = <Table.Tr>
@@ -149,17 +174,17 @@ export const LapsTable: React.FC<LapsTableProps> = ({
     })
 
     const exportedRows = results.map((result) => {
-      const athlete = athletes[result.bibNumber]
-      const row: Array<string | number | null> = [
+      const athlete = athletes[result.athleteId]
+      const row: Array<string | number | undefined | null> = [
         columns.position(result, { text: true }) as string,
-        `${athlete.lastName}, ${athlete.firstName}`,
+        columns.name(athlete, { text: true }) as string,
         athlete.team,
         result.bibNumber,
       ]
       if (dataType === 'TIME') {
         row.push(columns.time(result, { showGapTime: false, text: true }) as string)
       } else if (dataType === 'SPEED') {
-        row.push(result.avgSpeed > 0 ? formatSpeed(result.avgSpeed) : null)
+        row.push(result.avgSpeed && result.avgSpeed > 0 ? formatSpeed(result.avgSpeed) : null)
       }
 
       Array(lapCount).fill(0).forEach((_, i) => {

@@ -1,7 +1,7 @@
 import type { SerieSummary } from '../../types/results'
 import { useNavigate } from 'react-router'
 import { Button, Card, Group } from '@mantine/core'
-import { OrganizerBadge } from '../../Event/Shared/OrganizerBadge'
+import { OrganizerBadge } from '../../Shared/OrganizerBadge'
 import { IconUsersGroup, IconUserStar } from '@tabler/icons-react'
 
 type SerieCardProps = {

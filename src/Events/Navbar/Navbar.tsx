@@ -2,7 +2,8 @@ import { AppShell, Divider, NavLink } from '@mantine/core'
 import { useNavigate } from 'react-router'
 import { useContext, useMemo } from 'react'
 import { AppContext } from '../../AppContext'
-import { Credit } from '../../Event/Shared/Credit'
+import { Credit } from '../../Shared/Credit'
+import { getSerieLabel } from '../../Event/utils'
 
 type NavbarProps = {
   filters: {
@@ -39,7 +40,7 @@ export const Navbar: React.FC<NavbarProps> = ({ filters }) => {
           }}
           active={year === filters.year}
           label={year}
-        /> ))}
+        />))}
 
       <Divider style={{ marginBottom: '1rem' }}/>
 
@@ -63,8 +64,8 @@ export const Navbar: React.FC<NavbarProps> = ({ filters }) => {
               navigate(`/events?year=${filters.year}&series=${serieAlias}`)
             }}
             active={serieAlias === filters.serie}
-            label={matchingSerie?.name || serieAlias}
-          /> )
+            label={matchingSerie?.name || getSerieLabel(serieAlias)}
+          />)
       })}
 
       <Credit/>

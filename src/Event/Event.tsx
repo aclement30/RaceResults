@@ -12,7 +12,7 @@ import { useCategoryResults } from './utils'
 import { FETCH_ERROR_TYPE, FetchError, fetchEventResults } from '../utils/aws-s3'
 import { Navbar } from './Navbar/Navbar'
 import { useEventsAndSeries } from '../utils/useEventsAndSeries'
-import { Source } from './Shared/Source'
+import { Source } from '../Shared/Source'
 import { PointsTable } from './PointsTable/PointsTable'
 import { Loader } from '../Loader/Loader'
 
@@ -33,9 +33,27 @@ export const Event: React.FC = () => {
 
   const [searchParams, setSearchParams] = useSearchParams()
   const selectedCategory = searchParams.get('category') || eventSummary?.categories[0].alias
-  const selectedTab = searchParams.get('tab') || 'results'
+  const activeTab = searchParams.get('tab') || 'results'
 
   const selectedEvent = useMemo(() => events.get(eventYear)?.find(({ hash }) => hash === eventHash), [events, params])
+  const selectedEventCategory = !!selectedCategory && eventResults?.results[selectedCategory] || undefined
+
+  const tabs = useMemo(() => {
+    const tabs = ['results']
+
+    if (selectedEventCategory?.primes?.length) tabs.push('primes')
+    if (selectedEventCategory?.laps && selectedEventCategory.laps > 1) tabs.push('laps')
+    if (selectedEventCategory?.upgradePoints) tabs.push('points')
+
+    return tabs
+  }, [selectedEventCategory])
+
+  // Ensure the selected tab is valid or reset to 'results'
+  useEffect(() => {
+    const updatedParams = new URLSearchParams(searchParams)
+    updatedParams.set('tab', 'results')
+    if (!tabs.includes(activeTab)) setSearchParams(updatedParams)
+  }, [tabs, activeTab])
 
   useEventsAndSeries(eventYear)
 
@@ -91,8 +109,6 @@ export const Event: React.FC = () => {
     }
   }, [eventYear, eventHash, events])
 
-  const selectedEventCategory = !!selectedCategory && eventResults?.results[selectedCategory] || undefined
-
   const {
     sortedResults,
   } = useCategoryResults(selectedEventCategory?.results || [], eventResults?.athletes || {})
@@ -132,25 +148,25 @@ export const Event: React.FC = () => {
             }}
           />
 
-          <Tabs value={selectedTab} onChange={handleTabChamge}>
+          <Tabs value={activeTab} onChange={handleTabChamge} keepMounted={false}>
             <Tabs.List style={{ overflowX: 'auto', flexWrap: 'nowrap' }}>
               <Tabs.Tab value="results" leftSection={<IconTrophy/>}>
                 Results
               </Tabs.Tab>
 
-              {!!selectedEventCategory?.primes?.length && (
+              {tabs.includes('primes') && (
                 <Tabs.Tab value="primes" leftSection={<IconCoins/>}>
                   Primes
                 </Tabs.Tab>
               )}
 
-              {selectedEventCategory?.laps && selectedEventCategory?.laps > 1 && (
+              {tabs.includes('laps') && (
                 <Tabs.Tab value="laps" leftSection={<IconStopwatch/>}>
                   Laps
                 </Tabs.Tab>
               )}
 
-              {!!eventSummary?.hasUpgradePoints && (
+              {tabs.includes('points') && (
                 <Tabs.Tab value="points" leftSection={<IconStars/>}>
                   Points
                 </Tabs.Tab>
@@ -168,13 +184,13 @@ export const Event: React.FC = () => {
               )}
             </Tabs.Panel>
 
-            {!!selectedEventCategory?.primes?.length && (
+            {tabs.includes('primes') && (
               <Tabs.Panel value="primes">
                 <PrimesTable primes={selectedEventCategory?.primes || []} athletes={eventResults!.athletes}/>
               </Tabs.Panel>
             )}
 
-            {selectedEventCategory?.laps && selectedEventCategory?.laps > 1 && (
+            {tabs.includes('laps') && (
               <Tabs.Panel value="laps">
                 <LapsTable lapCount={selectedEventCategory?.laps || 0}
                            results={sortedResults}
@@ -182,7 +198,7 @@ export const Event: React.FC = () => {
               </Tabs.Panel>
             )}
 
-            {!!eventSummary?.hasUpgradePoints && eventResults && selectedCategory && (
+            {tabs.includes('points') && eventResults && selectedCategory && (
               <Tabs.Panel value="points">
                 <PointsTable
                   eventSummary={eventSummary!}

@@ -1,5 +1,5 @@
 import type { EventAthlete, AthleteRaceResult, AthleteSerieResult } from '../../types/results'
-import { Badge, Tooltip } from '@mantine/core'
+import { Anchor, Badge, Tooltip } from '@mantine/core'
 import { formatTimeDuration, formatGapTime, formatSpeed } from '../../utils/race-results'
 
 
@@ -23,6 +23,22 @@ function renderEmptyValue(empty: string, textOnly?: boolean) {
 export const columns = {
   position: (row: Pick<AthleteRaceResult, 'status' | 'position'>, { text }: ColumnOptions = {}) => {
     return row.status === 'FINISHER' ? formatRacerPositionLabel(row.position, text) : row.status
+  },
+  name: (row: Partial<Pick<EventAthlete, 'firstName' | 'lastName' | 'uciId'>>, {
+    text,
+    short,
+    onClick
+  }: ColumnOptions & {
+    short?: boolean
+    onClick?: (uciId: string) => void
+  } = {}) => {
+    if (!row.firstName && !row.lastName) return null
+
+    const textLabel = short ? `${row.lastName?.toUpperCase()}, ${row.firstName?.slice(0, 1)}` : `${row.lastName?.toUpperCase()}, ${row.firstName}`
+
+    if (text || !row.uciId || !onClick) return textLabel
+
+    return <Anchor size="sm" onClick={() => onClick?.(row.uciId!)}>{textLabel}</Anchor>
   },
   city: (row: Pick<EventAthlete, 'city' | 'province'>) => {
     return [row.city, row.province].filter(Boolean).join(', ')
@@ -49,26 +65,29 @@ export const columns = {
   }: ColumnOptions & {
     showGapTime?: boolean
   } = {}) => {
-    if (!['FINISHER', 'DNF'].includes(row.status) || row.status === 'DNF' && row.finishTime === 0) return renderEmptyValue('-', text)
+    if (![
+      'FINISHER',
+      'DNF'
+    ].includes(row.status) || row.status === 'DNF' && row.finishTime === 0) return renderEmptyValue('-', text)
 
-    if (row.position === 1 || ( !showGapTime && row.status === 'FINISHER' && row.finishGap >= 0 )) {
+    if (row.position === 1 || (!showGapTime && row.status === 'FINISHER' && row.finishGap && row.finishGap >= 0)) {
       const duration = formatTimeDuration(row.finishTime)
       if (duration === '-') return renderEmptyValue('-', text)
       return duration
-    } else if (row.status === 'DNF' || row.finishGap < 0) return `(${formatTimeDuration(row.finishTime)})`
+    } else if (row.status === 'DNF' || row.finishGap !== null && row.finishGap < 0) return `(${formatTimeDuration(row.finishTime)})`
     else {
       if (text) {
-        const value = formatGapTime(row.finishGap)
+        const value = formatGapTime(row.finishGap!)
         if (value === '-') return renderEmptyValue('-', text)
         return value
       }
 
       return <Tooltip
-        label={formatTimeDuration(row.finishTime)}><span>{formatGapTime(row.finishGap)}</span></Tooltip>
+        label={formatTimeDuration(row.finishTime)}><span>{formatGapTime(row.finishGap!)}</span></Tooltip>
     }
   },
   gap: (row: Pick<AthleteRaceResult, 'status' | 'finishGap'>, { text }: ColumnOptions = {}) => {
-    if (!['FINISHER', 'DNF'].includes(row.status)) return renderEmptyValue('-', text)
+    if (!['FINISHER', 'DNF'].includes(row.status) || !row.finishGap) return renderEmptyValue('-', text)
 
     const value = formatGapTime(row.finishGap)
     if (value === '-') return renderEmptyValue('-', text)

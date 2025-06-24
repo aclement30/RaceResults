@@ -1,9 +1,10 @@
 import { Button, Group } from '@mantine/core'
 import type { BaseCategory, EventSummary } from '../../types/results'
 import { useNavigate } from 'react-router'
-import { OrganizerBadge } from '../Shared/OrganizerBadge'
+import { OrganizerBadge } from '../../Shared/OrganizerBadge'
 import { useContext } from 'react'
 import { AppContext } from '../../AppContext'
+import { getSerieLabel } from '../utils'
 
 type EventHeaderProps = {
   event: EventSummary
@@ -16,21 +17,14 @@ export const EventHeader: React.FC<EventHeaderProps> = ({ event, selectedCategor
 
   const yearSeries = series.get(event.year) || []
 
-  const getSerieLabel = (eventSerieAlias: string | null | undefined): string | null => {
+  const renderSerieLabel = (eventSerieAlias: string | null | undefined): string | null => {
     if (!eventSerieAlias) return null
 
     const serieSummary = yearSeries.find(s => s.alias === eventSerieAlias)
     if (serieSummary) {
       return serieSummary.name
     } else {
-      switch (eventSerieAlias) {
-        case 'BCProvincials':
-          return 'BC Provincials'
-        case 'SpringSeries':
-          return 'Spring Series'
-        default:
-          return eventSerieAlias
-      }
+      return getSerieLabel(eventSerieAlias)!
     }
   }
 
@@ -85,7 +79,7 @@ export const EventHeader: React.FC<EventHeaderProps> = ({ event, selectedCategor
           }}
           onClick={() => navigate(`/events?year=${event.year}&series=${event.serie}`)}
         >
-          {getSerieLabel(event.serie)}
+          {renderSerieLabel(event.serie)}
         </Button>
       )}
     </>

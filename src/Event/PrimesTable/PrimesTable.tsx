@@ -1,7 +1,9 @@
 import type { EventAthlete, PrimeResult } from '../../types/results'
 import { Table, Text } from '@mantine/core'
-import { useMemo } from 'react'
+import { useContext, useMemo } from 'react'
 import { columns } from '../Shared/columns'
+import { AppContext } from '../../AppContext'
+import { useNavigate } from 'react-router'
 
 type PrimesTableProps = {
   primes: PrimeResult[]
@@ -9,21 +11,39 @@ type PrimesTableProps = {
 }
 
 export const PrimesTable: React.FC<PrimesTableProps> = ({
-                                                          primes,
-                                                          athletes,
-                                                        }) => {
+  primes,
+  athletes,
+}) => {
+  const { findAthlete } = useContext(AppContext)
+  const navigate = useNavigate()
+
+  const showAthleteProfile = (athleteUciId: string) => {
+    navigate(`/athletes/${athleteUciId}`)
+  }
+
+  const athleteColumns = useMemo(() => {
+    const resultAthletes = primes.map((prime) => athletes[prime.athleteId])
+    const athleteColumns = ['name']
+
+    if (resultAthletes?.some(result => !!result.team?.length)) athleteColumns.push('team')
+    if (resultAthletes?.some(result => !!result.bibNumber)) athleteColumns.push('bibNumber')
+
+    return athleteColumns
+  }, [primes, athletes])
+
   const rows = useMemo(() => primes.map((primeResult) => {
-    const athlete = athletes[primeResult.bibNumber]
+    const eventAthlete = athletes[primeResult.athleteId]
+    const athleteProfile = findAthlete(eventAthlete)
 
     return (
       <Table.Tr key={primeResult.number}>
         <Table.Td>{primeResult.number}</Table.Td>
         <Table.Td>
-          {athlete.lastName}, {athlete.firstName}
-          <Text size="sm" c="dimmed" hiddenFrom="sm">{athlete.team}</Text>
+          {columns.name(athleteProfile || eventAthlete, { onClick: showAthleteProfile })}
+          {athleteColumns.includes('team') && (<Text size="sm" c="dimmed" hiddenFrom="sm">{eventAthlete.team}</Text>)}
         </Table.Td>
-        <Table.Td visibleFrom="sm">{athlete.team}</Table.Td>
-        <Table.Td>{columns.bibNumber(primeResult)}</Table.Td>
+        {athleteColumns.includes('team') && (<Table.Td visibleFrom="sm">{eventAthlete.team}</Table.Td>)}
+        {athleteColumns.includes('bibNumber') && (<Table.Td>{columns.bibNumber(eventAthlete)}</Table.Td>)}
         <Table.Td>{primeResult.position}</Table.Td>
       </Table.Tr>
     )
@@ -39,8 +59,8 @@ export const PrimesTable: React.FC<PrimesTableProps> = ({
               className="mantine-hidden-from-sm">#</span>
             </Table.Th>
             <Table.Th>Name</Table.Th>
-            <Table.Th visibleFrom="sm">Team</Table.Th>
-            <Table.Th>Bib</Table.Th>
+            {athleteColumns.includes('team') && (<Table.Th visibleFrom="sm">Team</Table.Th>)}
+            {athleteColumns.includes('bibNumber') && (<Table.Th>Bib</Table.Th>)}
             <Table.Th>P<span className="mantine-visible-from-sm">osition</span></Table.Th>
           </Table.Tr>
         </Table.Thead>

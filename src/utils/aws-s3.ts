@@ -7,6 +7,9 @@ import {
 } from '@aws-sdk/client-s3'
 import { fromCognitoIdentityPool } from '@aws-sdk/credential-providers'
 import type { EventResults, EventSummary, SerieResults, SerieSummary } from '../types/results'
+import type { Athlete, AthleteCompilations, AthleteProfile } from '../types/athletes'
+import { PUBLIC_BUCKET_FILES, PUBLIC_BUCKET_PATHS } from '../config/s3'
+import type { Team } from '../types/team'
 
 const { VITE_AWS_REGION, VITE_AWS_POOL_ID, VITE_RR_S3_BUCKET } = import.meta.env || {}
 
@@ -100,7 +103,7 @@ export async function fetchFile(filename: string, options?: FetchFileOptions): P
 }
 
 export async function fetchEventYears(): Promise<number[]> {
-  const { files } = await fetchDirectoryFiles('events/')
+  const { files } = await fetchDirectoryFiles(PUBLIC_BUCKET_PATHS.events)
 
   const years = files?.map((file) => +getBasename(file.Key!).substring(0, 4)).sort().reverse() || []
 
@@ -111,7 +114,7 @@ export async function fetchEvents(year: number, ifModifiedSince?: Date | null) {
   let response
 
   try {
-    response = await fetchFile(`events/${year}.json`, { ifModifiedSince })
+    response = await fetchFile(`${PUBLIC_BUCKET_PATHS.events}${year}.json`, { ifModifiedSince })
   } catch (error) {
     // If the file is not found, return an empty array
     if (error instanceof FetchError && error.type === FETCH_ERROR_TYPE.NotFound) {
@@ -130,7 +133,7 @@ export async function fetchEventResults(year: number, hash: string, ifModifiedSi
   let response
 
   try {
-    response = await fetchFile(`events-results/${year}/${hash}.json`, { ifModifiedSince })
+    response = await fetchFile(`${PUBLIC_BUCKET_PATHS.eventsResults}${year}/${hash}.json`, { ifModifiedSince })
   } catch (error) {
     if (error instanceof S3ServiceException && error.name === 'NoSuchKey') {
       throw new Error('No such event could be found!')
@@ -148,7 +151,7 @@ export async function fetchSeries(year: number, ifModifiedSince?: Date | null) {
   let response
 
   try {
-    response = await fetchFile(`series/${year}.json`, { ifModifiedSince })
+    response = await fetchFile(`${PUBLIC_BUCKET_PATHS.series}${year}.json`, { ifModifiedSince })
   } catch (error) {
     // If the file is not found, return an empty array
     if (error instanceof FetchError && error.type === FETCH_ERROR_TYPE.NotFound) {
@@ -167,9 +170,9 @@ export async function fetchSeriesResults(year: number, hash: string, ifModifiedS
   let response
 
   try {
-    response = await fetchFile(`series-results/${year}/${hash}.json`, { ifModifiedSince })
+    response = await fetchFile(`${PUBLIC_BUCKET_PATHS.seriesResults}${year}/${hash}.json`, { ifModifiedSince })
   } catch (error) {
-    if (error instanceof S3ServiceException && error.name === 'NoSuchKey') {
+    if (error instanceof FetchError && error.type === FETCH_ERROR_TYPE.NotFound) {
       throw new Error('No such series could be found!')
     }
 
@@ -179,4 +182,89 @@ export async function fetchSeriesResults(year: number, hash: string, ifModifiedS
   const serieResults: SerieResults = response && response.content && JSON.parse(response.content)
 
   return { serieResults, lastModified: response.lastModified }
+}
+
+export async function fetchTeamsList(): Promise<Record<string, Team>> {
+  let response
+
+  try {
+    response = await fetchFile(PUBLIC_BUCKET_FILES.athletes.teams)
+  } catch (error) {
+    // If the file is not found, return an empty array
+    if (error instanceof FetchError && error.type === FETCH_ERROR_TYPE.NotFound) {
+      return {}
+    }
+
+    throw error
+  }
+
+  return JSON.parse(response.content) as Record<string, Team>
+}
+
+export async function fetchAthletesList(): Promise<Record<string, Athlete>> {
+  let response
+
+  try {
+    response = await fetchFile(PUBLIC_BUCKET_FILES.athletes.list)
+  } catch (error) {
+    // If the file is not found, return an empty array
+    if (error instanceof FetchError && error.type === FETCH_ERROR_TYPE.NotFound) {
+      return {}
+    }
+
+    throw error
+  }
+
+  return JSON.parse(response.content) as Record<string, Athlete>
+}
+
+export async function fetchAthleteLookupTable(): Promise<Record<string, string>> {
+  let response
+
+  try {
+    response = await fetchFile(PUBLIC_BUCKET_FILES.athletes.lookup)
+  } catch (error) {
+    // If the file is not found, return an empty array
+    if (error instanceof FetchError && error.type === FETCH_ERROR_TYPE.NotFound) {
+      return {}
+    }
+
+    throw error
+  }
+
+  return JSON.parse(response.content) as Record<string, string>
+}
+
+export async function fetchAthleteProfile(uciId: string): Promise<AthleteProfile> {
+  let response
+
+  try {
+    response = await fetchFile(`${PUBLIC_BUCKET_PATHS.athletesProfiles}${uciId}.json`)
+  } catch (error) {
+    // If the file is not found, return an empty array
+    if (error instanceof FetchError && error.type === FETCH_ERROR_TYPE.NotFound) {
+      throw new Error('Athlete profile could not be found!')
+    }
+
+    throw error
+  }
+
+  return JSON.parse(response.content) as AthleteProfile
+}
+
+export async function fetchAthleteCompilations(): Promise<AthleteCompilations> {
+  let response
+
+  try {
+    response = await fetchFile(PUBLIC_BUCKET_FILES.athletes.compilations)
+  } catch (error) {
+    // If the file is not found, return an empty array
+    if (error instanceof FetchError && error.type === FETCH_ERROR_TYPE.NotFound) {
+      throw new Error('Athlete compilations could not be found!')
+    }
+
+    throw error
+  }
+
+  return JSON.parse(response.content) as AthleteCompilations
 }

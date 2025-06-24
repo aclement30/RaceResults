@@ -14,7 +14,7 @@ const today = new Date().toLocaleDateString('sv', { timeZone: 'America/Vancouver
 export const Events: React.FC = () => {
   const [searchParams] = useSearchParams()
   const filters = {
-    year: +( searchParams.get('year') || new Date().getFullYear() ),
+    year: +(searchParams.get('year') || new Date().getFullYear()),
     serie: searchParams.get('series') || null,
   }
 
@@ -44,7 +44,11 @@ export const Events: React.FC = () => {
     <>
       <Navbar filters={filters}/>
 
-      <AppShell.Main>
+      <AppShell.Main style={{
+        backgroundImage: 'url(/header-bg.png)',
+        backgroundPosition: 'top 60px right',
+        backgroundRepeat: 'no-repeat',
+      }}>
         <LoadingOverlay
           visible={loading && !events.get(filters.year)} overlayProps={{ radius: 'sm', blur: 2 }}
           loaderProps={{
@@ -58,7 +62,7 @@ export const Events: React.FC = () => {
           <div style={{ marginBottom: 20 }}>
             <h2 style={{ marginTop: 0 }}>Today</h2>
             {todayEvents.map((event) => (
-              <EventCard key={`${event.hash}`} event={event}/> ))}
+              <EventCard key={`${event.hash}`} event={event}/>))}
           </div>
         )}
 
@@ -66,7 +70,7 @@ export const Events: React.FC = () => {
           <>
             <h2 style={{ marginTop: 0 }}>Past Events</h2>
             {pastEvents.map((event) => (
-              <EventCard key={`${event.hash}`} event={event}/> ))}
+              <EventCard key={`${event.hash}`} event={event}/>))}
           </>
         )}
 

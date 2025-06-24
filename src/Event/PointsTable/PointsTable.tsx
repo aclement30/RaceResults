@@ -1,14 +1,17 @@
-import { Alert, Button, Group, List, Table, Text, ThemeIcon } from '@mantine/core'
-import { useMemo, useState } from 'react'
-import { IconCircleCheck, IconFileDownload } from '@tabler/icons-react'
+import { Alert, Button, Group, Table, Text } from '@mantine/core'
+import { useContext, useMemo, useState } from 'react'
+import { IconFileDownload } from '@tabler/icons-react'
 import {
+  getCategoriesWithLabels,
   getSanctionedEventTypeLabel,
-  hasUpgradePoints, useCategoryResults
 } from '../utils'
 import type { EventSummary, EventAthlete, EventResults } from '../../types/results'
 import { columns } from '../Shared/columns'
 import { exportCSV } from '../../utils/exportCSV'
 import { showErrorMessage } from '../../utils/showErrorMessage'
+import { UpgradePointExplanation } from '../Shared/UpgradePointExplanation'
+import { useNavigate, useSearchParams } from 'react-router'
+import { AppContext } from '../../AppContext'
 
 type PointsTableProps = {
   eventSummary: EventSummary
@@ -18,59 +21,92 @@ type PointsTableProps = {
 }
 
 export const PointsTable: React.FC<PointsTableProps> = ({
-                                                          eventSummary,
-                                                          eventResults,
-                                                          selectedCategory,
-                                                          athletes,
-                                                        }) => {
-  const {
-    sortedResults,
-  } = useCategoryResults(eventResults?.results[selectedCategory]?.results || [], eventResults?.athletes || {})
+  eventSummary,
+  eventResults,
+  selectedCategory: selectedCategoryAlias,
+  athletes,
+}) => {
+  const { findAthlete } = useContext(AppContext)
 
-  const pointType = hasUpgradePoints(eventSummary)
+  const navigate = useNavigate()
+  const [searchParams, setSearchParams] = useSearchParams()
+
+  const handleSelectCategory = (categoryAlias: string) => {
+    const updatedParams = new URLSearchParams(searchParams)
+    updatedParams.set('category', categoryAlias)
+
+    setSearchParams(updatedParams)
+  }
+
+  const selectedCategory = eventResults.results[selectedCategoryAlias]
+
+  const combinedCategoriesWithLabels = useMemo(() => {
+    let combinedCategories: string[] = []
+
+    if (selectedCategory.umbrellaCategory) {
+      combinedCategories = eventResults.results[selectedCategory.umbrellaCategory].combinedCategories || []
+    } else {
+      combinedCategories = [selectedCategory.alias]
+    }
+
+    return getCategoriesWithLabels(combinedCategories, eventResults.results)
+  }, [eventResults, selectedCategory])
+
+  const pointType = eventSummary.hasUpgradePoints
   const eventTypeLabel = getSanctionedEventTypeLabel(eventSummary.sanctionedEventType)
   const [loadingCsv, setLoadingCsv] = useState(false)
 
-  const filteredResults = useMemo(() => {
-    return sortedResults.filter(result => !!result.upgradePoints)
-  }, [sortedResults])
+  const showAthleteProfile = (athleteUciId: string) => {
+    navigate(`/athletes/${athleteUciId}`)
+  }
 
-  const rows = useMemo(() => filteredResults.map((result) => {
-    const athlete = athletes[result.bibNumber]
+  const athleteColumns = useMemo(() => {
+    const resultAthletes = selectedCategory.upgradePoints?.map((point) => athletes[point.athleteId])
+    const athleteColumns = ['name']
+
+    if (resultAthletes?.some(result => !!result.team?.length)) athleteColumns.push('team')
+    if (resultAthletes?.some(result => !!result.bibNumber)) athleteColumns.push('bibNumber')
+
+    return athleteColumns
+  }, [selectedCategory.upgradePoints, athletes])
+
+  const rows = useMemo(() => selectedCategory.upgradePoints?.map((result) => {
+    const eventAthlete = athletes[result.athleteId]
+    const athleteProfile = findAthlete(eventAthlete)
 
     return (
-      <Table.Tr key={`ranking-${result.bibNumber}`}>
-        <Table.Td>{columns.position(result)}</Table.Td>
+      <Table.Tr key={`ranking-${result.athleteId}`}>
+        <Table.Td>{columns.position({ status: 'FINISHER', position: result.position })}</Table.Td>
         <Table.Td>
-          {athlete.lastName}, {athlete.firstName}
-          <Text size="sm" c="dimmed" hiddenFrom="sm" style={{
+          {columns.name(athleteProfile || eventAthlete, { onClick: showAthleteProfile })}
+          {athleteColumns.includes('team') && (<Text size="sm" c="dimmed" hiddenFrom="sm" style={{
             overflow: 'hidden',
             whiteSpace: 'nowrap', textOverflow: 'ellipsis',
-          }}>{athlete.team}</Text>
+          }}>{eventAthlete.team}</Text>)}
         </Table.Td>
-        <Table.Td visibleFrom="sm">{athlete.team}</Table.Td>
-        <Table.Td>{columns.bibNumber(result)}</Table.Td>
-        <Table.Td style={{ textAlign: 'center' }}>{result.upgradePoints}</Table.Td>
+        {athleteColumns.includes('team') && (<Table.Td visibleFrom="sm">{eventAthlete.team}</Table.Td>)}
+        {athleteColumns.includes('bibNumber') && (<Table.Td>{columns.bibNumber(eventAthlete)}</Table.Td>)}
+        <Table.Td style={{ textAlign: 'center' }}>{result.points}</Table.Td>
       </Table.Tr>
     )
-  }), [filteredResults, athletes])
+  }), [athletes, selectedCategory, athleteColumns])
 
   const handleExportCSV = async () => {
-    const exportedRows = filteredResults.map((result) => {
-      const athlete = athletes[result.bibNumber]
+    const exportedRows = selectedCategory.upgradePoints?.map((result) => {
+      const athlete = athletes[result.athleteId]
       return [
-        columns.position(result, { text: true }) as string,
-        `${athlete.lastName}, ${athlete.firstName}`,
+        columns.position({ status: 'FINISHER', position: result.position }, { text: true }) as string,
+        columns.name(athlete, { text: true }) as string,
         athlete.team,
-        result.bibNumber,
-        result.upgradePoints,
+        athlete.bibNumber?.toString(),
+        result.points.toString(),
       ]
     })
 
     setLoadingCsv(true)
 
     try {
-      await exportCSV(exportedRows, [
+      await exportCSV(exportedRows || [], [
         'Position',
         'Name',
         'Team',
@@ -83,28 +119,6 @@ export const PointsTable: React.FC<PointsTableProps> = ({
       setLoadingCsv(false)
     }
   }
-
-  const PointExplanation = useMemo(() => {
-    return (
-      <List
-        spacing="xs"
-        size="sm"
-        center
-        style={{ marginTop: '1rem' }}
-        icon={
-          <ThemeIcon color="teal" size={16} radius="xl">
-            <IconCircleCheck size={16}/>
-          </ThemeIcon>
-        }
-      >
-        <List.Item>Field
-          Size: {eventResults.results[selectedCategory].fieldSize} ({eventResults.results[selectedCategory].combinedCategories?.map(cat => eventResults.results[cat].label).join(' + ') + ', '}excluding
-          DNS)</List.Item>
-        {eventTypeLabel && <List.Item>Event
-            Type: {eventTypeLabel} {eventSummary.isDoubleUpgradePoints && '(double upgrade points)'}</List.Item>}
-      </List>
-    )
-  }, [sortedResults.length, eventTypeLabel, eventSummary])
 
   return (
     <div style={{ width: '100%', marginTop: '1rem' }}>
@@ -128,10 +142,10 @@ export const PointsTable: React.FC<PointsTableProps> = ({
               width: 80
             }}>Position</Table.Th>
             <Table.Th>Name</Table.Th>
-            <Table.Th visibleFrom="sm">Team</Table.Th>
-            <Table.Th style={{
+            {athleteColumns.includes('team') && (<Table.Th visibleFrom="sm">Team</Table.Th>)}
+            {athleteColumns.includes('bibNumber') && (<Table.Th style={{
               width: 70
-            }}>Bib</Table.Th>
+            }}>Bib</Table.Th>)}
             <Table.Th style={{
               width: 100,
               textAlign: 'center',
@@ -139,27 +153,36 @@ export const PointsTable: React.FC<PointsTableProps> = ({
           </Table.Tr>
         </Table.Thead>
         <Table.Tbody>{rows}</Table.Tbody>
-        {/*<Table.Caption>Scroll page to see sticky thead</Table.Caption>*/}
       </Table>
 
-      {pointType === 'UPGRADE' && (
-        <Alert variant="light" color="blue" style={{ margin: '1rem 0' }} title="Upgrade Points">
-          Upgrade points are awarded based on the Cycling BC Upgrade Points Schedule and the finishing position of each
-          athletes. This is an estimate and may not reflect the final points awarded by Cycling BC.
-
-          {PointExplanation}
-        </Alert>
-      )}
-
-      {pointType === 'SUBJECTIVE' && (
-        <Alert variant="light" color="blue" style={{ margin: '1rem 0' }} title="Subjective Upgrade Points">
-          Subjective upgrade points are awarded based on the Cycling BC Upgrade Points Schedule and the finishing
-          position of each
-          athletes. This is an estimate and may not reflect the final points awarded by Cycling BC.
-
-          {PointExplanation}
-        </Alert>
-      )}
+      <Alert
+        variant="light"
+        color="blue"
+        style={{ margin: '1rem 0' }}
+        title={pointType === 'UPGRADE' ? 'Upgrade Points' : 'Subjective Upgrade Points'}
+      >
+        <UpgradePointExplanation
+          fieldSize={selectedCategory.fieldSize}
+          combinedCategories={combinedCategoriesWithLabels}
+          selectedCategory={selectedCategory.alias}
+          onCategoryClick={handleSelectCategory}
+          eventTypeLabel={eventTypeLabel}
+          isDoubleUpgradePoints={eventSummary.isDoubleUpgradePoints}
+        >
+          {pointType === 'UPGRADE' ? (
+            <>
+              Upgrade points are awarded based on the Cycling BC Upgrade Points Schedule and the finishing position of
+              each athletes. This is an estimate and may not reflect the final points awarded by Cycling BC.
+            </>
+          ) : (
+            <>
+              Subjective upgrade points are awarded based on the Cycling BC Upgrade Points Schedule and the finishing
+              position of each
+              athletes. This is an estimate and may not reflect the final points awarded by Cycling BC.
+            </>
+          )}
+        </UpgradePointExplanation>
+      </Alert>
     </div>
   )
 }

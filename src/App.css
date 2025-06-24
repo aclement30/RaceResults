@@ -4,6 +4,10 @@
   }
 }
 
+table tr.-dimmed td {
+  opacity: 0.4;
+}
+
 :root {
   --hue: 223;
   --bg: hsl(var(--hue), 90%, 90%);
