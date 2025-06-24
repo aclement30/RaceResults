@@ -7,8 +7,8 @@ export const useNavigator = () => {
     navigate(`/teams/${teamId}`)
   }
 
-  const navigateToAthlete = (athleteUciId: string) => {
-    navigate(`/athletes/${athleteUciId}`)
+  const navigateToAthlete = (athleteUciId: string, tab?: string) => {
+    navigate(`/athletes/${athleteUciId}` + (tab ? `?tab=${tab}` : ''))
   }
 
   const navigateToEvents = () => {

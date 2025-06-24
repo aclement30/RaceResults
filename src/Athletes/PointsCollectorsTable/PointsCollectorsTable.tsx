@@ -53,7 +53,7 @@ export const PointsCollectorsTable: React.FC<PointsCollectorsTableProps> = ({
     return (
       <Table.Tr key={`athlete-${upgrade.uciId}`} className={upgrade.hasRacedUp ? '-dimmed' : ''}>
         <Table.Td>
-          <Anchor onClick={() => navigateToAthlete(upgrade.uciId)}>
+          <Anchor onClick={() => navigateToAthlete(upgrade.uciId, 'points')}>
             <Group gap="xs" style={{ flexWrap: 'nowrap' }}>
               {upgrade.firstName} {upgrade.lastName?.toUpperCase()}
               {!!upgrade.hasRacedUp && (
