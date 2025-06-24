@@ -60,12 +60,18 @@ export class AwsS3Client {
   }
 
   async writeFile(path: string, content: string) {
+    let cacheControl = 'must-revalidate, max-age=3600'
+
+    if (NO_CACHE_FILES.some((file) => path.startsWith(file))) {
+      cacheControl = 'max-age=0, no-cache, no-store, must-revalidate'
+    }
+
     await this._client.send(
       new PutObjectCommand({
         Bucket: this._bucket,
         Key: path,
         Body: content,
-        CacheControl: NO_CACHE_FILES.includes(path) ? 'max-age=0, no-cache, no-store, must-revalidate' : 'must-revalidate',
+        CacheControl: cacheControl,
         ContentType: 'application/json',
       })
     )

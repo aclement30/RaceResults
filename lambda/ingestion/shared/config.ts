@@ -1,4 +1,4 @@
-import { PUBLIC_BUCKET_PATHS } from '../../../src/config/s3.ts'
+import { PUBLIC_BUCKET_FILES, PUBLIC_BUCKET_PATHS } from '../../../src/config/s3.ts'
 
 const Environment = {
   prod: 'prod',
@@ -19,7 +19,7 @@ export const CONFIG_FILES = {
 export const WATCHERS_PATH = `${INGESTION_BASE_PATH}watchers/`
 export const ENV: TEnv = process.env.ENV as TEnv || 'dev'
 
-export const DEBUG = process.env.DEBUG === 'true' || false
+export const DEBUG = process.env.DEBUG === 'true' || true
 
 export const RR_S3_BUCKET = ENV === 'prod' ? 'cycling-race-results' : 'cycling-race-results-stage'
 export const AWS_DEFAULT_CONFIG = {
@@ -30,5 +30,8 @@ export const LOCAL_STORAGE_PATH = '../../storage'
 const currentYear = new Date().getFullYear()
 
 export const NO_CACHE_FILES = [
+  PUBLIC_BUCKET_FILES.athletes.list,
+  `${PUBLIC_BUCKET_PATHS.athletesProfiles}list.json`,
   `${PUBLIC_BUCKET_PATHS.events}${currentYear}.json`,
+  `${PUBLIC_BUCKET_PATHS.eventsResults}${currentYear}`,
 ]
