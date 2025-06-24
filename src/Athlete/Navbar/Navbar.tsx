@@ -5,19 +5,14 @@ import { Credit } from '../../Shared/Credit'
 import { AthleteSearchField } from '../../Shared/AthleteSearchField'
 import { useNavigator } from '../../utils/useNavigator'
 import { IconFlag3, IconTrendingUp, IconUser, IconUsersGroup } from '@tabler/icons-react'
-import { useNavigate } from 'react-router'
+import { NavLink as RouterNavLink } from 'react-router'
+import cx from 'clsx'
 
 const currentYear = new Date().getFullYear()
 
 export const Navbar = () => {
-  const { navigateToAthlete, navigateToTeam } = useNavigator()
-  const navigate = useNavigate()
+  const { navigateToAthlete } = useNavigator()
   const { closeNavbar, favoriteAthletes, favoriteTeams, teams, athletes } = useContext(AppContext)
-
-  const handleSelectTeam = (teamId: number) => {
-    closeNavbar()
-    navigateToTeam(teamId)
-  }
 
   const handleSelectAthlete = (athleteUciId: string) => {
     closeNavbar()
@@ -32,6 +27,15 @@ export const Navbar = () => {
       return (
         <NavLink
           key={teamId}
+          renderRoot={({ className, ...others }) => (
+            <RouterNavLink
+              to={`/teams/${teamId}`}
+              className={({ isActive }) =>
+                cx(className, { 'active-class': isActive })
+              }
+              {...others}
+            />
+          )}
           label={
             <Stack
               align="stretch"
@@ -41,8 +45,8 @@ export const Navbar = () => {
               <Text>{team.name}</Text>
             </Stack>
           }
-          onClick={() => handleSelectTeam(teamId)}>
-        </NavLink>
+          onClick={() => closeNavbar()}
+        />
       )
     }).filter(Boolean)
   }, [favoriteTeams, teams])
@@ -57,6 +61,15 @@ export const Navbar = () => {
       return (
         <NavLink
           key={athleteUciId}
+          renderRoot={({ className, ...others }) => (
+            <RouterNavLink
+              to={`/athletes/${athleteUciId}`}
+              className={({ isActive }) =>
+                cx(className, { 'active-class': isActive })
+              }
+              {...others}
+            />
+          )}
           label={
             <Group
               align="stretch"
@@ -72,8 +85,8 @@ export const Navbar = () => {
               }}>{team?.name || 'Independent'}</Text>
             </Group>
           }
-          onClick={() => handleSelectAthlete(athleteUciId)}>
-        </NavLink>
+          onClick={() => closeNavbar()}
+        />
       )
     }).filter(Boolean)
   }, [favoriteAthletes, athletes])
@@ -116,16 +129,35 @@ export const Navbar = () => {
         {/*  navigate('/athletes/list/all')*/}
         {/*}} label="All Athletes" leftSection={<IconUsers/>}/>*/}
 
-        <NavLink onClick={() => {
-          closeNavbar()
-          navigate('/athletes/list/recently-upgraded')
-        }} label="Recently Upgraded Athletes"
-                 leftSection={<IconTrendingUp/>}/>
+        <NavLink
+          renderRoot={({ className, ...others }) => (
+            <RouterNavLink
+              to="/athletes/list/recently-upgraded"
+              className={({ isActive }) =>
+                cx(className, { 'active-class': isActive })
+              }
+              {...others}
+            />
+          )}
+          label="Recently Upgraded Athletes"
+          leftSection={<IconTrendingUp/>}
+          onClick={() => closeNavbar()}
+        />
 
-        <NavLink onClick={() => {
-          closeNavbar()
-          navigate('/athletes/list/points-collectors')
-        }} label="Points Collectors" leftSection={<IconFlag3/>}/>
+        <NavLink
+          renderRoot={({ className, ...others }) => (
+            <RouterNavLink
+              to="/athletes/list/points-collectors"
+              className={({ isActive }) =>
+                cx(className, { 'active-class': isActive })
+              }
+              {...others}
+            />
+          )}
+          label="Points Collectors"
+          leftSection={<IconFlag3/>}
+          onClick={() => closeNavbar()}
+        />
       </div>
 
       <Credit/>
