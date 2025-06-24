@@ -4,10 +4,12 @@ import { handler as AthleteLambda } from './athletes/index.ts'
 import logger from './shared/logger.ts'
 import { ENV } from './shared/config.ts'
 
-const currentYear = new Date().getFullYear()
+// const currentYear = new Date().getFullYear()
+const currentYear = 2025
 
 const options = {
-    year: currentYear
+    year: currentYear,
+    // skipProfileUpload: true,
   }
 
 ;(async () => {

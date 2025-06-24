@@ -16,11 +16,12 @@ const logger = defaultLogger.child({ parser: PARSER_NAME })
 
 export default async (
   athletes: Record<string, CleanAthlete>,
-  { allAthleteUpgradePoints, allAthleteUpgradeDates, allAthleteRaces, allAthleteTeams }: {
+  { allAthleteUpgradePoints, allAthleteUpgradeDates, allAthleteRaces, allAthleteTeams, skipProfileUpload }: {
     allAthleteUpgradePoints: CleanAthleteEventUpgradePoints
     allAthleteUpgradeDates: Record<string, CleanAthleteUpgradeDate>
     allAthleteRaces: CleanAthleteEventRaces
     allAthleteTeams: Record<string, CleanAthleteTeam>
+    skipProfileUpload?: boolean
   }
 ) => {
   const shapedAthletes = _.mapValues(athletes, (value) => shapeAthlete(value, allAthleteUpgradeDates, allAthleteTeams)) as Record<string, Athlete>
@@ -33,22 +34,24 @@ export default async (
     logger.error(`Failed to save athletes to ${PUBLIC_BUCKET_FILES.athletes.list}:` + (error as any).message, { error })
   }
 
-  const athleteProfiles = shapeAthleteProfiles(shapedAthletes, { allAthleteUpgradePoints, allAthleteRaces })
+  if (!skipProfileUpload) {
+    const athleteProfiles = shapeAthleteProfiles(shapedAthletes, { allAthleteUpgradePoints, allAthleteRaces })
 
-  logger.info(`Uploading ${Object.keys(athleteProfiles).length} athletes profiles to ${PUBLIC_BUCKET_PATHS.athletesProfiles}`)
+    logger.info(`Uploading ${Object.keys(athleteProfiles).length} athletes profiles to ${PUBLIC_BUCKET_PATHS.athletesProfiles}`)
 
-  for (const [athleteUciId, athleteProfile] of Object.entries(athleteProfiles)) {
-    const athleteProfileFilePath = `${PUBLIC_BUCKET_PATHS.athletesProfiles}${athleteUciId}.json`
+    for (const [athleteUciId, athleteProfile] of Object.entries(athleteProfiles)) {
+      const athleteProfileFilePath = `${PUBLIC_BUCKET_PATHS.athletesProfiles}${athleteUciId}.json`
 
-    try {
-      // Save athlete profile
-      if (DEBUG) logger.info(`Uploading athlete profile for ${athleteUciId} to ${athleteProfileFilePath}`)
-      await RRS3.writeFile(athleteProfileFilePath, JSON.stringify(athleteProfile))
-    } catch (error) {
-      logger.error(`Failed to save athlete profile to ${athleteProfileFilePath}:` + (error as any).message, {
-        error,
-        athleteUciId
-      })
+      try {
+        // Save athlete profile
+        if (DEBUG) logger.info(`Uploading athlete profile for ${athleteUciId} to ${athleteProfileFilePath}`)
+        await RRS3.writeFile(athleteProfileFilePath, JSON.stringify(athleteProfile))
+      } catch (error) {
+        logger.error(`Failed to save athlete profile to ${athleteProfileFilePath}:` + (error as any).message, {
+          error,
+          athleteUciId
+        })
+      }
     }
   }
 }

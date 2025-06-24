@@ -18,7 +18,7 @@ import unpackData from './unpack.ts'
 
 const logger = defaultLogger.child({ parser: PARSER_NAME })
 
-export const handler = async (options: { year: number }) => {
+export const handler = async (options: { year: number, skipProfileUpload?: boolean }) => {
   logger.info(`Parser: ${PARSER_NAME}`)
   logger.info(`Options: ${JSON.stringify(options)}`)
 
@@ -74,6 +74,7 @@ export const handler = async (options: { year: number }) => {
     allAthleteRaces: cleanedAthleteRaces,
     allAthleteUpgradeDates: cleanedAthleteUpgradeDates,
     allAthleteTeams: cleanedAthleteTeams,
+    skipProfileUpload: options.skipProfileUpload,
   })
 
   return {
