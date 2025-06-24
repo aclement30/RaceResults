@@ -1,37 +1,19 @@
-// import pino from 'pino'
-
-const TODAY = new Date().toISOString().slice(0, 10)
-
-// const fileTransport = pino.transport({
-//   target: 'pino/file',
-//   options: { destination: `${LOG_PATH}/${TODAY}.log` },
-// })
-//
-// const logger = pino({
-//     level: process.env.PINO_LOG_LEVEL || 'info',
-//     formatters: {
-//       bindings: (bindings) => {
-//         // Remove pid & hostname fields
-//         return {}
-//       },
-//       level: (label) => {
-//         return { level: label.toUpperCase() }
-//       },
-//     },
-//     timestamp: pino.stdTimeFunctions.isoTime,
-//   },
-//   fileTransport
-// )
+import colors from 'colors'
+import { ENV } from './config.ts'
 
 type LogLevel = 'info' | 'warn' | 'error'
 
 const log = (level: LogLevel, message: string, context?: Record<string, any>) => {
-  console[level](JSON.stringify({
+  const stringifiedMessage = JSON.stringify({
     'level': level.toUpperCase(),
     'time': new Date().toISOString(),
     'msg': message,
     ...(context || {})
-  }))
+  })
+
+  if (level === 'error') console[level](ENV === 'dev' ? stringifiedMessage.red : stringifiedMessage)
+  else if (level === 'warn') console[level](ENV === 'dev' ? stringifiedMessage.yellow : stringifiedMessage)
+  else console[level](stringifiedMessage)
 }
 
 class Logger {

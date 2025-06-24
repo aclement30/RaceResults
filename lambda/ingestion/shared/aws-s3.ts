@@ -8,7 +8,7 @@ import {
   S3Client
 } from '@aws-sdk/client-s3'
 import type { S3ClientConfig } from '@aws-sdk/client-s3/dist-types/S3Client'
-import { AWS_DEFAULT_CONFIG, ENV, LOCAL_STORAGE_PATH, RR_S3_BUCKET } from './config.ts'
+import { AWS_DEFAULT_CONFIG, ENV, LOCAL_STORAGE_PATH, NO_CACHE_FILES, RR_S3_BUCKET } from './config.ts'
 
 export type AwsFiles = Required<ListObjectsCommandOutput['Contents']>
 
@@ -65,17 +65,16 @@ export class AwsS3Client {
         Bucket: this._bucket,
         Key: path,
         Body: content,
-        CacheControl: 'must-revalidate',
+        CacheControl: NO_CACHE_FILES.includes(path) ? 'max-age=0, no-cache, no-store, must-revalidate' : 'must-revalidate',
+        ContentType: 'application/json',
       })
     )
 
     // Write raw data to local storage
-    if (ENV === 'stage' && this._bucket === RR_S3_BUCKET) {
+    if (ENV === 'dev' && this._bucket === RR_S3_BUCKET) {
       const directory = `${LOCAL_STORAGE_PATH}/${path}`.split('/').slice(0, -1).join('/')
 
-      if (!fs.existsSync(directory)) {
-        fs.mkdirSync(directory, { recursive: true })
-      }
+      if (!fs.existsSync(directory)) fs.mkdirSync(directory, { recursive: true })
 
       const unpackedContent = JSON.parse(content)
       fs.writeFileSync(`${LOCAL_STORAGE_PATH}/${path}`, JSON.stringify(unpackedContent, null, 2))

@@ -9,7 +9,13 @@ export type ManualImportBaseFile = {
   year: number
   organizer: string
   name: string
-  fields: Record<string, string>
+  location: {
+    city: string
+    province: string
+    country: 'CA' | 'US'
+  }
+  provider?: string
+  fields?: Record<string, string>
   lastUpdated: string
   sourceUrls?: string[]
 }
@@ -20,11 +26,13 @@ export type ManualImportEventFile = ManualImportBaseFile & {
   series?: string
   raceNotes?: string
   isTimeTrial?: boolean
+  fields: Record<string, string>
   categories: ManualImportCategory[]
 }
 
 export type ManualImportSerieFile = ManualImportBaseFile & {
   type: 'serie'
+  fields: Record<string, string>
   categories: {
     individual?: ManualImportCategory[]
     team?: ManualImportCategory[]

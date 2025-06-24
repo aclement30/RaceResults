@@ -1,28 +1,36 @@
 import _ from 'lodash'
 import { parse } from 'csv-parse/sync'
 
-import defaultLogger from '../../shared/logger.ts'
-import type { AthleteRaceResult, EventAthlete, EventCategory, EventSummary } from '../../../../src/types/results.ts'
-import { formatDurationToSeconds, transformOrganizer } from '../utils.ts'
+import defaultLogger from '../../../../shared/logger.ts'
+import type {
+  EventCategory,
+  EventSummary
+} from '../../../../../../src/types/results.ts'
+import { formatAthleteName, formatDurationToSeconds, transformOrganizer } from '../../../utils.ts'
 import {
-  capitalize,
-  formatCategoryAlias, formatProvince, formatTeamName,
+  createUmbrellaCategories,
+  formatCategoryAlias, formatProvince,
   transformCategory
-} from '../../shared/utils.ts'
-import { PROVIDER_NAME } from '../config.ts'
-import type { CleanAthleteRaceResult, CleanEventAthlete, CleanEventWithResults } from '../../shared/types.ts'
-import type { ManualImportCategory, ManualImportEventFile, ManualImportRawData } from '../types.ts'
+} from '../../../../shared/utils.ts'
+import { PROVIDER_NAME } from '../../../config.ts'
+import type { CleanAthleteRaceResult, CleanEventAthlete, CleanEventWithResults } from '../../../../shared/types.ts'
+import type { ManualImportCategory, ManualImportEventFile, ManualImportRawData } from '../../../types.ts'
 import {
   calculateBCUpgradePoints,
-  calculateFieldSize, getCombinedRaceCategories,
+  calculateFieldSize,
   getSanctionedEventType,
   hasDoubleUpgradePoints,
   hasUpgradePoints
-} from '../../shared/upgrade-points.ts'
+} from '../../../../shared/upgrade-points.ts'
+import { getCombinedRaceCategories } from '../../../../cross-mgr/utils.ts'
+import { TeamParser } from '../../../../shared/team-parser.ts'
 
 const logger = defaultLogger.child({ provider: PROVIDER_NAME })
 
-export const parseEvent = (eventBundle: ManualImportEventFile, payloads: ManualImportRawData['payloads']): CleanEventWithResults => {
+export const parseEvent = (
+  eventBundle: ManualImportEventFile,
+  payloads: ManualImportRawData['payloads']
+): CleanEventWithResults => {
   logger.info(`Importing event results for: ${eventBundle.name}`)
 
   const organizerObj = transformOrganizer(eventBundle.organizer)
@@ -38,6 +46,8 @@ export const parseEvent = (eventBundle: ManualImportEventFile, payloads: ManualI
     year: eventBundle.year,
     date: eventBundle.date,
     type: 'event',
+    discipline: 'ROAD',
+    location: eventBundle.location,
     ...organizerObj,
     name: eventBundle.name,
     serie: eventBundle.series,
@@ -48,8 +58,8 @@ export const parseEvent = (eventBundle: ManualImportEventFile, payloads: ManualI
     isDoubleUpgradePoints: hasDoubleUpgradePoints(sanctionedEventType),
   }
 
-  let combinedAthletes: Record<string, EventAthlete> = {}
-  let combinedEventCategories: Record<string, EventCategory> = {}
+  let allEventAthletes: Record<string, CleanEventAthlete> = {}
+  let allEventCategories: CleanEventWithResults['results'] = {}
 
   eventBundle.categories.forEach(importCategory => {
     const matchingFile = payloads[importCategory.filename]
@@ -61,15 +71,15 @@ export const parseEvent = (eventBundle: ManualImportEventFile, payloads: ManualI
     const categoryLabel = transformCategory(importCategory.outputLabel)
     const alias = formatCategoryAlias(categoryLabel)
 
-    combinedAthletes = {
-      ...combinedAthletes,
+    allEventAthletes = {
+      ...allEventAthletes,
       ...athletes,
     }
 
     const starters = results.filter(r => r.status !== 'DNS').length
     const finishers = results.filter(r => r.status === 'FINISHER').length
 
-    combinedEventCategories[alias] = {
+    allEventCategories[alias] = {
       alias,
       label: categoryLabel,
       gender: categoryGender,
@@ -78,42 +88,44 @@ export const parseEvent = (eventBundle: ManualImportEventFile, payloads: ManualI
       finishers,
       distanceUnit: 'km',
       raceDistance: importCategory.distance,
-      startOffset: 0,
     }
   })
 
+  // Check if some categories are combined
+  const combinedCategoryGroups = getCombinedRaceCategories(eventBundle)
+
+  // Create umbrella categories for combined categories
+  allEventCategories = createUmbrellaCategories(allEventCategories, combinedCategoryGroups)
+
   if (eventSummary.hasUpgradePoints) {
     // Calculate upgrade points for each category
-    combinedEventCategories = _.mapValues(combinedEventCategories, (category: EventCategory, categoryAlias: string) => {
-      const fieldSize = calculateFieldSize(eventBundle.hash, categoryAlias, combinedEventCategories)
+    allEventCategories = _.mapValues(allEventCategories, (category: EventCategory, categoryAlias: string) => {
+      // Dont calculate upgrade points for umbrella categories
+      if (category.combinedCategories) return category
 
-      // Calculate upgrade points for each result
-      const resultsWithUpgradePoints: CleanAthleteRaceResult[] = category.results.map((result) => {
-        const upgradePoints = calculateBCUpgradePoints({
-          position: result.position,
-          fieldSize,
-          eventType: sanctionedEventType,
-        })
+      const categoryGroup = combinedCategoryGroups.find(group => group.categories.some(c => c === categoryAlias))
+      const combinedCategories = categoryGroup?.categories.map(alias => allEventCategories[alias]) || [category]
+      const fieldSize = calculateFieldSize(combinedCategories)
 
-        return {
-          ...result,
-          upgradePoints,
-        }
+      // Calculate upgrade points for the category/combined categories
+      const upgradePoints = calculateBCUpgradePoints({
+        category,
+        fieldSize,
+        eventType: sanctionedEventType,
       })
 
       return {
         ...category,
-        results: resultsWithUpgradePoints,
         fieldSize,
-        combinedCategories: getCombinedRaceCategories(eventBundle.hash, categoryAlias),
+        upgradePoints,
       } as EventCategory
     })
   }
 
   return {
     ...eventSummary,
-    athletes: combinedAthletes,
-    results: combinedEventCategories,
+    athletes: allEventAthletes,
+    results: allEventCategories,
     sourceUrls: eventBundle.sourceUrls || [],
     raceNotes: eventBundle.raceNotes?.length ? eventBundle.raceNotes.replace(/\n/g, '<br />') : '',
     lastUpdated: eventBundle.lastUpdated,
@@ -121,8 +133,8 @@ export const parseEvent = (eventBundle: ManualImportEventFile, payloads: ManualI
 }
 
 const parseCategoryResults = (csvData: string, fields: Record<string, string>, importCategory: ManualImportCategory): {
-  athletes: Record<string, EventAthlete>,
-  results: AthleteRaceResult[]
+  athletes: Record<string, CleanEventAthlete>,
+  results: CleanAthleteRaceResult[]
 } => {
   logger.info(`Parsing category results for: ${importCategory.outputLabel}`)
 
@@ -134,6 +146,7 @@ const parseCategoryResults = (csvData: string, fields: Record<string, string>, i
   // Transform records to series results
   const athletes: Record<string, CleanEventAthlete> = {}
   const categoryResults: CleanAthleteRaceResult[] = []
+  const categoryAlias = formatCategoryAlias(importCategory.outputLabel)
 
   inputRecords.forEach((record: Record<string, string>) => {
     const shapedRecord: Record<string, string> = Object.keys(record).reduce((acc, inputField) => {
@@ -143,18 +156,38 @@ const parseCategoryResults = (csvData: string, fields: Record<string, string>, i
       return acc
     }, {} as Record<string, any>)
 
+    if (Object.keys(shapedRecord).length === 0) {
+      logger.error(`Invalid fields mapping`, { record, fields })
+      return
+    }
+
     const bibNumber = +shapedRecord.bibNumber
+
+    let firstName
+    let lastName
+    try {
+      ({ firstName, lastName } = formatAthleteName(shapedRecord as {
+        firstName: string,
+        lastName: string
+      }))
+    } catch (error) {
+      logger.error(`Error formatting athlete name: ${(error as any).message}`, { shapedRecord })
+      return
+    }
+
+    const team = TeamParser.parseTeamName(shapedRecord.team)
 
     athletes[bibNumber] = {
       bibNumber,
-      firstName: capitalize(shapedRecord.firstName),
-      lastName: capitalize(shapedRecord.lastName),
+      firstName,
+      lastName,
       license: shapedRecord.license?.toUpperCase(),
       uciId: shapedRecord.uciId?.replace(/\s/g, '').trim(),
-      team: formatTeamName(shapedRecord.team) || null,
+      team: team?.name,
       age: shapedRecord.age ? +shapedRecord.age : undefined,
-      city: shapedRecord.city || null,
-      province: shapedRecord.state ? formatProvince(shapedRecord.state) : null,
+      city: shapedRecord.city,
+      province: formatProvince(shapedRecord.state),
+      eventCategories: [categoryAlias],
     }
 
     let position = -1
@@ -163,10 +196,11 @@ const parseCategoryResults = (csvData: string, fields: Record<string, string>, i
     if (shapedRecord.position && shapedRecord.position.match(/^\d+$/)) {
       position = +shapedRecord.position
     } else {
-      status = shapedRecord.position.toUpperCase()
+      status = shapedRecord.position?.toUpperCase()
     }
 
     categoryResults.push({
+      athleteId: bibNumber.toString(),
       bibNumber,
       position,
       status: status as any,

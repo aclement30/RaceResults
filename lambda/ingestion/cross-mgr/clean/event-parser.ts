@@ -11,34 +11,44 @@ import type {
 } from '../../shared/types.ts'
 import type { EventCategory, EventSummary } from '../../../../src/types/results.ts'
 import {
-  formatRaceNotes,
-  transformCategory,
+  formatRaceNotes, getCombinedRaceCategories, getEventDiscipline,
+  transformCategory, transformLocation,
   transformOrganizer,
   transformSerieAlias
 } from '../utils.ts'
-import { capitalize, formatCategoryAlias, formatProvince, formatTeamName } from '../../shared/utils.ts'
+import {
+  capitalize,
+  createUmbrellaCategories,
+  formatCategoryAlias,
+  formatProvince,
+} from '../../shared/utils.ts'
 import { PROVIDER_NAME, SOURCE_URL_PREFIX } from '../config.ts'
 import defaultLogger from '../../shared/logger.ts'
 import {
   calculateBCUpgradePoints,
-  calculateFieldSize, getCombinedRaceCategories,
+  calculateFieldSize,
   getSanctionedEventType,
   hasDoubleUpgradePoints,
   hasUpgradePoints
 } from '../../shared/upgrade-points.ts'
+import { TeamParser } from '../../shared/team-parser.ts'
 
 const logger = defaultLogger.child({ provider: PROVIDER_NAME })
 
-export const parseEvent = (eventBundle: CrossMgrEventBundle, payloads: CrossMgrEventRawData['payloads']): CleanEventWithResults => {
+export const parseEvent = (
+  eventBundle: CrossMgrEventBundle,
+  payloads: CrossMgrEventRawData['payloads'],
+): CleanEventWithResults => {
   const firstPayload = Object.values(payloads)[0]
   const eventName = _.startCase(firstPayload.raceNameText.split('-')[0])
   const organizerObj = transformOrganizer(eventBundle.organizer, firstPayload.organizer)
+  const serie = transformSerieAlias(eventBundle.serie, eventBundle.organizer) || null
 
   logger.info(`Parsing raw data for ${eventBundle.type} ${eventBundle.hash}: ${eventName}`)
 
   const sanctionedEventType = getSanctionedEventType({
     organizerAlias: organizerObj.organizerAlias,
-    serie: eventBundle.serie,
+    serie,
     name: eventName
   })
 
@@ -47,19 +57,21 @@ export const parseEvent = (eventBundle: CrossMgrEventBundle, payloads: CrossMgrE
     date: eventBundle.date!,
     year: eventBundle.year,
     type: 'event',
+    discipline: getEventDiscipline(eventBundle, eventName),
+    location: transformLocation(firstPayload.raceAddress),
     ...organizerObj,
     organizerEmail: firstPayload.email,
     name: eventName,
     // flags: firstPayload.flags,
     isTimeTrial: firstPayload.isTimeTrial,
-    serie: transformSerieAlias(eventBundle.serie, eventBundle.organizer) || null,
+    serie,
     sanctionedEventType,
     hasUpgradePoints: hasUpgradePoints(sanctionedEventType),
     isDoubleUpgradePoints: hasDoubleUpgradePoints(sanctionedEventType),
     provider: PROVIDER_NAME,
   }
 
-  const combinedAthleteData = Object.values(payloads).reduce((acc, payload) => {
+  const allEventAthleteData = Object.values(payloads).reduce((acc, payload) => {
     if (!payload.data) return acc
 
     Object.keys(payload.data).forEach((bibNumber) => {
@@ -69,7 +81,7 @@ export const parseEvent = (eventBundle: CrossMgrEventBundle, payloads: CrossMgrE
     return acc
   }, {} as CrossMgrEventResultPayload['data'])
 
-  const combinedPrimes = Object.values(payloads).reduce((acc, payload) => {
+  const allEventPrimes = Object.values(payloads).reduce((acc, payload) => {
     if (payload.primes) {
       payload.primes.forEach((prime) => {
         acc.push(prime)
@@ -79,7 +91,7 @@ export const parseEvent = (eventBundle: CrossMgrEventBundle, payloads: CrossMgrE
     return acc
   }, [] as CrossMgrEventResultPayload['primes'])
 
-  let combinedEventCategories = Object.values(payloads).reduce((acc, payload) => {
+  let allEventCategories = Object.values(payloads).reduce((acc, payload) => {
     if (!payload.catDetails) return acc
 
     payload.catDetails.forEach((cat) => {
@@ -89,7 +101,7 @@ export const parseEvent = (eventBundle: CrossMgrEventBundle, payloads: CrossMgrE
 
       if (cat.name !== 'All') {
         const athleteRaceResults: CleanAthleteRaceResult[] = cat.pos.map((bibNumber, index) => {
-          const athleteData = combinedAthleteData?.[bibNumber]
+          const athleteData = allEventAthleteData?.[bibNumber]
 
           if (!athleteData) {
             logger.warn('Error: cannot find athlete data for bib #' + bibNumber + ` (category: ${cat.name})`, {
@@ -119,6 +131,7 @@ export const parseEvent = (eventBundle: CrossMgrEventBundle, payloads: CrossMgrE
 
           return {
             position,
+            athleteId: bibNumber.toString(),
             bibNumber,
             lapSpeeds: athleteData.lapSpeeds,
             lapDurations,
@@ -131,19 +144,19 @@ export const parseEvent = (eventBundle: CrossMgrEventBundle, payloads: CrossMgrE
           }
         }).filter(result => result !== undefined)
 
-        const primes = combinedPrimes.filter(prime => cat.pos.includes(prime.winnerBib)).map((prime, index) => {
+        const primes = allEventPrimes.filter(prime => cat.pos.includes(prime.winnerBib)).map((prime, index) => {
           return {
             number: index + 1,
             position: prime.position,
-            bibNumber: prime.winnerBib,
+            athleteId: prime.winnerBib.toString(),
           }
         })
 
         acc[alias] = {
           alias,
           label: categoryName,
-          startOffset: cat.startOffset,
           gender: categoryGender,
+          startTime: payload.raceStartTime + cat.startOffset,
           laps: cat.laps,
 
           starters: cat.starters,
@@ -161,79 +174,81 @@ export const parseEvent = (eventBundle: CrossMgrEventBundle, payloads: CrossMgrE
     return acc
   }, {} as Record<string, EventCategory>)
 
-  const combinedAthletes = Object.values(payloads).reduce((acc, payload) => {
+  const allEventAthletes = Object.values(payloads).reduce((acc, payload) => {
     if (!payload.data) return acc
 
     Object.keys(payload.data).forEach((bibNumber) => {
       const resultRow = payload.data![bibNumber]
-      const racerGender = resultRow.Gender === 'Men' ? 'M' : resultRow.Gender === 'Women' ? 'F' : 'X'
+      const racerGender: 'M' | 'F' | 'X' = resultRow.Gender === 'Men' ? 'M' : resultRow.Gender === 'Women' ? 'F' : 'X'
+      const team = TeamParser.parseTeamName(resultRow.Team)
 
-      acc[bibNumber] = {
+      const athlete = {
         bibNumber: +bibNumber,
         firstName: capitalize(resultRow.FirstName),
         lastName: capitalize(resultRow.LastName),
         age: resultRow.Age ? +resultRow.Age : undefined,
         gender: racerGender,
-        city: resultRow.City || null,
-        province: formatProvince(resultRow.StateProv) || null,
+        city: resultRow.City,
+        province: formatProvince(resultRow.StateProv),
         license: resultRow.License,
-        uciId: resultRow.UCIID?.replace(/\s/g, '').trim() || null,
-        team: formatTeamName(resultRow.Team),
+        eventCategories: [formatCategoryAlias(resultRow.Category)],
+        uciId: resultRow.UCIID?.replace(/\s/g, '').trim(),
+        team: team?.name,
+        nationality: resultRow.NatCode?.length ? resultRow.NatCode.toUpperCase() : undefined,
+      }
+
+      if (acc[bibNumber]) {
+        acc[bibNumber].eventCategories.push(athlete.eventCategories[0])
+      } else {
+        acc[bibNumber] = athlete
       }
     })
 
     return acc
   }, {} as Record<string, CleanEventAthlete>)
 
-  const combinedRaceNotes = Object.values(payloads).reduce((acc, payload) => {
+  const allEventRaceNotes = Object.values(payloads).reduce((acc, payload) => {
     if (payload.raceNotes?.trim().length) acc = acc += formatRaceNotes(payload.raceNotes) + '<br />'
     return acc
   }, '')
 
+  // Check if some categories are combined
+  const combinedCategoryGroups = getCombinedRaceCategories(eventBundle)
+
+  // Create umbrella categories for combined categories
+  allEventCategories = createUmbrellaCategories(allEventCategories, combinedCategoryGroups)
+
   if (eventSummary.hasUpgradePoints) {
     // Calculate upgrade points for each category
-    combinedEventCategories = _.mapValues(combinedEventCategories, (category: EventCategory, categoryAlias: string) => {
-      const fieldSize = calculateFieldSize(eventBundle.hash, categoryAlias, combinedEventCategories)
+    allEventCategories = _.mapValues(allEventCategories, (category: EventCategory, categoryAlias: string) => {
+      // Dont calculate upgrade points for umbrella categories
+      if (category.combinedCategories) return category
 
-      // Calculate upgrade points for each result
-      const resultsWithUpgradePoints: CleanAthleteRaceResult[] = category.results.map((result) => {
-        const upgradePoints = calculateBCUpgradePoints({
-          position: result.position,
-          fieldSize,
-          eventType: sanctionedEventType,
-        })
+      const categoryGroup = combinedCategoryGroups.find(group => group.categories.some(c => c === categoryAlias))
+      const combinedCategories = categoryGroup?.categories.map(alias => allEventCategories[alias]) || [category]
+      const fieldSize = calculateFieldSize(combinedCategories)
 
-        return {
-          ...result,
-          upgradePoints,
-        }
+      // Calculate upgrade points for the category/combined categories
+      const upgradePoints = calculateBCUpgradePoints({
+        category,
+        fieldSize,
+        eventType: sanctionedEventType,
       })
 
       return {
         ...category,
-        results: resultsWithUpgradePoints,
         fieldSize,
-        combinedCategories: getCombinedRaceCategories(eventBundle.hash, categoryAlias),
+        upgradePoints,
       } as EventCategory
     })
   }
 
-  // const baseCategories = Object.values(combinedEventCategories)
-  //   .map((cat: EventCategory) => ( {
-  //     alias: cat.alias,
-  //     label: cat.label,
-  //     startOffset: cat.startOffset,
-  //     gender: cat.gender,
-  //     laps: cat.laps,
-  //   } ))
-  //   .sort(sortByCategory)
-
   return {
     ...eventSummary,
-    athletes: combinedAthletes,
-    results: combinedEventCategories,
+    athletes: allEventAthletes,
+    results: allEventCategories,
     sourceUrls: Object.keys(payloads).map(filename => SOURCE_URL_PREFIX + filename),
-    raceNotes: combinedRaceNotes,
+    raceNotes: allEventRaceNotes,
     lastUpdated: eventBundle.lastUpdated,
   }
 }

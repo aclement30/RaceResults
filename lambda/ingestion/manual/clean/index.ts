@@ -2,22 +2,49 @@ import defaultLogger from '../../shared/logger.ts'
 import { createEventSerieHash, s3 as RRS3 } from '../../shared/utils.ts'
 import { CLEAN_DATA_PATH, PROVIDER_NAME, RAW_DATA_PATH } from '../config.ts'
 import { validateRefFile } from '../utils.ts'
-import { FETCH_ERROR_TYPE, FetchError } from '../../../../src/utils/aws-s3.ts'
 import type { ManualImportBaseFile, ManualImportEventFile, ManualImportSerieFile } from '../types.ts'
-import { parseEvent } from './event-parser.ts'
-import { parseSerie } from './serie-parser.ts'
+import { parseEvent } from './parsers/default/event-parser.ts'
+import { parseSerie } from './parsers/default/serie-parser.ts'
+import {
+  type ManualImportRaceResultsEventFile,
+  parseEvent as raceResultsEventParser
+} from './parsers/race-results/event-parser.ts'
+import { TeamParser } from '../../shared/team-parser.ts'
+import { S3ServiceException } from '@aws-sdk/client-s3'
 
 const logger = defaultLogger.child({ provider: PROVIDER_NAME })
 
-export const main = async ({ year, importRefFiles }: { year: number, importRefFiles: string[] }) => {
-  const cleanData = await Promise.allSettled(importRefFiles.map(async (filename) => {
-    const filePath = `${RAW_DATA_PATH}${year}/${filename}`
+export default async (importRefFiles: string[]): Promise<{ hashes: string[], year: number }> => {
+  await TeamParser.init()
 
-    const { payloads, ...bundle } = await fetchManualImportFiles(filePath, year)
+  const cleanData = await Promise.allSettled(importRefFiles.map(async (filePath) => {
+    const { payloads, ...bundle } = await fetchManualImportFiles(filePath)
 
     if (bundle.type === 'event') {
+      if (bundle.provider) {
+        switch (bundle.provider) {
+          case 'race-results':
+            return raceResultsEventParser(bundle as ManualImportRaceResultsEventFile, payloads)
+            break
+          default:
+            logger.error(`Unsupported provider "${bundle.provider}" for manual import.`)
+            return
+        }
+      }
+
       return parseEvent(bundle as ManualImportEventFile, payloads)
     } else if (bundle.type === 'serie') {
+      if (bundle.provider) {
+        switch (bundle.provider) {
+          // case 'race-results':
+          //   return raceResultsEventParser(bundle as ManualImportRaceResultsEventFile, payloads)
+          //   break
+          default:
+            logger.error(`Unsupported provider "${bundle.provider}" for manual import.`)
+            return
+        }
+      }
+
       return parseSerie(bundle as ManualImportSerieFile, payloads)
     } else {
       throw new Error(`Unsupported reference file type: ${(bundle as ManualImportBaseFile).type}`)
@@ -25,6 +52,7 @@ export const main = async ({ year, importRefFiles }: { year: number, importRefFi
   }))
 
   const cleanHashes: string[] = []
+  let requestYear
 
   // Write clean data to S3 bucket
   for (const [index, importResult] of cleanData.entries()) {
@@ -36,7 +64,8 @@ export const main = async ({ year, importRefFiles }: { year: number, importRefFi
       continue
     }
 
-    const { hash, type } = importResult.value
+    const { hash, type, year } = importResult.value!
+    requestYear = year
     cleanHashes.push(hash)
 
     const filePath = `${CLEAN_DATA_PATH}${year}/${hash}.json`
@@ -49,13 +78,18 @@ export const main = async ({ year, importRefFiles }: { year: number, importRefFi
     }
   }
 
-  return cleanHashes
+  return {
+    hashes: cleanHashes,
+    year: requestYear!,
+  }
 }
 
 // Fetch reference file and linked payloads files
-const fetchManualImportFiles = async (refFilePath: string, year: number): Promise<ManualImportBaseFile & {
+const fetchManualImportFiles = async (refFilePath: string): Promise<ManualImportBaseFile & {
   payloads: Record<string, string>
 }> => {
+  const pathParts = refFilePath.split('/')
+  const year = +pathParts[pathParts.length - 2]
   const basename = refFilePath.split('/').pop()!
   const directory = basename.replace('.json', '')
   const { files } = await RRS3.fetchDirectoryFiles(`${RAW_DATA_PATH}${year}/${directory}/`)
@@ -79,7 +113,7 @@ const fetchManualImportFiles = async (refFilePath: string, year: number): Promis
       files: sourceFiles,
     }
   } catch (error) {
-    if (error instanceof FetchError && error.type === FETCH_ERROR_TYPE.NotFound) {
+    if (error instanceof S3ServiceException && error.name === 'NoSuchKey') {
       throw new Error(`Reference file ${refFilePath} could not be found in S3 bucket`)
     }
 

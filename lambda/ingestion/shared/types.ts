@@ -1,4 +1,5 @@
 import type {
+  AthleteRaceResult,
   EventAthlete,
   EventCategory,
   EventSummary,
@@ -14,33 +15,18 @@ export type CleanEventResults = {
   athletes: Record<string, CleanEventAthlete>
   results: Record<string, EventCategory & { results: CleanAthleteRaceResult[] }>
   sourceUrls: string[]
-  raceNotes: string
+  raceNotes?: string
   lastUpdated: string
 }
 
 export type CleanEventAthlete = EventAthlete & {
   gender?: 'M' | 'F' | 'X'
-  age?: number             // Age
-  province?: string | null // Province
-  license?: string         // License
-  nationality?: string     // NatCode
+  age?: number                  // Age
+  license?: string              // License
+  nationality?: string           // NatCode
+  eventCategories: string[]     // Category
 }
 
-export type CleanAthleteRaceResult = {
-  position: number
-  bibNumber: number
-  // flr: number
-  // interp: number[]
-  // lastInterp: boolean
-  lapSpeeds?: number[]
-  lapDurations?: number[]   // (raceTimes)
+export type CleanAthleteRaceResult = AthleteRaceResult & {
   lapTimes?: number[]       // raceTimes
-  finishTime: number
-  finishGap: number        // gapValue
-  // raceSpeeds: number[]
-  // raceTimes: number[]
-  avgSpeed: number        // speed
-  status: 'FINISHER' | 'DNF' | 'DNS' | 'OTL'
-  relegated?: boolean
-  upgradePoints?: number | null
 }

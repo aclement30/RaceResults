@@ -14,6 +14,8 @@ export const unpackEvent = (event: CleanEventWithResults): { summary: EventSumma
     date: event.date,
     year: event.year,
     type: 'event',
+    location: event.location,
+    discipline: event.discipline,
     organizerAlias: event.organizerAlias,
     organizerOrg: event.organizerOrg,
     organizerName: event.organizerName,
@@ -64,15 +66,16 @@ export const shapeCategoriesResults = (results: CleanEventWithResults['results']
   return Object.keys(results).reduce((updatedResults, key) => {
     const category = results[key]
 
-    let lapGapsByBib: Record<string, Array<number | null>> = {}
+    let lapGapsByAthlete: Record<string, Array<number | null>> = {}
 
     if (category.laps && category.laps > 1) {
-      lapGapsByBib = calculateLapGaps(category.results as CleanAthleteRaceResult[], category.laps)
+      lapGapsByAthlete = calculateLapGaps(category.results as CleanAthleteRaceResult[], category.laps)
     }
 
     updatedResults[key] = {
       ...category,
       results: category.results.map((result: CleanAthleteRaceResult) => ({
+        athleteId: result.athleteId,
         position: result.position,
         bibNumber: result.bibNumber,
         finishTime: result.finishTime,
@@ -82,8 +85,8 @@ export const shapeCategoriesResults = (results: CleanEventWithResults['results']
         relegated: result.relegated,
         lapSpeeds: result.lapSpeeds,
         lapDurations: result.lapDurations,
-        lapGaps: lapGapsByBib[result.bibNumber] || null,
-        upgradePoints: result.upgradePoints ?? null,
+        lapGaps: result.bibNumber ? lapGapsByAthlete[result.athleteId] : undefined,
+        upgradePoints: result.upgradePoints,
       })),
     }
 
@@ -91,17 +94,23 @@ export const shapeCategoriesResults = (results: CleanEventWithResults['results']
   }, {} as EventResults['results'])
 }
 
-export const calculateLapGaps = (results: CleanAthleteRaceResult[], lapCount: number): Record<string, Array<number | null>> => {
+export const calculateLapGaps = (
+  results: CleanAthleteRaceResult[],
+  lapCount: number
+): Record<string, Array<number | null>> => {
   const lapGaps: Record<string, Array<number | null>> = {}
 
   for (let i = 1; i < lapCount + 1; i++) {
-    const firstRiderPastTheLine = results.reduce((prev, curr) => !curr.lapTimes![i] || prev.lapTimes![i] < curr.lapTimes![i] ? prev : curr)
+    const firstRiderPastTheLine = results.reduce((
+      prev,
+      curr
+    ) => !curr.lapTimes?.[i] || prev.lapTimes![i] < curr.lapTimes?.[i] ? prev : curr)
 
-    results.forEach(({ bibNumber, lapTimes }) => {
+    results.forEach(({ athleteId, lapTimes }) => {
       const riderGapInCurrentLap = lapTimes![i] ? lapTimes![i] - firstRiderPastTheLine.lapTimes![i] : null
 
-      if (!lapGaps.hasOwnProperty(bibNumber)) lapGaps[bibNumber] = []
-      lapGaps[bibNumber].push(riderGapInCurrentLap)
+      if (!lapGaps.hasOwnProperty(athleteId)) lapGaps[athleteId] = []
+      lapGaps[athleteId].push(riderGapInCurrentLap)
     })
   }
 

@@ -1,61 +1,80 @@
-import type { Context, EventBridgeEvent } from 'aws-lambda'
-import { main as ManualImportParser } from '../parsers/manual-import/index.ts'
-import { getEventDays } from 'ingestion/shared/utils.ts'
-import { main as CrossMgrParser } from '../parsers/cross-mgr/index.ts'
+import type { Context, EventBridgeEvent, S3Event } from 'aws-lambda'
+import { handler as ManualImportParser } from '../ingestion/manual/index.ts'
+import { handler as CrossMgrParser } from '../ingestion/cross-mgr/index.ts'
+import { handler as AthletesParser } from '../ingestion/athletes/index.ts'
+import { getEventDays } from '../ingestion/shared/utils.ts'
+import { getModifiedRefFiles } from '../ingestion/manual/utils.ts'
 
 const WATCH_HOURS = { morning: [9, 12], afternoon: [12, 17], evening: [17, 21], day: [9, 17] }
 
-export const handler = async (event: EventBridgeEvent<any, any>, _: Context) => {
-  // { resources: [ 'arn:aws:events:us-west-2:545296359752:rule/1-minute' ] }
-  const eventBridgeRule = event.resources?.[0]
-
-  const results: Record<string, { events?: string, series?: string }> = {}
+export const handler = async (event: EventBridgeEvent<any, any> | S3Event, _?: Context) => {
+  let handlerResponse = null
   let watcher = null
 
-  if (eventBridgeRule?.endsWith('5-minutes')) {
+  if (event && (event as S3Event).Records && (event as S3Event).Records.length > 0 && 's3' in (event as S3Event).Records[0]) {
     // Event day watcher
-    watcher = 'EVENT-DAY'
+    watcher = 'S3-EVENT'
     console.log('Watcher', watcher)
 
-    const eventDays = await getEventDays()
-    const today = new Date().toLocaleDateString('sv', { timeZone: 'America/Vancouver' })
+    const modifiedRefFiles = getModifiedRefFiles(event as S3Event)
+    console.log('Modified files:', modifiedRefFiles)
 
-    const currentHour = new Date().getHours()
+    if (!modifiedRefFiles.length) {
+      console.log('No modified reference files found, skipping manual import')
 
-    // No event today, skip high-frequency watcher
-    if (!eventDays[today]) {
-      console.log(`No event day found for ${today}`)
-      return
+      return {
+        statusCode: 204,
+        body: JSON.stringify({ message: 'No modified reference files found' }),
+      }
     }
 
-    const eventDayWatchType = eventDays[today]
-
-    // Outside event day watch hours, skip high-frequency watcher
-    if (currentHour < WATCH_HOURS[eventDayWatchType][0] && currentHour > WATCH_HOURS[eventDayWatchType][1]) {
-      console.log(`Outside watch hours: ${WATCH_HOURS[eventDayWatchType].join(':00-')}:00`)
-      return
-    }
-
-    results['cross-mgr'] = await CrossMgrParser()
-  } else if (eventBridgeRule?.endsWith('1-day')) {
-    // Daily watcher
-    watcher = 'DAILY'
-    console.log('Watcher', watcher)
-
-    // @ts-ignore
-    results['manual-import'] = await ManualImportParser()
+    // Call manual import parser
+    return await ManualImportParser({ importRefFiles: modifiedRefFiles })
   } else {
-    // Hourly watcher
-    watcher = 'HOURLY'
-    console.log('Watcher', watcher)
+    // { resources: [ 'arn:aws:events:us-west-2:545296359752:rule/1-minute' ] }
+    const eventBridgeRule = (event as EventBridgeEvent<any, any>).resources?.[0]
 
-    results['cross-mgr'] = await CrossMgrParser()
+    if (eventBridgeRule?.endsWith('5-minutes')) {
+      // Event day watcher
+      watcher = 'EVENT-DAY'
+      console.log('Watcher', watcher)
+
+      const eventDays = await getEventDays()
+      const today = new Date().toLocaleDateString('sv', { timeZone: 'America/Vancouver' })
+
+      const currentHour = new Date().getHours()
+
+      // No event today, skip high-frequency watcher
+      if (!eventDays[today]) {
+        console.log(`No event day found for ${today}`)
+        return
+      }
+
+      const eventDayWatchType = eventDays[today]
+
+      // Outside event day watch hours, skip high-frequency watcher
+      if (currentHour < WATCH_HOURS[eventDayWatchType][0] && currentHour > WATCH_HOURS[eventDayWatchType][1]) {
+        console.log(`Outside watch hours: ${WATCH_HOURS[eventDayWatchType].join(':00-')}:00`)
+        return
+      }
+
+      handlerResponse = await CrossMgrParser()
+    } else if (eventBridgeRule?.endsWith('1-day')) {
+      // Daily watcher
+      watcher = 'DAILY'
+      console.log('Watcher', watcher)
+
+      handlerResponse = await AthletesParser({ year: new Date().getFullYear() })
+    } else {
+      // Hourly watcher
+      watcher = 'HOURLY'
+      console.log('Watcher', watcher)
+
+      handlerResponse = await CrossMgrParser()
+    }
   }
 
-  console.log(results)
+  console.log(handlerResponse)
 
-  return {
-    statusCode: 200,
-    body: JSON.stringify({ watcher, results }),
-  }
+  return handlerResponse
 }

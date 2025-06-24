@@ -14,15 +14,19 @@ import type {
   SerieResults,
   SerieSummary, SerieTeamCategory, TeamSerieResult
 } from '../../../../src/types/results.ts'
-import { capitalize, formatCategoryAlias, formatTeamName } from '../../shared/utils.ts'
+import { capitalize, formatCategoryAlias } from '../../shared/utils.ts'
 import * as cheerio from 'cheerio'
 import defaultLogger from '../../shared/logger.ts'
 import { PROVIDER_NAME, SOURCE_URL_PREFIX } from '../config.ts'
 import type { CleanSerieWithResults } from '../../shared/types.ts'
+import { TeamParser } from '../../shared/team-parser.ts'
 
 const logger = defaultLogger.child({ provider: PROVIDER_NAME })
 
-export const parseSerie = (serieBundle: CrossMgrEventBundle, payloads: CrossMgrSerieRawData['payloads']): CleanSerieWithResults => {
+export const parseSerie = (
+  serieBundle: CrossMgrEventBundle,
+  payloads: CrossMgrSerieRawData['payloads'],
+): CleanSerieWithResults => {
   const alias = transformSerieAlias(serieBundle.serie, serieBundle.organizer)!
   const serieName = formatSerieName(alias)
 
@@ -69,7 +73,11 @@ const getSeriesResultType = (content: string): 'INDIVIDUAL' | 'TEAM' => {
   else return 'TEAM'
 }
 
-const parseSerieIndividualResults = (fileContent: string, sourceFile: string, serieSummary: Pick<SerieSummary, 'hash' | 'name' | 'year' | 'organizerAlias'>): SerieResults['individual'] => {
+const parseSerieIndividualResults = (
+  fileContent: string,
+  sourceFile: string,
+  serieSummary: Pick<SerieSummary, 'hash' | 'name' | 'year' | 'organizerAlias'>,
+): SerieResults['individual'] => {
   logger.info('Parsing team results from ' + sourceFile)
 
   const $ = cheerio.load(fileContent)
@@ -132,7 +140,9 @@ const parseSerieIndividualResults = (fileContent: string, sourceFile: string, se
             athleteResult[columns[index].type] = $(td).text().trim()
             break
           case 'team':
-            athleteResult[columns[index].type] = formatTeamName($(td).text().trim())
+            const team = TeamParser.parseTeamName($(td).text().trim())
+
+            athleteResult[columns[index].type] = team?.name
             break
           case 'uciId':
             athleteResult[columns[index].type] = $(td).text().replace(/\s/g, '').trim()
@@ -166,7 +176,11 @@ const parseSerieIndividualResults = (fileContent: string, sourceFile: string, se
 }
 
 // Classic green table
-function parseSerieTeamResults(fileContent: string, sourceFile: string, serieSummary: Pick<SerieSummary, 'hash' | 'name' | 'year' | 'organizerAlias'>): SerieResults['team'] {
+function parseSerieTeamResults(
+  fileContent: string,
+  sourceFile: string,
+  serieSummary: Pick<SerieSummary, 'hash' | 'name' | 'year' | 'organizerAlias'>,
+): SerieResults['team'] {
   logger.info('Parsing team results from ' + sourceFile)
 
   const $ = cheerio.load(fileContent)
@@ -217,7 +231,9 @@ function parseSerieTeamResults(fileContent: string, sourceFile: string, serieSum
             teamResult[columns[index].type] = +$(td).text().trim()
             break
           case 'team':
-            teamResult[columns[index].type] = formatTeamName($(td).text().trim())
+            const team = TeamParser.parseTeamName($(td).text().trim())
+
+            teamResult[columns[index].type] = team?.name
             break
           case 'racePoints': {
             teamResult.racePoints[columns[index].date!] = +$(td).text().replace(/\([0-9]+[a-z]{1,2}\)/, '').trim()
@@ -248,7 +264,11 @@ function parseSerieTeamResults(fileContent: string, sourceFile: string, serieSum
 }
 
 // Orange table
-const parseSerieTeamResultsFromOrangeTable = (fileContent: string, sourceFile: string, serieSummary: Pick<SerieSummary, 'name' | 'year' | 'organizerAlias'>): SerieResults['team'] => {
+const parseSerieTeamResultsFromOrangeTable = (
+  fileContent: string,
+  sourceFile: string,
+  serieSummary: Pick<SerieSummary, 'name' | 'year' | 'organizerAlias'>,
+): SerieResults['team'] => {
   const $ = cheerio.load(fileContent)
 
   logger.info('Parsing team results from ' + sourceFile)
@@ -277,8 +297,11 @@ const parseSerieTeamResultsFromOrangeTable = (fileContent: string, sourceFile: s
           } else {
             teamResult.position = -1
           }
-        } else if (index === 1) teamResult.team = formatTeamName($(cell).text().trim())
-        else if (index === 2) teamResult.totalPoints = +$(cell).text().trim()
+        } else if (index === 1) {
+          const team = TeamParser.parseTeamName($(cell).text().trim())
+
+          teamResult.team = team?.name
+        } else if (index === 2) teamResult.totalPoints = +$(cell).text().trim()
       })
 
       teamResults.push(teamResult as TeamSerieResult)

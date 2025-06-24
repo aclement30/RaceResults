@@ -7,13 +7,16 @@ import { PROVIDER_NAME, RAW_DATA_PATH } from '../config.ts'
 const logger = defaultLogger.child({ provider: PROVIDER_NAME })
 
 // If no `year` provided, fetch only updated files since last check date
-export const main = async ({ year: requestedYear }: { year?: number } = {}) => {
+export default async ({ year: requestedYear }: { year?: number } = {}) => {
   const { year, ...sourceBundles } = await getListOfSourceBundles(requestedYear)
 
   logger.info(`${sourceBundles.events?.length || 0} updated events`)
   logger.info(`${sourceBundles.series?.length || 0} updated series`)
 
-  const importedRawData = await Promise.allSettled([...sourceBundles.events, ...sourceBundles.series].map(async (bundle) => {
+  const importedRawData = await Promise.allSettled([
+    ...sourceBundles.events,
+    ...sourceBundles.series
+  ].map(async (bundle) => {
     let payloads: Record<string, CrossMgrEventResultPayload | string> = {}
 
     if (bundle.type === 'event') {

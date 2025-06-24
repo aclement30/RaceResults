@@ -103,7 +103,7 @@ type CrossMgrRaceCategory = {
   name: string
   startOffset: number
   gender: string
-  catType: string
+  catType: 'Start Wave' | 'Component' | 'Custom'
   laps: number
   pos: number[]
   gapValue: number[]

@@ -8,10 +8,13 @@ import { CLEAN_DATA_PATH, PROVIDER_NAME, RAW_DATA_PATH } from '../config.ts'
 import defaultLogger from '../../shared/logger.ts'
 import { parseEvent } from './event-parser.ts'
 import { parseSerie } from './serie-parser.ts'
+import { TeamParser } from '../../shared/team-parser.ts'
 
 const logger = defaultLogger.child({ provider: PROVIDER_NAME })
 
-export const main = async ({ year, sourceHashes }: { year: number, sourceHashes: string[] }) => {
+export default async ({ year, sourceHashes }: { year: number, sourceHashes: string[] }) => {
+  await TeamParser.init()
+
   const cleanData = await Promise.allSettled(sourceHashes.map(async (hash) => {
     const filePath = `${RAW_DATA_PATH}${year}/${hash}.json`
     const content = await RRS3.fetchFile(filePath)

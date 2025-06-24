@@ -1,9 +1,11 @@
+import _ from 'lodash'
 import shortHash from 'short-hash'
 import type {
-  BaseCategory,
+  BaseCategory, EventCategory,
 } from '../../../src/types/results.ts'
 import { AwsS3Client } from './aws-s3.ts'
-import { RR_S3_BUCKET } from './config.ts'
+import { CONFIG_FILES, RR_S3_BUCKET, WATCHERS_PATH } from './config.ts'
+import type { CombinedCategoryGroup } from './upgrade-points.ts'
 
 export const s3 = new AwsS3Client(RR_S3_BUCKET)
 
@@ -17,19 +19,22 @@ export function createEventSerieHash(inputData: {
   year: number,
   organizer: string,
   type: 'serie' | 'event' | 'doc' | 'startlist',
+  name?: string | null,
   date?: string | null
 }): string {
-  return shortHash(`${inputData.year}/${inputData.organizer}/${inputData.type}/${inputData.date}`)
+  return shortHash(`${inputData.year}/${inputData.organizer}/${inputData.type}/${inputData.date}/${inputData.name}`)
 }
 
-export function getBaseCategories(combinedCategories: Record<string, BaseCategory>): BaseCategory[] {
+export function getBaseCategories(combinedCategories: Record<string, Pick<EventCategory, 'alias' | 'label' | 'gender' | 'combinedCategories' | 'umbrellaCategory'>>): BaseCategory[] {
   return Object.values(combinedCategories)
-    .map((cat: BaseCategory) => ({
-      alias: cat.alias,
-      label: cat.label,
-      gender: cat.gender,
-    }))
-    .sort(sortByCategory)
+  .map((cat) => ({
+    alias: cat.alias,
+    label: cat.label,
+    gender: cat.gender,
+    combinedCategories: cat.combinedCategories,
+    umbrellaCategory: cat.umbrellaCategory,
+  }))
+  .sort(sortByCategory)
 }
 
 export function sortByCategory(a: { label: string }, b: { label: string }): number {
@@ -51,7 +56,7 @@ export const formatCategoryAlias = (catName: string): string => {
 }
 
 export async function getLastCheckDate(provider: string): Promise<Date | null> {
-  const { files } = await s3.fetchDirectoryFiles('watchers/last-check/')
+  const { files } = await s3.fetchDirectoryFiles(`${WATCHERS_PATH}last-check/`)
 
   const lastProviderCheckDate = files!.find(f => f.Key!.endsWith(`${provider}.json`))?.LastModified
 
@@ -64,13 +69,13 @@ export async function setLastCheck(provider: string, timestamp: Date, extra?: Re
     ...(extra || {})
   }
 
-  await s3.writeFile(`watchers/last-check/${provider}.json`, JSON.stringify(payload))
+  await s3.writeFile(`${WATCHERS_PATH}last-check/${provider}.json`, JSON.stringify(payload))
 }
 
 export async function getEventDays(): Promise<Record<string, 'day' | 'evening'>> {
   const currentYear = new Date().getFullYear()
 
-  const eventDaysJson = await s3.fetchFile('watchers/event-days.json')
+  const eventDaysJson = await s3.fetchFile(CONFIG_FILES.eventDays)
 
   if (!eventDaysJson) throw new Error('Event days file could not be found!')
 
@@ -78,8 +83,8 @@ export async function getEventDays(): Promise<Record<string, 'day' | 'evening'>>
   return allEventDays[currentYear] || {}
 }
 
-export const formatProvince = (province: string | null): string | null => {
-  if (!province) return null
+export const formatProvince = (province: string | null | undefined): string | undefined => {
+  if (!province) return
 
   const formattedProvince = province.trim().toUpperCase()
 
@@ -114,60 +119,12 @@ export const formatProvince = (province: string | null): string | null => {
     case 'NL':
     case 'NEWFOUNDLAND AND LABRADOR':
       return 'NL'
+    case 'WASHINGTON':
+      return 'WA'
+    case 'OREGON':
+      return 'OR'
     default:
       return formattedProvince
-  }
-}
-
-export const formatTeamName = (teamName: string | null): string | null => {
-  if (!teamName) return null
-
-  const formattedName = teamName
-
-  switch (formattedName.toLowerCase()) {
-    case 'broad st cycles':
-    case 'broad street cycles / stuckylife':
-      return 'Broad Street Cycles'
-    case 'diversion':
-    case 'diversion p/b enroute.cc':
-      return 'Diversion p/b Enroute.cc'
-    case 'escape velocity / devo club':
-    case 'escape velocity / devo':
-    case 'escape velocity society/devo':
-    case 'ev racing team':
-    case 'ev racing':
-      return 'Escape Velocity/DEVO'
-    case 'femme fatale cycling team':
-      return 'Femme Fatale'
-    case 'independant':
-      return 'Independent'
-    case 'lost boys':
-      return 'Lost Boys Book Club'
-    case 'meraloma':
-    case 'meraloma bike club':
-      return 'Meraloma Racing'
-    case 'red kilo':
-      return 'Red Kilo Cycling Team'
-    case 'red truck racing':
-    case 'red truck racing pb mosaic homes':
-      return 'Red Truck Racing p/b Mosaic Homes'
-    case 'ruckus racing team':
-      return 'Ruckus Racing'
-    case 'tag cycling':
-    case 'tag race team':
-      return 'TaG Cycling Race Team'
-    case 'the last drop':
-    case 'the last drop cycling team':
-      return 'The Last Drop Cycling Club'
-    case 'tru grit racing team':
-    case 'true grit racing':
-      return 'Tru Grit Racing'
-    case 'ubc cycling':
-      return 'UBC Cycling Team'
-    case 'united velo cycling club':
-      return 'United Velo'
-    default:
-      return formattedName
   }
 }
 
@@ -176,4 +133,106 @@ export const capitalize = <T extends string | undefined | null>(str: T): T => {
 
   // @ts-ignore
   return str.toLowerCase().replace(/(?:^|\s|-|["'([{])+\S/g, match => match.toUpperCase())
+}
+
+export const findCommonValue = <T>(objects: Record<string, any>[], field: string): T | undefined => {
+  const commonValues: T[] = _.uniq(objects.map(o => o[field]))
+
+  if (commonValues?.length === 1) return commonValues[0]
+
+  return undefined
+}
+
+export const createUmbrellaCategories = (
+  categories: Record<string, EventCategory>,
+  combinedCategoryGroups: CombinedCategoryGroup[]
+): Record<string, EventCategory> => {
+  const updatedCategories: Record<string, EventCategory> = _.cloneDeep(categories)
+
+  // Find umbrella categories for combined categories groups
+  Object.values(categories).forEach((category) => {
+    const categoryGroup = combinedCategoryGroups.find(group => group.umbrellaCategory === category.alias)
+
+    // If the category is umbrella category, set the combined categories
+    if (categoryGroup) {
+      updatedCategories[category.alias].combinedCategories = categoryGroup.categories
+
+      categoryGroup.categories.forEach(alias => {
+        updatedCategories[alias].umbrellaCategory = category.alias
+      })
+    }
+  })
+
+  // Create umbrella category for each combined groups, if not already existing
+  combinedCategoryGroups.forEach((categoryGroup) => {
+    // Check if any of the subset point categories is a WAVE category
+    const hasUmbrellaCategory = !!categoryGroup.umbrellaCategory && !!updatedCategories[categoryGroup.umbrellaCategory]
+
+    if (!hasUmbrellaCategory) {
+      const combinedCategories = categoryGroup.categories.map(alias => {
+        if (updatedCategories[alias]) return updatedCategories[alias]
+        else throw new Error(`Combined category ${alias} not found in event categories`)
+      }).filter(c => !!c)
+
+      // Create an umbrella category for the subgroup
+      const newCategory = combineCategories(categoryGroup.label, combinedCategories)
+      newCategory.combinedCategories = categoryGroup.categories
+      updatedCategories[newCategory.alias] = newCategory
+
+      categoryGroup.categories.forEach(alias => {
+        updatedCategories[alias].umbrellaCategory = newCategory.alias
+      })
+    }
+  })
+
+  return updatedCategories
+}
+
+// Combine multiple categories into a single umbrella category
+export const combineCategories = (categoryName: string, categories: EventCategory[]): EventCategory => {
+  const alias = formatCategoryAlias(categoryName)
+
+  const starters = categories.reduce((acc, cat) => acc + (cat.starters || 0), 0)
+  const finishers = categories.reduce((acc, cat) => acc + (cat.finishers || 0), 0)
+
+  // Combine results and update position by finish time
+  let combinedResults = categories.flatMap(c => c.results)
+  const finisherResults = combinedResults
+  .filter(r => r.status === 'FINISHER' && r.finishTime > 0)
+  .sort((a, b) => a.finishTime - b.finishTime)
+  // Add finishers with finishTime === 0 at the end of finisher results (probably due to wrong timing)
+  .concat(combinedResults.filter(r => r.status === 'FINISHER' && r.finishTime === 0))
+
+  const nonFinisherResults = combinedResults.filter(r => r.status !== 'FINISHER')
+
+  combinedResults = [
+    ...finisherResults.map((
+      result,
+      index
+    ) => ({
+      ...result,
+      finishGap: result.finishTime - finisherResults[0].finishTime,
+      position: index + 1,
+    })),
+    ...nonFinisherResults,
+  ]
+
+  const combinedPrimes = categories.flatMap(c => c.primes || [])
+
+  return {
+    alias,
+    label: categoryName,
+    gender: findCommonValue(categories, 'gender') || 'X',
+    startTime: findCommonValue(categories, 'startTime'),
+    laps: findCommonValue(categories, 'laps'),
+
+    starters,
+    finishers,
+    distanceUnit: categories[0].distanceUnit,
+    lapDistance: findCommonValue(categories, 'lapDistance'),
+    raceDistance: findCommonValue(categories, 'raceDistance'),
+
+    results: combinedResults,
+    primes: combinedPrimes,
+  }
 }

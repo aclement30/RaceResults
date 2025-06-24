@@ -1,21 +1,25 @@
 import _ from 'lodash'
 import { parse } from 'csv-parse/sync'
-import defaultLogger from '../../shared/logger.ts'
+import defaultLogger from '../../../../shared/logger.ts'
 import type {
   AthleteSerieResult,
   SerieIndividualCategory,
   SerieSummary
-} from '../../../../src/types/results.ts'
+} from '../../../../../../src/types/results.ts'
 import {
-  formatCategoryAlias, formatTeamName, transformCategory
-} from '../../shared/utils.ts'
-import { PROVIDER_NAME } from '../config.ts'
-import type { ManualImportCategory, ManualImportRawData, ManualImportSerieFile } from '../types.ts'
-import type { CleanSerieWithResults } from '../../shared/types.ts'
+  formatCategoryAlias, transformCategory
+} from '../../../../shared/utils.ts'
+import { PROVIDER_NAME } from '../../../config.ts'
+import type { ManualImportCategory, ManualImportRawData, ManualImportSerieFile } from '../../../types.ts'
+import type { CleanSerieWithResults } from '../../../../shared/types.ts'
+import { TeamParser } from '../../../../shared/team-parser.ts'
 
 const logger = defaultLogger.child({ provider: PROVIDER_NAME })
 
-export const parseSerie = (serieBundle: ManualImportSerieFile, payloads: ManualImportRawData['payloads']): CleanSerieWithResults => {
+export const parseSerie = (
+  serieBundle: ManualImportSerieFile,
+  payloads: ManualImportRawData['payloads']
+): CleanSerieWithResults => {
   logger.info(`Importing serie results for: ${serieBundle.name}`)
 
   const serieSummary: Omit<SerieSummary, 'categories'> = {
@@ -59,7 +63,11 @@ export const parseSerie = (serieBundle: ManualImportSerieFile, payloads: ManualI
   }
 }
 
-const parseSerieIndividualResults = (csvData: string, fields: Record<string, string>, importCategory: ManualImportCategory): AthleteSerieResult[] => {
+const parseSerieIndividualResults = (
+  csvData: string,
+  fields: Record<string, string>,
+  importCategory: ManualImportCategory
+): AthleteSerieResult[] => {
   logger.info(`Parsing serie individual results for ${importCategory.outputLabel}`)
 
   const inputRecords = parse(csvData, {
@@ -83,13 +91,16 @@ const parseSerieIndividualResults = (csvData: string, fields: Record<string, str
       return acc
     }, {} as Record<string, any>)
 
+    const team = TeamParser.parseTeamName(shapedRecord.team)
+
     return {
+      athleteId: shapedRecord.bibNumber?.toString(),
       bibNumber: shapedRecord.bibNumber ? +shapedRecord.bibNumber : undefined,
       firstName: shapedRecord.firstName,
       lastName: shapedRecord.lastName,
       license: shapedRecord.license,
       uciId: shapedRecord.uciId?.replace(/\s/g, '').trim(),
-      team: formatTeamName(shapedRecord.team),
+      team: team?.name,
       totalPoints: +shapedRecord.totalPoints,
       racePoints: shapedRecord.racePoints,
     }

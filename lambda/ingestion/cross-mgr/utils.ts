@@ -1,8 +1,13 @@
 import _ from 'lodash'
 import type { EventSummary, SerieSummary } from '../../../src/types/results.ts'
-import { transformCategory as defaultTransformCategory } from '../shared/utils.ts'
+import { capitalize, formatProvince, transformCategory as defaultTransformCategory } from '../shared/utils.ts'
+import type { CrossMgrEventBundle } from './types.ts'
+import { COMBINED_RACE_CATEGORIES, type CombinedCategoryGroup } from '../shared/upgrade-points.ts'
 
-export const transformCategory = (catName: string, eventSummary: Pick<EventSummary | SerieSummary, 'name' | 'year' | 'organizerAlias'>): string => {
+export const transformCategory = (
+  catName: string,
+  eventSummary: Pick<EventSummary | SerieSummary, 'name' | 'year' | 'organizerAlias'>
+): string => {
   if (eventSummary.organizerAlias === 'EscapeVelocity') {
     if (eventSummary.name.includes('WTNC') && eventSummary.year === 2025) {
       switch (catName.toLowerCase()) {
@@ -45,6 +50,14 @@ export const transformCategory = (catName: string, eventSummary: Pick<EventSumma
         case 'ma-masters (men)':
           return 'Gentlemen of Leisure'
       }
+    }
+  } else if (eventSummary.name === 'BC Provincial Crit' && eventSummary.year === 2025) {
+    if (catName === '<CategoryName> (Open)') return 'Master C-D (M)'
+  } else if (eventSummary.name === 'Murchie' && eventSummary.year === 2025) {
+    if (catName === 'Elite (Women)') {
+      return 'Elite 1/2/3 (W)'
+    } else if (catName === 'Cat 3/4/5 (Women)') {
+      return 'Cat 4/5 (W)'
     }
   }
 
@@ -156,6 +169,16 @@ export const transformSerieAlias = (serieAlias: string | null | undefined, organ
   }
 }
 
+export const transformLocation = (locationStr: string): { city: string, province: string, country: 'CA' | 'US' } => {
+  const parts = locationStr.split(',')
+
+  return {
+    city: capitalize(parts[0].trim()),
+    province: formatProvince(parts[1].trim().toUpperCase())!,
+    country: parts[2]?.trim().toUpperCase().slice(0, 2) as 'CA' | 'US',
+  }
+}
+
 export const formatSerieName = (alias: string): string => {
   return _.startCase(alias)
 }
@@ -168,4 +191,71 @@ export const formatRaceNotes = (raceNotes?: string): string | null => {
   notes = notes.replace(/{-{ul class="(.+)"}-}/g, '<ul>')
 
   return notes
+}
+
+export const getEventDiscipline = (eventBundle: CrossMgrEventBundle, eventName: string): 'ROAD' | 'CX' => {
+  if (eventBundle.organizer.includes('LMCX') || eventName.toLowerCase().includes('cross')) return 'CX'
+
+  return 'ROAD'
+}
+
+// Find combined categories for a specific event
+export const getCombinedRaceCategories = ({
+  hash,
+  serie
+}: Pick<CrossMgrEventBundle, 'hash' | 'serie'>): CombinedCategoryGroup[] => {
+  let categoriesOverrides: CombinedCategoryGroup[] = []
+
+  // Check if selected category has been combined with another category
+  if (COMBINED_RACE_CATEGORIES[hash]) {
+    categoriesOverrides = COMBINED_RACE_CATEGORIES[hash]
+  } else if (serie === 'WTNC2025') {
+    // Special case for WTNC2025 where categories are grouped by start time
+    categoriesOverrides = [
+      {
+        label: 'Men/Youth 1/2 (M-A)',
+        umbrellaCategory: 'men-youth-1-2-(m-a)',
+        categories: [
+          'men-1-2-(ma-a)',
+          'youth-m1-2-(my-a)'
+        ],
+      },
+      {
+        label: 'Men/Youth 3 (M-B)',
+        umbrellaCategory: 'men-youth-3-(m-a)',
+        categories: [
+          'men-3-(ma-b)',
+          'youth-m3-(my-b)',
+        ],
+      },
+      {
+        label: 'Men/Youth 4 (M-C)',
+        umbrellaCategory: 'men-youth-4-(m-c)',
+        categories: [
+          'men-4-(ma-c)',
+          'youth-m4-(my-c)',
+        ],
+      },
+      {
+        label: 'Men/Youth 5 (M-D)',
+        umbrellaCategory: 'men-youth-5-(m-d)',
+        categories: [
+          'men-5-(ma-d)',
+          'youth-m5-(my-d)',
+        ],
+      },
+      {
+        label: 'Women/Youth 4/5 (W-B)',
+        umbrellaCategory: 'women-youth-4-5-(w-b)',
+        categories: [
+          'women-4-5-(wa-b)',
+          'youth-w4-5-(wy-b)',
+        ],
+      },
+    ]
+  }
+
+  if (categoriesOverrides.length) return categoriesOverrides
+
+  return []
 }

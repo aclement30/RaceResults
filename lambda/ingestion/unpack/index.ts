@@ -4,13 +4,13 @@ import { INGESTION_BASE_PATH } from '../shared/config.ts'
 import type { CleanEventWithResults, CleanSerieWithResults } from '../shared/types.ts'
 import { unpackEvent } from './event-unpack.ts'
 import logger from '../shared/logger.ts'
-import { BUCKET_PATHS } from '../../../src/config/s3.ts'
+import { PUBLIC_BUCKET_PATHS } from '../../../src/config/s3.ts'
 import { unpackSerie } from './serie-unpack.ts'
 import type { EventSummary, SerieSummary } from '../../../src/types/results.ts'
 
 const CLEAN_DATA_PATH = `${INGESTION_BASE_PATH}2-clean/`
 
-export const main = async ({ year, hashes: updatedHashes, provider }: {
+export default async ({ year, hashes: updatedHashes, provider }: {
   year: number,
   hashes: string[],
   provider: string
@@ -50,11 +50,11 @@ export const main = async ({ year, hashes: updatedHashes, provider }: {
     let summaryPath
     let resultsPath
     if (type === 'event') {
-      summaryPath = BUCKET_PATHS.events
-      resultsPath = BUCKET_PATHS.eventsResults
+      summaryPath = PUBLIC_BUCKET_PATHS.events
+      resultsPath = PUBLIC_BUCKET_PATHS.eventsResults
     } else if (type === 'serie') {
-      summaryPath = BUCKET_PATHS.series
-      resultsPath = BUCKET_PATHS.seriesResults
+      summaryPath = PUBLIC_BUCKET_PATHS.series
+      resultsPath = PUBLIC_BUCKET_PATHS.seriesResults
     } else {
       throw new Error(`Unsupported event type: ${type}`)
     }

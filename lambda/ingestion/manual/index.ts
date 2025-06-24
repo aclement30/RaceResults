@@ -1,42 +1,37 @@
-import type { Context, EventBridgeEvent } from 'aws-lambda'
-
 import logger from '../shared/logger.ts'
-import { ENV } from '../shared/config.ts'
 import { PROVIDER_NAME } from './config.ts'
-
-import { main as cleanData } from './clean/index.ts'
-import { main as unpackData } from '../unpack/index.ts'
 import { listRefFiles } from './utils.ts'
 
-const currentYear = new Date().getFullYear()
+import cleanData from './clean/index.ts'
+import unpackData from '../unpack/index.ts'
 
-export const handler = async (event?: EventBridgeEvent<any, any>, _: Context) => {
-  logger.info(`ENV: ${ENV}`)
+export const handler = async (options: { year?: number, importRefFiles?: string[] }) => {
+  logger.info(`Parser: ${PROVIDER_NAME}`)
+  logger.info(`Options: ${JSON.stringify(options)}`)
 
-  let importRefFiles: string[] = []
+  let importRefFiles = options.importRefFiles
 
-  if (!importRefFiles?.length) {
-    logger.info('No import reference files provided, fetching list from S3 bucket...')
-    importRefFiles = await listRefFiles(currentYear)
+  if (!importRefFiles?.length && options.year) {
+    logger.info(`No import reference files provided, fetching list from S3 bucket...`)
 
-    logger.info(`Found ${importRefFiles.length} reference files in S3 bucket`)
+    importRefFiles = await listRefFiles({ year: options.year })
   }
 
-  if (!importRefFiles.length) {
-    logger.info(`No reference files found in S3 bucket for year ${currentYear}, skipping manual import`)
-    return []
+  if (!importRefFiles?.length) {
+    logger.info(`No reference files found in S3 bucket for year ${options.year}, skipping manual import`)
+    return {}
   }
 
   // Clean imported data
-  const cleanedHashes = await cleanData({ year: currentYear, importRefFiles })
+  const { hashes: cleanedHashes, year } = await cleanData(importRefFiles)
 
   // Unpack cleaned data for client-side usage
-  const unpackedHashes = await unpackData({ year: currentYear, hashes: cleanedHashes, provider: PROVIDER_NAME })
+  const unpackedHashes = await unpackData({ year, hashes: cleanedHashes, provider: PROVIDER_NAME })
 
   return {
     statusCode: 200,
     body: JSON.stringify({
-      year: currentYear,
+      year: options.year,
       clean: cleanedHashes,
       unpack: unpackedHashes,
       provider: PROVIDER_NAME

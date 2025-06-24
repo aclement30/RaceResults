@@ -1,27 +1,23 @@
-import type { Context, EventBridgeEvent } from 'aws-lambda'
-
 import logger from '../shared/logger.ts'
-import { ENV } from '../shared/config.ts'
 import { PROVIDER_NAME } from './config.ts'
 
-import { main as importData } from './import/index.ts'
-import { main as cleanData } from './clean/index.ts'
-import { main as unpackData } from '../unpack/index.ts'
+import importData from './import/index.ts'
+import cleanData from './clean/index.ts'
+import unpackData from '../unpack/index.ts'
 
-const currentYear = new Date().getFullYear()
-
-export const handler = async (event?: EventBridgeEvent<any, any>, _: Context) => {
-  logger.info(`ENV: ${ENV}`)
+export const handler = async (options?: { year: number }) => {
+  logger.info(`Parser: ${PROVIDER_NAME}`)
+  logger.info(`Options: ${JSON.stringify(options)}`)
 
   let importedHashes: string[] = []
   let year: number
 
-  if (event) {
+  if (!options?.year) {
     // Import updated files since last check date
     ({ year, hashes: importedHashes } = await importData())
   } else {
     // Import all files for the current year
-    ({ year, hashes: importedHashes } = await importData({ year: currentYear }))
+    ({ year, hashes: importedHashes } = await importData({ year: options?.year }))
   }
 
   // Clean imported data
