@@ -132,7 +132,7 @@ const findUpgradeDate = (
           confidence,
         }
         break
-      } else if (range && currentLevel >= range[0] && currentLevel <= range[1]) {
+      } else if (range && currentLevel >= range[0] && currentLevel <= range[1] && range[1] < currentLevel + 1) {
         // Check if next date is for the previous level or range (eg. cat 3: 4, 4, [3, 4], 4)
         if (possibleUpgradeDates[index + 1]) {
           const nextDate = possibleUpgradeDates[+index + 1]
