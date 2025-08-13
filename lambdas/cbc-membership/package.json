@@ -1,0 +1,27 @@
+{
+  "name": "cbc-membership-importer",
+  "version": "1.0.0",
+  "main": "index.js",
+  "scripts": {
+    "prebuild": "rm -rf dist",
+    "build": "esbuild index.ts --bundle --external:@aws-sdk --sourcemap --platform=node --target=es2020 --metafile=dist/metadata.json --outfile=dist/index.js",
+    "postbuild": "cd dist && zip -r index.zip index.js*",
+    "build-visualizer": "esbuild-visualizer --metadata dist/metadata.json --filename dist/stats.html --open",
+    "local": "node --experimental-strip-types run-local.ts",
+    "deploy": "aws lambda update-function-code --function-name race-results-cbc-membership-importer --output json --no-cli-pager --zip-file fileb://dist/index.zip"
+  },
+  "author": "Alex Clement",
+  "license": "ISC",
+  "description": "",
+  "devDependencies": {
+    "@aws-sdk/client-s3": "^3.846.0",
+    "@types/node": "^22.15.26",
+    "esbuild": "^0.25.5",
+    "esbuild-visualizer": "^0.7.0",
+    "jest-diff": "^30.0.0-beta.3"
+  },
+  "dependencies": {
+    "colors": "^1.4.0"
+  },
+  "type": "module"
+}

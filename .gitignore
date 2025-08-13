@@ -1,0 +1,16 @@
+node_modules
+.idea
+.DS_Store
+lambdas/cbc-membership/dist
+lambdas/watcher/dist
+storage/athletes
+storage/athletes-profiles
+storage/data-ingestion
+storage/events
+storage/events-results
+storage/manual-import
+storage/series
+storage/series-results
+storage/data-ingestion/watchers/last-check
+dist/*
+scripts

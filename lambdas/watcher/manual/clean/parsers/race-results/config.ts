@@ -1,0 +1,1 @@
+export const PARSER_NAME = 'race-results'
