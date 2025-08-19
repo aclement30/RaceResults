@@ -29,8 +29,8 @@ export const getSanctionedEventType = (event: Pick<EventSummary, 'name' | 'serie
   if (event.organizerAlias === 'Concord') return 'A'
   if (event.organizerAlias === 'GastownGP') return 'A'
   if (event.organizerAlias === 'EscapeVelocity' && event.name.includes('Seymour Challenge') && event.year < 2025) return 'A'
-  if (event.organizerAlias === 'EscapeVelocity' && event.name.includes('Seymour Challenge') && event.year === 2025) return 'GRASSROOTS'
-  if (event.serie === 'VCL2025') return 'A'
+  if (event.organizerAlias === 'EscapeVelocity' && event.name.includes('Seymour Challenge') && event.year === 2025) return 'MASS-PARTICIPATION'
+  if (event.serie === 'VCL2025') return 'GRASSROOTS'
   if (event.organizerAlias === 'TourDeBloom') return 'AA-USA'
   if (event.serie === 'EPO') return 'AA-USA'
 
