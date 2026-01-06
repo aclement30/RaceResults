@@ -13,6 +13,8 @@ type NavbarProps = {
   }
 }
 
+const CURRENT_YEAR = new Date().getFullYear()
+
 export const Navbar: React.FC<NavbarProps> = ({ filters }) => {
   const navigate = useNavigate()
   const { closeNavbar } = useContext(UIContext)
@@ -36,6 +38,16 @@ export const Navbar: React.FC<NavbarProps> = ({ filters }) => {
 
   return (
     <AppShell.Navbar p="md">
+      {!years.includes(CURRENT_YEAR) && (
+        <NavLink
+          key={CURRENT_YEAR}
+          data-umami-event="filter-events-year"
+          label={<div style={{ display: 'flex', justifyContent: 'space-between' }}><span>{CURRENT_YEAR}</span> <span>(No events)</span>
+          </div>}
+          disabled={true}
+        />
+      )}
+
       {years.map((year) => (
         <NavLink
           key={year}
@@ -46,7 +58,8 @@ export const Navbar: React.FC<NavbarProps> = ({ filters }) => {
           data-umami-event="filter-events-year"
           active={year === filters.year}
           label={year}
-        />))}
+        />
+      ))}
 
       <Divider style={{ marginBottom: '1rem' }}/>
 

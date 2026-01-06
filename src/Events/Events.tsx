@@ -1,7 +1,7 @@
 import { AppShell, LoadingOverlay, Stack, Text } from '@mantine/core'
 import sortBy from 'lodash/sortBy'
 import { useSearchParams } from 'react-router'
-import { useContext, useMemo } from 'react'
+import { useContext, useEffect, useMemo, useState } from 'react'
 import { AppContext } from '../AppContext'
 import { Navbar } from './Navbar/Navbar'
 import { EventCard } from './EventCard/EventCard'
@@ -15,13 +15,22 @@ const last48hours = new Date(Date.now() - 48 * 60 * 60 * 1000).toISOString()
 
 export const Events: React.FC = () => {
   const [searchParams] = useSearchParams()
+  const [defaultYear, setDefaultYear] = useState(new Date().getFullYear())
+
   const filters = {
-    year: +(searchParams.get('year') || new Date().getFullYear()),
+    year: +(searchParams.get('year') || defaultYear),
     serie: searchParams.get('series') || null,
   }
 
   const { loading } = useContext(UIContext)
-  const { events, series } = useContext(AppContext)
+  const { events, series, years } = useContext(AppContext)
+
+  // If there are no events for the current year, default to the latest year with events
+  useEffect(() => {
+    if (years.length && !years.includes(defaultYear)) {
+      setDefaultYear(Math.max(...years))
+    }
+  }, [years])
 
   useEventsAndSeries(filters.year)
 
