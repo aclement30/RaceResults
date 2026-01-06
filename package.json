@@ -13,16 +13,16 @@
   "dependencies": {
     "@aws-sdk/client-s3": "^3.804.0",
     "@aws-sdk/credential-providers": "^3.804.0",
-    "@mantine/core": "^8.0.0",
-    "@mantine/hooks": "^8.0.0",
-    "@mantine/notifications": "^8.0.1",
-    "@tabler/icons-react": "^3.33.0",
-    "csv-stringify": "^6.5.2",
+    "@mantine/core": "^8.3.11",
+    "@mantine/hooks": "^8.3.11",
+    "@mantine/notifications": "^8.3.11",
+    "@tabler/icons-react": "^3.36.1",
+    "csv-stringify": "^6.6.0",
     "html-table-to-json": "^1.0.0",
     "lodash": "^4.17.21",
-    "react": "^19.1.0",
-    "react-dom": "^19.1.0",
-    "react-router": "^7.6.0",
+    "react": "^19.2.3",
+    "react-dom": "^19.2.3",
+    "react-router": "^7.11.0",
     "short-hash": "^1.0.0"
   },
   "devDependencies": {
@@ -32,7 +32,7 @@
     "@types/react": "^19.1.2",
     "@types/react-dom": "^19.1.2",
     "@types/umami": "^2.10.0",
-    "@vitejs/plugin-react": "^4.4.1",
+    "@vitejs/plugin-react": "^5.1.2",
     "csv-parse": "^5.6.0",
     "eslint": "^9.25.0",
     "eslint-plugin-react-hooks": "^5.2.0",
@@ -42,7 +42,7 @@
     "node-fetch": "^3.3.2",
     "typescript": "~5.8.3",
     "typescript-eslint": "^8.30.1",
-    "vite": "^6.3.5",
+    "vite": "^7.3.0",
     "vite-bundle-analyzer": "^0.22.0"
   }
 }
