@@ -310,8 +310,9 @@ export const getCombinedRaceCategories = ({
   hash,
   serie,
   organizerAlias,
-  name
-}: Pick<EventSummary, 'hash' | 'serie' | 'organizerAlias' | 'name'>): CombinedCategoryGroup[] => {
+  name,
+  year,
+}: Pick<EventSummary, 'hash' | 'serie' | 'organizerAlias' | 'name' | 'year'>): CombinedCategoryGroup[] => {
   let categoriesOverrides: CombinedCategoryGroup[] = []
 
   // Check if selected category has been combined with another category
@@ -395,6 +396,27 @@ export const getCombinedRaceCategories = ({
           'd-male-u19',
           'd-female-adult',
           'd-female-u19',
+        ],
+      },
+    ]
+  } else if (organizerAlias === 'LocalRide' && year === 2026) {
+    categoriesOverrides = [
+      {
+        label: 'B Wave',
+        umbrellaCategory: 'wave-b-x',
+        categories: [
+          'b-m',
+          'b-w',
+          'b-masters-m',
+        ],
+      },
+      {
+        label: 'C Wave',
+        umbrellaCategory: 'wave-c-x',
+        categories: [
+          'c-m',
+          'c-w',
+          'c-masters-m',
         ],
       },
     ]
