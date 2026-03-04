@@ -5,7 +5,7 @@ import {
   getCategoriesWithLabels,
   getSanctionedEventTypeLabel,
 } from '../utils'
-import type { EventSummary, EventAthlete, EventResults } from '../../types/results'
+import type { RaceEvent, EventAthlete, EventResults } from '../../types/results'
 import { columns } from '../Shared/columns'
 import { exportCSV } from '../../utils/exportCSV'
 import { showErrorMessage } from '../../utils/showErrorMessage'
@@ -16,7 +16,7 @@ import { useNavigator } from '../../utils/useNavigator'
 import { UserFavoriteContext } from '../../UserFavoriteContext'
 
 type PointsTableProps = {
-  eventSummary: EventSummary
+  eventSummary: RaceEvent
   eventResults: EventResults
   selectedCategory: string
   athletes: Record<string, EventAthlete>,
@@ -72,7 +72,7 @@ export const PointsTable: React.FC<PointsTableProps> = ({
   const rows = useMemo(() => selectedCategory.upgradePoints?.map((result) => {
     const eventAthlete = athletes[result.athleteId]
     const athleteProfile = findAthlete(eventAthlete)
-    const team = eventAthlete.team || athleteProfile?.team?.[eventSummary.year]?.name
+    const team = eventAthlete.team || athleteProfile?.teams?.[eventSummary.year]?.name
     const isFavoriteRow = isFavorite({ athleteUciId: athleteProfile?.uciId, team })
 
     return (

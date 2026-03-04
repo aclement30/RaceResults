@@ -1,4 +1,4 @@
-import type { EventAthlete, AthleteRaceResult, EventSummary } from '../../types/results'
+import type { EventAthlete, AthleteRaceResult, RaceEvent } from '../../types/results'
 import { Blockquote, Button, Divider, Group, Table, Text } from '@mantine/core'
 import { useContext, useMemo, useState } from 'react'
 import { useDisclosure } from '@mantine/hooks'
@@ -14,7 +14,7 @@ import { useNavigator } from '../../utils/useNavigator'
 import { UserFavoriteContext } from '../../UserFavoriteContext'
 
 type ResultsTableProps = {
-  eventSummary: EventSummary
+  eventSummary: RaceEvent
   results: AthleteRaceResult[]
   athletes: Record<string, EventAthlete>,
   raceNotes?: string
@@ -72,7 +72,7 @@ export const ResultsTable: React.FC<ResultsTableProps> = ({
   const rows = useMemo(() => filteredResults.map((result) => {
     const eventAthlete = athletes[result.athleteId]
     const athleteProfile = findAthlete(eventAthlete)
-    const team = eventAthlete.team || athleteProfile?.team?.[eventSummary.year]?.name
+    const team = eventAthlete.team || athleteProfile?.teams?.[eventSummary.year]?.name
     const isFavoriteRow = isFavorite({ athleteUciId: athleteProfile?.uciId, team })
 
     return (
@@ -110,7 +110,7 @@ export const ResultsTable: React.FC<ResultsTableProps> = ({
     const exportedRows = filteredResults.map((result) => {
       const eventAthlete = athletes[result.athleteId]
       const athleteProfile = findAthlete(eventAthlete)
-      const team = eventAthlete.team || athleteProfile?.team?.[eventSummary.year]?.name
+      const team = eventAthlete.team || athleteProfile?.teams?.[eventSummary.year]?.name
 
       return [
         columns.position(result, { text: true }) as string,

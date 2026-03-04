@@ -8,16 +8,16 @@ const Environment = {
 
 export type TEnv = typeof Environment[keyof typeof Environment];
 
-export const INGESTION_BASE_PATH = 'data-ingestion/'
+export const RAW_INGESTION_DATA_PATH = 'raw_ingestion_data/'
 
-const CONFIG_BASE_PATH = `${INGESTION_BASE_PATH}config/`
 export const CONFIG_FILES = {
-  athletesOverrides: `${CONFIG_BASE_PATH}athletes-overrides.json`,
-  eventDays: `${CONFIG_BASE_PATH}event-days.json`,
+  athletesOverrides: 'athlete_overrides.json',
+  eventDays: 'event_days.json',
 }
 
-export const WATCHERS_PATH = `${INGESTION_BASE_PATH}watchers/`
-export const ENV: TEnv = process.env.ENV as TEnv || 'dev'
+export const WATCHER_LAST_CHECKS_PATH = `watcher_last_checks/`
+
+export const ENV: TEnv = process.env.ENV as TEnv || 'prod'
 
 export const DEBUG = process.env.DEBUG === 'true' || true
 
@@ -31,7 +31,9 @@ const currentYear = new Date().getFullYear()
 
 export const NO_CACHE_FILES = [
   PUBLIC_BUCKET_FILES.athletes.list,
-  `${PUBLIC_BUCKET_PATHS.athletesProfiles}list.json`,
+  PUBLIC_BUCKET_PATHS.athletesProfiles,
   `${PUBLIC_BUCKET_PATHS.events}${currentYear}.json`,
   `${PUBLIC_BUCKET_PATHS.eventsResults}${currentYear}`,
 ]
+
+export const CLEAN_ATHLETE_CATEGORIES_FILE = 'athletes_skill_categories.json'

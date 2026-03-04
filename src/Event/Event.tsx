@@ -1,7 +1,7 @@
 import { useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react'
 import { AppContext } from '../AppContext'
 import { useParams, useSearchParams } from 'react-router'
-import type { EventResults, EventSummary } from '../types/results'
+import type { EventResults, RaceEvent } from '../types/results'
 import { ResultsTable } from './ResultsTable/ResultsTable'
 import { AppShell, Text, Divider, Tabs, LoadingOverlay, Blockquote, Group } from '@mantine/core'
 import { IconCoins, IconHelp, IconStars, IconStopwatch, IconTrophy } from '@tabler/icons-react'
@@ -25,7 +25,7 @@ const today = new Date().toLocaleDateString('sv', { timeZone: 'America/Vancouver
 export const Event: React.FC = () => {
   const { events } = useContext(AppContext)
   const { loading } = useContext(UIContext)
-  const [eventSummary, setEventSummary] = useState<EventSummary | null>(null)
+  const [eventSummary, setEventSummary] = useState<RaceEvent | null>(null)
   const [eventResults, setEventResults] = useState<EventResults | null>(null)
   const eventResultsLastModifiedRef = useRef<Date | null>(null)
   const [loadingResults, setLoadingResults] = useState<boolean>(true)

@@ -45,7 +45,7 @@ export const IndividualRankingsTable: React.FC<IndividualRankingsTableProps> = (
 
   const rows = useMemo(() => results.map((result) => {
     const athleteProfile = findAthlete(result)
-    const team = result.team || athleteProfile?.team?.[serie.year]?.name
+    const team = result.team || athleteProfile?.teams?.[serie.year]?.name
     const isFavoriteRow = isFavorite({ athleteUciId: athleteProfile?.uciId, team })
 
     return (

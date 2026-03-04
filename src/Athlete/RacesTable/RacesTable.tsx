@@ -51,7 +51,7 @@ export const RacesTable: React.FC<RacesTableProps> = ({
     const year = +race.date.slice(0, 4)
 
     return (
-      <Table.Tr key={`race-${race.eventHash}`}>
+      <Table.Tr key={`race-${race.eventHash}-${race.category}`}>
         <Table.Td visibleFrom="sm">{race.date}</Table.Td>
         <Table.Td style={{
           overflow: 'hidden',

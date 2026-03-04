@@ -1,6 +1,5 @@
-import type { Team } from '../../src/types/team.ts'
-import { PUBLIC_BUCKET_FILES } from '../../src/config/s3.ts'
-import { s3 } from './utils.ts'
+import type { Team } from './types.ts'
+import data from './data.ts'
 
 class TeamParserSingleton {
   private _teams: Record<string, Team>
@@ -17,17 +16,11 @@ class TeamParserSingleton {
     // Check if already initialized
     if (Object.keys(this._teams).length > 0) return
 
-    let fileContent
-
     try {
-      fileContent = await s3.fetchFile(PUBLIC_BUCKET_FILES.athletes.teams)
+      this._teams = await data.get.teams()
     } catch (error) {
       throw error
     }
-
-    if (!fileContent) throw new Error('Empty teams file')
-
-    this._teams = JSON.parse(fileContent) as Record<string, Team>
 
     // Create a lookup by team name
     const teamsByNames: Record<string, Team> = {}

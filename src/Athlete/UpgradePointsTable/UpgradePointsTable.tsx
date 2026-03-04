@@ -114,7 +114,7 @@ export const UpgradePointsTable: React.FC<ResultsTableProps> = ({
     const staleUpgradePoint = isUpgradePointStale(upgradePoint.date, latestUpgrade?.[upgradePoint.discipline])
 
     return (<>
-        <Table.Tr key={`upgrade-point-${upgradePoint.eventHash}`}
+        <Table.Tr key={`upgrade-point-${upgradePoint.eventHash}-${upgradePoint.category}`}
                   className={staleUpgradePoint ? '-dimmed' : ''}>
           <Table.Td>
             <Checkbox checked={selectedRows.includes(upgradePoint.eventHash)}

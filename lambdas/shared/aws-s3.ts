@@ -6,7 +6,7 @@ import {
   type ListObjectsCommandOutput,
   PutObjectCommand,
   S3Client,
-  type S3ClientConfig
+  type S3ClientConfig, S3ServiceException
 } from '@aws-sdk/client-s3'
 import { AWS_DEFAULT_CONFIG, ENV, LOCAL_STORAGE_PATH, NO_CACHE_FILES, RR_S3_BUCKET } from './config.ts'
 
@@ -45,18 +45,23 @@ export class AwsS3Client {
     }
   }
 
-  async fetchFile(filename: string): Promise<string | undefined> {
-    const response = await this._client.send(
-      new GetObjectCommand({
-        Bucket: this._bucket,
-        Key: filename,
-      }),
-    )
+  async fetchFile(filename: string, ignoreNotFound: boolean = false): Promise<string | null> {
+    try {
+      const response = await this._client.send(
+        new GetObjectCommand({
+          Bucket: this._bucket,
+          Key: filename,
+        }),
+      )
 
-    // The Body object also has 'transformToByteArray' and 'transformToWebStream' methods.
-    const content = await response.Body?.transformToString()
+      // The Body object also has 'transformToByteArray' and 'transformToWebStream' methods.
+      const content = await response.Body?.transformToString()
 
-    return content
+      return content || null
+    } catch (error) {
+      if (error instanceof S3ServiceException && error.name === 'NoSuchKey' && ignoreNotFound) return ''
+      throw error
+    }
   }
 
   async writeFile(path: string, content: string) {

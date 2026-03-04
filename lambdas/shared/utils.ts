@@ -1,11 +1,14 @@
 import shortHash from 'short-hash'
-import { cloneDeep } from 'lodash-es'
-import { uniq } from 'lodash-es'
+import { cloneDeep, uniq } from 'lodash-es'
 import type {
-  BaseCategory, EventCategory, EventSummary,
-} from '../../src/types/results.ts'
+  AthleteRaceResult,
+  BaseCategory,
+  EventCategory,
+  EventResults,
+  RaceEvent,
+} from './types.ts'
 import { AwsS3Client } from './aws-s3.ts'
-import { CONFIG_FILES, RR_S3_BUCKET, WATCHERS_PATH } from './config.ts'
+import { RR_S3_BUCKET } from './config.ts'
 import { COMBINED_RACE_CATEGORIES, type CombinedCategoryGroup } from './upgrade-points.ts'
 
 export const s3 = new AwsS3Client(RR_S3_BUCKET)
@@ -28,7 +31,7 @@ export function createEventSerieHash(inputData: {
 
 export function getBaseCategories(
   combinedCategories: Record<string, Pick<EventCategory, 'alias' | 'label' | 'gender' | 'combinedCategories' | 'umbrellaCategory'>>,
-  eventSummary: Pick<EventSummary, 'organizerAlias' | 'serie'>
+  eventSummary: Pick<RaceEvent, 'organizerAlias' | 'serie'>
 ): BaseCategory[] {
   return Object.values(combinedCategories)
   .map((cat) => ({
@@ -41,7 +44,7 @@ export function getBaseCategories(
   .sort(sortByCategory(eventSummary))
 }
 
-export const sortByCategory = ({ organizerAlias, serie }: Partial<Pick<EventSummary, 'organizerAlias' | 'serie'>>) => {
+export const sortByCategory = ({ organizerAlias, serie }: Partial<Pick<RaceEvent, 'organizerAlias' | 'serie'>>) => {
   let customOrder: string[] = []
 
   if (organizerAlias === 'CRC') {
@@ -117,34 +120,6 @@ export const formatCategoryAlias = (catName: string): string => {
   const alias = catName.toLowerCase().replace('(m)', 'm').replace('(w)', 'w').replace('(open)', 'x').replace(/[\s\/]/g, '-').replace(/\+/g, '').replace(/---/, '-').trim()
 
   return alias
-}
-
-export async function getLastCheckDate(provider: string): Promise<Date | null> {
-  const { files } = await s3.fetchDirectoryFiles(`${WATCHERS_PATH}last-check/`)
-
-  const lastProviderCheckDate = files!.find(f => f.Key!.endsWith(`${provider}.json`))?.LastModified
-
-  return lastProviderCheckDate || null
-}
-
-export async function setLastCheck(provider: string, timestamp: Date, extra?: Record<string, any>) {
-  const payload = {
-    timestamp: timestamp.toISOString(),
-    ...(extra || {})
-  }
-
-  await s3.writeFile(`${WATCHERS_PATH}last-check/${provider}.json`, JSON.stringify(payload))
-}
-
-export async function getEventDays(): Promise<Record<string, 'day' | 'evening'>> {
-  const currentYear = new Date().getFullYear()
-
-  const eventDaysJson = await s3.fetchFile(CONFIG_FILES.eventDays)
-
-  if (!eventDaysJson) throw new Error('Event days file could not be found!')
-
-  const allEventDays = JSON.parse(eventDaysJson)
-  return allEventDays[currentYear] || {}
 }
 
 export const formatProvince = (province: string | null | undefined): string | undefined => {
@@ -310,8 +285,9 @@ export const getCombinedRaceCategories = ({
   hash,
   serie,
   organizerAlias,
-  name
-}: Pick<EventSummary, 'hash' | 'serie' | 'organizerAlias' | 'name'>): CombinedCategoryGroup[] => {
+  name,
+  year,
+}: Pick<RaceEvent, 'hash' | 'serie' | 'organizerAlias' | 'name' | 'year'>): CombinedCategoryGroup[] => {
   let categoriesOverrides: CombinedCategoryGroup[] = []
 
   // Check if selected category has been combined with another category
@@ -398,9 +374,84 @@ export const getCombinedRaceCategories = ({
         ],
       },
     ]
+  } else if (organizerAlias === 'LocalRide' && year === 2026) {
+    categoriesOverrides = [
+      {
+        label: 'B Wave',
+        umbrellaCategory: 'wave-b-x',
+        categories: [
+          'b-m',
+          'b-w',
+          'b-masters-m',
+        ],
+      },
+      {
+        label: 'C Wave',
+        umbrellaCategory: 'wave-c-x',
+        categories: [
+          'c-m',
+          'c-w',
+          'c-masters-m',
+        ],
+      },
+    ]
   }
 
   if (categoriesOverrides.length) return categoriesOverrides
 
   return []
+}
+
+export const shapeCategoriesResults = (results: EventResults['results']): EventResults['results'] => {
+  return Object.keys(results).reduce((updatedResults, key) => {
+    const category = results[key]
+
+    let lapGapsByAthlete: Record<string, Array<number | null>> = {}
+
+    if (category.laps && category.laps > 1) {
+      lapGapsByAthlete = calculateLapGaps(category.results, category.laps)
+    }
+
+    updatedResults[key] = {
+      ...category,
+      results: category.results.map((result) => ({
+        athleteId: result.athleteId,
+        position: result.position,
+        bibNumber: result.bibNumber,
+        finishTime: result.finishTime,
+        finishGap: result.finishGap,
+        avgSpeed: result.avgSpeed,
+        status: result.status,
+        relegated: result.relegated,
+        lapSpeeds: result.lapSpeeds,
+        lapDurations: result.lapDurations,
+        lapGaps: result.bibNumber ? lapGapsByAthlete[result.athleteId] : undefined,
+      })),
+    }
+
+    return updatedResults
+  }, {} as EventResults['results'])
+}
+
+const calculateLapGaps = (
+  results: AthleteRaceResult[],
+  lapCount: number
+): Record<string, Array<number | null>> => {
+  const lapGaps: Record<string, Array<number | null>> = {}
+
+  for (let i = 1; i < lapCount + 1; i++) {
+    const firstRiderPastTheLine = results.reduce((
+      prev,
+      curr
+    ) => !curr.lapTimes?.[i] || prev.lapTimes![i] < curr.lapTimes?.[i] ? prev : curr)
+
+    results.forEach(({ athleteId, lapTimes }) => {
+      const riderGapInCurrentLap = lapTimes![i] ? lapTimes![i] - firstRiderPastTheLine.lapTimes![i] : null
+
+      if (!lapGaps.hasOwnProperty(athleteId)) lapGaps[athleteId] = []
+      lapGaps[athleteId].push(riderGapInCurrentLap)
+    })
+  }
+
+  return lapGaps
 }

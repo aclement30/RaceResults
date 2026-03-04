@@ -1,18 +1,19 @@
 export const PUBLIC_BUCKET_PATHS = {
   events: 'events/',
-  eventsResults: 'events-results/',
+  eventsResults: 'events_results/',
   series: 'series/',
-  seriesResults: 'series-results/',
+  seriesResults: 'series_results/',
   athletes: 'athletes/',
-  athletesProfiles: 'athletes-profiles/',
+  athletesProfiles: 'views/athletes_profiles/',
 }
 
 export const PUBLIC_BUCKET_FILES = {
   athletes: {
-    compilations: `${PUBLIC_BUCKET_PATHS.athletes}compilations.json`,
-    list: `${PUBLIC_BUCKET_PATHS.athletes}list.json`,
-    lookup: `${PUBLIC_BUCKET_PATHS.athletes}lookup.json`,
-    teams: `${PUBLIC_BUCKET_PATHS.athletes}teams.json`,
-    upgradePoints: `${PUBLIC_BUCKET_PATHS.athletes}upgrade-points.json`,
+    list: 'views/athletes.json',
+    lookup: 'athletes_lookup.json',
+    teams: 'teams.json',
+  },
+  views: {
+    recentlyUpgradedAthletes: 'views/recently_upgraded_athletes.json',
   }
 }

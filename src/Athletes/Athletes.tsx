@@ -6,7 +6,7 @@ import { Navbar } from '../Athlete/Navbar/Navbar'
 import { AthletesTable } from './AthletesTable/AthletesTable'
 import { useEffect, useState } from 'react'
 import type { AthleteCompilations } from '../types/athletes'
-import { fetchAthleteCompilations } from '../utils/aws-s3'
+import { fetchRecentlyUpgradedAthletesView } from '../utils/aws-s3'
 import { showErrorMessage } from '../utils/showErrorMessage'
 import { useParams } from 'react-router'
 import { RecentlyUpgradedAthletesTable } from './RecentlyUpgradedAthletesTable/RecentlyUpgradedAthletesTable'
@@ -25,9 +25,12 @@ export const Athletes: React.FC = () => {
       try {
         setLoadingCompilations(true)
 
-        const athleteCompilations = await fetchAthleteCompilations()
+        const recentlyUpgradedAthletes = await fetchRecentlyUpgradedAthletesView()
 
-        setAthleteCompilations(athleteCompilations)
+        setAthleteCompilations({
+          recentlyUpgradedAthletes,
+          pointsCollectors: [],
+        })
       } catch (error) {
         showErrorMessage((error as any).message)
       } finally {

@@ -2,7 +2,7 @@ import { useCallback, useContext, useEffect, useRef } from 'react'
 import { FETCH_ERROR_TYPE, FetchError, fetchEvents, fetchSeries, validateYear } from './aws-s3'
 import { notifications } from '@mantine/notifications'
 import { AppContext } from '../AppContext'
-import type { EventSummary, SerieSummary } from '../types/results'
+import type { RaceEvent, SerieSummary } from '../types/results'
 import { UIContext } from '../UIContext'
 
 export const useEventsAndSeries = (year: number) => {
@@ -42,7 +42,7 @@ export const useEventsAndSeries = (year: number) => {
       fetchResponses.forEach((response, index) => {
         if (response.status === 'fulfilled') {
           if (index === 0) {
-            setEvents((response.value as { events: EventSummary[] }).events, year)
+            setEvents((response.value as { events: RaceEvent[] }).events, year)
             eventsRef.current.lastModified.set(year, response.value.lastModified)
           } else if (index === 1) {
             setSeries((response.value as { series: SerieSummary[] }).series, year)

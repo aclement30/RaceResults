@@ -119,7 +119,7 @@ export const AthleteSearchField: React.FC<AthleteSearchFieldProps> = ({
 
     if (!athlete) return null
 
-    const team = athlete.team?.[currentYear] || null
+    const team = athlete.teams?.[currentYear] || null
 
     return (
       <Stack

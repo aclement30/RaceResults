@@ -41,7 +41,7 @@ export const Team: React.FC = () => {
     const filteredAthletes: Athlete[] = []
 
     athletes.forEach((athlete: Athlete) => {
-      if (athlete.team?.[currentYear]?.id === teamId) {
+      if (athlete.teams?.[currentYear]?.id === teamId) {
         filteredAthletes.push(athlete)
       }
     })
