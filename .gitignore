@@ -1,8 +1,8 @@
 node_modules
 .idea
 .DS_Store
-lambdas/cbc-membership/dist
-lambdas/watcher/dist
+lambdas/bc-membership-importer/dist
+lambdas/ingest/dist
 storage/athletes
 storage/athletes-profiles
 storage/data-ingestion

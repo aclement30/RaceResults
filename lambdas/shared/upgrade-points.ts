@@ -1,9 +1,9 @@
 import type {
   EventCategory,
-  EventSummary,
+  RaceEvent,
   SanctionedEventType,
   UpgradePointResult
-} from '../../src/types/results.ts'
+} from './types.ts'
 
 export const hasUpgradePoints = (eventType: SanctionedEventType | null): 'UPGRADE' | 'SUBJECTIVE' | false => {
   if (!eventType) return false
@@ -14,7 +14,7 @@ export const hasUpgradePoints = (eventType: SanctionedEventType | null): 'UPGRAD
   return false
 }
 
-export const getSanctionedEventType = (event: Pick<EventSummary, 'name' | 'serie' | 'organizerAlias' | 'year'> | null): SanctionedEventType | null => {
+export const getSanctionedEventType = (event: Pick<RaceEvent, 'name' | 'serie' | 'organizerAlias' | 'year'> | null): SanctionedEventType | null => {
   if (!event) return null
 
   if (event.organizerAlias === 'GoodRideGravel') return 'MASS-PARTICIPATION'
@@ -30,7 +30,7 @@ export const getSanctionedEventType = (event: Pick<EventSummary, 'name' | 'serie
   if (event.organizerAlias === 'Concord') return 'A'
   if (event.organizerAlias === 'GastownGP') return 'A'
   if (event.organizerAlias === 'EscapeVelocity' && event.name.includes('Seymour Challenge') && event.year < 2025) return 'A'
-  if (event.organizerAlias === 'EscapeVelocity' && event.name.includes('Seymour Challenge') && event.year === 2025) return 'MASS-PARTICIPATION'
+  if (event.organizerAlias === 'EscapeVelocity' && event.name.includes('Seymour Challenge') && event.year === 2025) return 'GRASSROOTS'
   if (event.serie === 'VCL2025') return 'GRASSROOTS'
   if (event.organizerAlias === 'TourDeBloom') return 'AA-USA'
   if (event.serie === 'EPO') return 'AA-USA'
@@ -268,7 +268,7 @@ export const COMBINED_RACE_CATEGORIES: Record<string, CombinedCategoryGroup[]> =
 // Calculate upgrade points for BC events based on the field size of a group of categories and results
 // - Points are assigned based on the position in the ordered results.
 export const calculateBCUpgradePoints = ({ category, fieldSize, eventType }: {
-  category: EventCategory,
+  category: Pick<EventCategory, 'alias' | 'results'>,
   fieldSize: number,
   eventType: SanctionedEventType | null
 }): UpgradePointResult[] => {

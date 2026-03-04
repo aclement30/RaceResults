@@ -1,10 +1,10 @@
-import type { EventSummary } from '../../src/types/results'
+import type { RaceEvent } from '../../src/types/results'
 
 // Extract athlete skill level (or skill group) from race
 // Can be either a specific skill level (e.g. 1, 2, 3, etc.) or a skill range (e.g. elite -> [1, 2], 'cat 4/5' -> [4, 5], etc.)
 export const extractAthleteSkillLevel = (
   category: string,
-  eventSummary: Pick<EventSummary, 'name' | 'year'>
+  eventSummary: Pick<RaceEvent, 'name' | 'year'>
 ): {
   level?: number
   range?: [number, number],

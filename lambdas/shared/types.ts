@@ -1,32 +1,58 @@
-import type {
+import type { Athlete } from '../../src/types/athletes.ts'
+import type { RaceEvent, TDiscipline } from '../../src/types/results.ts'
+
+export type {
+  Athlete,
+  AthleteProfile,
+  BaseAthleteUpgradePoint
+} from '../../src/types/athletes.ts'
+
+export type {
   AthleteRaceResult,
+  BaseCategory,
   EventAthlete,
   EventCategory,
-  EventSummary,
+  EventResults,
+  RaceEvent,
+  SanctionedEventType,
   SerieResults,
-  SerieSummary
+  SerieSummary,
+  UpgradePointResult,
 } from '../../src/types/results.ts'
 
-export type CleanEventWithResults = Omit<EventSummary, 'categories'> & CleanEventResults
-export type CleanSerieWithResults = Omit<SerieSummary, 'categories'> & SerieResults
+export type {
+  Team
+} from '../../src/types/team.ts'
 
-export type CleanEventResults = {
-  hash: string
-  athletes: Record<string, CleanEventAthlete>
-  results: Record<string, EventCategory & { results: CleanAthleteRaceResult[] }>
-  sourceUrls: string[]
-  raceNotes?: string
-  lastUpdated: string
+export type AthleteSkillCategory = {
+  athleteUciId: string
+  skillLevels: { ROAD?: Record<string, string>, CX?: Record<string, string> }
+  ageCategory: string | null
 }
 
-export type CleanEventAthlete = EventAthlete & {
-  gender?: 'M' | 'F' | 'X'
-  age?: number                  // Age
-  license?: string              // License
-  nationality?: string           // NatCode
-  eventCategories: string[]     // Category
+export type AthleteTeam = {
+  athleteUciId: string
+  year: number
+  teamId?: number
+  teamName: string
 }
 
-export type CleanAthleteRaceResult = AthleteRaceResult & {
-  lapTimes?: number[]       // raceTimes
+export type EventSummary =
+  Pick<RaceEvent, 'hash' | 'year' | 'date' | 'sanctionedEventType' | 'name' | 'discipline' | 'organizerAlias' | 'location'>
+
+export type AthleteUpgradeDate = {
+  athleteUciId: string,
+  discipline: TDiscipline,
+  date: string,
+  confidence: number
 }
+
+export type AthleteManualEdit = {
+  uciId: string
+  meta: {
+    createdAt: string
+    createdBy?: string
+    updatedAt: string
+    updatedBy?: string
+  }
+} & Partial<Athlete>
