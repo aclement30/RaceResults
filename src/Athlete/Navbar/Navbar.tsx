@@ -62,7 +62,7 @@ export const Navbar = () => {
       const athlete = athletes.get(athleteUciId)
       if (!athlete) return null
 
-      const team = athlete.team?.[currentYear] || null
+      const team = athlete.teams?.[currentYear] || null
 
       return (
         <NavLink

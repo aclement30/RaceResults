@@ -42,9 +42,9 @@ export const AthletesTable: React.FC<AthletesTableProps> = ({}) => {
       if (!isNaN(+searchValueLower) && searchValueLower.length === 11) {
         return athlete.uciId === searchValueLower
       } else {
-        const { firstName, lastName, team } = athlete
+        const { firstName, lastName, teams } = athlete
         const fullName = `${firstName} ${lastName}`.toLowerCase()
-        const teamLower = team?.[currentYear]?.name?.toLowerCase()
+        const teamLower = teams?.[currentYear]?.name?.toLowerCase()
 
         return fullName.includes(searchValueLower) || teamLower?.includes(searchValueLower)
       }
@@ -52,7 +52,7 @@ export const AthletesTable: React.FC<AthletesTableProps> = ({}) => {
   }, [sortedAthletes, searchValue])
 
   const rows = useMemo(() => filteredAthletes.map((athlete) => {
-    const team = athlete.team?.[currentYear]
+    const team = athlete.teams?.[currentYear]
 
     return (
       <Table.Tr key={`athlete-${athlete.uciId}`}>

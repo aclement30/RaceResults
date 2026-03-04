@@ -6,10 +6,11 @@ import {
   S3ServiceException
 } from '@aws-sdk/client-s3'
 import { fromCognitoIdentityPool } from '@aws-sdk/credential-providers'
-import type { EventResults, EventSummary, SerieResults, SerieSummary } from '../types/results'
+import type { EventResults, RaceEvent, SerieResults, SerieSummary } from '../types/results'
 import type { Athlete, AthleteCompilations, AthleteProfile } from '../types/athletes'
 import { PUBLIC_BUCKET_FILES, PUBLIC_BUCKET_PATHS } from '../config/s3'
 import type { Team } from '../types/team'
+import keyBy from 'lodash/keyBy'
 
 const { VITE_AWS_REGION, VITE_AWS_POOL_ID, VITE_RR_S3_BUCKET } = import.meta.env || {}
 
@@ -118,13 +119,13 @@ export async function fetchEvents(year: number, ifModifiedSince?: Date | null) {
   } catch (error) {
     // If the file is not found, return an empty array
     if (error instanceof FetchError && error.type === FETCH_ERROR_TYPE.NotFound) {
-      return { events: [] as EventSummary[], lastModified: new Date() }
+      return { events: [] as RaceEvent[], lastModified: new Date() }
     }
 
     throw error
   }
 
-  const events: EventSummary[] = JSON.parse(response.content)
+  const events: RaceEvent[] = JSON.parse(response.content)
 
   return { events, lastModified: response.lastModified }
 }
@@ -155,7 +156,7 @@ export async function fetchSeries(year: number, ifModifiedSince?: Date | null) {
   } catch (error) {
     // If the file is not found, return an empty array
     if (error instanceof FetchError && error.type === FETCH_ERROR_TYPE.NotFound) {
-      return { series: [] as EventSummary[], lastModified: new Date() }
+      return { series: [] as RaceEvent[], lastModified: new Date() }
     }
 
     throw error
@@ -215,7 +216,9 @@ export async function fetchAthletesList(): Promise<Record<string, Athlete>> {
     throw error
   }
 
-  return JSON.parse(response.content) as Record<string, Athlete>
+  const athletesArray = JSON.parse(response.content) as Athlete[]
+
+  return keyBy(athletesArray, athlete => athlete.uciId)
 }
 
 export async function fetchAthleteLookupTable(): Promise<Record<string, string>> {
@@ -252,19 +255,19 @@ export async function fetchAthleteProfile(uciId: string): Promise<AthleteProfile
   return JSON.parse(response.content) as AthleteProfile
 }
 
-export async function fetchAthleteCompilations(): Promise<AthleteCompilations> {
+export async function fetchRecentlyUpgradedAthletesView(): Promise<AthleteCompilations['recentlyUpgradedAthletes']> {
   let response
 
   try {
-    response = await fetchFile(PUBLIC_BUCKET_FILES.athletes.compilations)
+    response = await fetchFile(PUBLIC_BUCKET_FILES.views.recentlyUpgradedAthletes)
   } catch (error) {
     // If the file is not found, return an empty array
     if (error instanceof FetchError && error.type === FETCH_ERROR_TYPE.NotFound) {
-      throw new Error('Athlete compilations could not be found!')
+      throw new Error('Athlete view could not be found!')
     }
 
     throw error
   }
 
-  return JSON.parse(response.content) as AthleteCompilations
+  return JSON.parse(response.content) as AthleteCompilations['recentlyUpgradedAthletes']
 }

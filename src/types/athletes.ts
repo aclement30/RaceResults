@@ -5,31 +5,35 @@ export type Athlete = {
   firstName: string
   lastName: string
   gender: TGender
-  city?: string
-  province?: string
+  city?: string | null
+  province?: string | null
   nationality?: string
   birthYear?: number
   licenses: Record<string, string[]>
-  team?: Record<string, { id?: number, name?: string }>
+  teams?: Record<string, { id?: number, name?: string }>
   skillLevel?: { ROAD?: string; CX?: string }
   ageCategory?: { ROAD?: string; CX?: string } // e.g. 'ELITE', 'JUNIOR', 'U13', 'U15', 'U17', 'U19', 'U23', 'MASTER'
   latestUpgrade?: { ROAD?: { date: string, confidence: number }; CX?: { date: string, confidence: number } }
   lastUpdated: string
 }
 
-export type AthleteUpgradePoint = {
+export type BaseAthleteUpgradePoint = {
+  athleteUciId: string
   date: string
   eventHash: string
-  eventName: string
   eventType: SanctionedEventType | null
   discipline: TDiscipline
   position: number
   category: string
-  categoryLabel: string
   points: number
   fieldSize: number
   type: 'UPGRADE' | 'SUBJECTIVE'
   partialMatch?: boolean // If true, indicates that the athlete's UCI ID was not an exact match but a close match based on name or other criteria
+}
+
+export type AthleteUpgradePoint = Omit<BaseAthleteUpgradePoint, 'athleteUciId'> & {
+  eventName: string
+  categoryLabel: string
 }
 
 export type AthleteRace = Pick<AthleteRaceResult, 'position' | 'status'> & {
@@ -63,3 +67,10 @@ export type AthleteCompilations = {
     hasRacedUp: boolean,
   }[]
 }
+
+export type RecentlyUpgradedAthletes = Array<{
+  athleteUciId: string,
+  skillLevel: string,
+  discipline: TDiscipline
+  date: string,
+}>

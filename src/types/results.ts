@@ -17,7 +17,7 @@ export type TGender = typeof Gender[keyof typeof Gender];
 
 export type SanctionedEventType = keyof typeof BC_SANCTIONED_EVENT_TYPES
 
-export type EventSummary = {
+export type RaceEvent = {
   hash: string
   name: string
   date: string
@@ -43,6 +43,7 @@ export type EventSummary = {
   isTimeTrial: boolean
   provider: string
   categories: BaseCategory[]
+  lastUpdated: string
 }
 
 export type EventResults = {
@@ -82,8 +83,6 @@ export type EventResults = {
   // lengthKm: number
 }
 
-export type RaceEvent = EventSummary & EventResults
-
 export type PrimeResult = {
   number: number
   position: number
@@ -114,7 +113,12 @@ export type EventAthlete = Partial<{
   province: string
   uciId: string
   team: string
+  gender: TGender
+  license: string
+  age: number
+  nationality: string
 }>
+//& { eventCategories: string[] }
 
 export type AthleteRaceResult = {
   athleteId: string
@@ -125,6 +129,7 @@ export type AthleteRaceResult = {
   // lastInterp: boolean
   lapSpeeds?: number[]
   lapDurations?: number[]   // (raceTimes)
+  lapTimes?: number[]       // (raceTimes)
   lapGaps?: Array<number | null> // gaps between laps, if applicable
   finishTime: number
   finishGap: number | null       // gapValue
@@ -133,7 +138,6 @@ export type AthleteRaceResult = {
   avgSpeed?: number        // speed
   status: 'FINISHER' | 'DNF' | 'DNS' | 'OTL'
   relegated?: boolean
-  upgradePoints?: number
 }
 
 export type BaseCategory = {

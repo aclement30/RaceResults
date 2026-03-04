@@ -1,5 +1,5 @@
 import { Button, Group } from '@mantine/core'
-import type { BaseCategory, EventSummary } from '../../types/results'
+import type { BaseCategory, RaceEvent } from '../../types/results'
 import { useNavigate } from 'react-router'
 import { OrganizerBadge } from '../../Shared/OrganizerBadge'
 import { useContext } from 'react'
@@ -7,7 +7,7 @@ import { AppContext } from '../../AppContext'
 import { getSerieLabel } from '../utils'
 
 type EventHeaderProps = {
-  event: EventSummary
+  event: RaceEvent
   selectedCategory?: BaseCategory
 }
 

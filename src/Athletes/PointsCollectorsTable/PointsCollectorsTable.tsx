@@ -48,7 +48,7 @@ export const PointsCollectorsTable: React.FC<PointsCollectorsTableProps> = ({
   }, [athletes, pointsCollectors])
 
   const rows = useMemo(() => shapedAthletes.map((upgrade) => {
-    const team = upgrade.team?.[currentYear]
+    const team = upgrade.teams?.[currentYear]
 
     return (
       <Table.Tr key={`athlete-${upgrade.uciId}`} className={upgrade.hasRacedUp ? '-dimmed' : ''}>

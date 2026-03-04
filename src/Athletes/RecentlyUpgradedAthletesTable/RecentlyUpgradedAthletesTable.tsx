@@ -46,7 +46,7 @@ export const RecentlyUpgradedAthletesTable: React.FC<RecentlyUpgradedAthletesTab
   }, [athletes, recentlyUpgradedAthletes])
 
   const rows = useMemo(() => shapedAthletes.map((upgrade) => {
-    const team = upgrade.team?.[currentYear]
+    const team = upgrade.teams?.[currentYear]
 
     return (
       <Table.Tr key={`athlete-${upgrade.uciId}`}>

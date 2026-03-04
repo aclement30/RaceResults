@@ -48,12 +48,12 @@ export const displayAthleteCurrentTeam = (athlete: Athlete, onClick?: (teamId: n
   let label = 'Independent'
   let teamId = null
 
-  if (athlete.team?.[currentYear]) {
-    label = athlete.team[currentYear].name!
-    teamId = athlete.team[currentYear].id
-  } else if (athlete.team?.[currentYear - 1]) {
-    label = `(${athlete.team[currentYear - 1].name!})`
-    teamId = athlete.team[currentYear - 1].id
+  if (athlete.teams?.[currentYear]) {
+    label = athlete.teams[currentYear].name!
+    teamId = athlete.teams[currentYear].id
+  } else if (athlete.teams?.[currentYear - 1]) {
+    label = `(${athlete.teams[currentYear - 1].name!})`
+    teamId = athlete.teams[currentYear - 1].id
   }
 
   if (onClick && teamId) {

@@ -1,7 +1,7 @@
 import type { EventAthlete, AthleteRaceResult, AthleteSerieResult } from '../../types/results'
 import { Anchor, Badge, Tooltip } from '@mantine/core'
 import { formatTimeDuration, formatGapTime, formatSpeed } from '../../utils/race-results'
-
+import type { Athlete } from '../../types/athletes'
 
 export const formatRacerPositionLabel = (position: number, textOnly?: boolean) => {
   if (position > 3 || textOnly) return position
@@ -42,7 +42,7 @@ export const columns = {
 
     return <Anchor size="sm" onClick={() => onClick?.(row.uciId!)}>{textLabel}</Anchor>
   },
-  city: (row: Pick<EventAthlete, 'city' | 'province'>) => {
+  city: (row: Pick<Athlete, 'city' | 'province'>) => {
     return [row.city, row.province].filter(Boolean).join(', ')
   },
   bibNumber: (row: Pick<AthleteRaceResult | AthleteSerieResult, 'bibNumber'> | {
