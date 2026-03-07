@@ -2,7 +2,7 @@ import type { FastifyPluginAsync, FastifyReply, FastifyRequest } from 'fastify'
 import data, { DataError, DataErrorCode } from '../../shared/data.ts'
 import type { Athlete, Team } from '../../shared/types.ts'
 import { createViewAthletes } from '../../processing/views/athletes.ts'
-import { omit } from 'lodash-es'
+import { keyBy, omit } from 'lodash-es'
 import type { TeamRoster } from '../../../src/types/team.ts'
 import { calculateRequiredManualEdits, mergeAthleteChanges } from '../../shared/merge-athlete.ts'
 
@@ -298,11 +298,11 @@ const PutTeamRosterRoute = async (request: FastifyRequest, response: FastifyRepl
     return
   }
 
+  const rosterByTeamIds = keyBy(existingTeamRosters, 'teamId')
+  const updatedTeamIds = new Set<number>()
+
   // Find athletes that are being moved from other teams to this team
   // Athletes can only be on one team per year, so we need to remove them from their current team
-  const conflictingAthletes: Array<{ athleteUciId: string; currentTeamId: number }> = []
-  const updatedRosters: TeamRoster[] = []
-
   for (const newAthlete of teamRoster.athletes) {
     // Check if this athlete is currently on another team
     const currentTeamRoster = existingTeamRosters.find(roster =>
@@ -311,26 +311,47 @@ const PutTeamRosterRoute = async (request: FastifyRequest, response: FastifyRepl
     )
 
     if (currentTeamRoster) {
-      conflictingAthletes.push({
-        athleteUciId: newAthlete.athleteUciId,
-        currentTeamId: currentTeamRoster.teamId
-      })
-
       // Remove athlete from their current team
-      const updatedCurrentRoster = updatedRosters.find(r => r.teamId === currentTeamRoster.teamId) || {
-        teamId: currentTeamRoster.teamId,
-        athletes: currentTeamRoster.athletes.filter(a => a.athleteUciId !== newAthlete.athleteUciId)
+      rosterByTeamIds[currentTeamRoster.teamId] = {
+        ...rosterByTeamIds[currentTeamRoster.teamId],
+        athletes: rosterByTeamIds[currentTeamRoster.teamId].athletes.filter(a => a.athleteUciId !== newAthlete.athleteUciId)
       }
 
-      // Update or add the modified roster
-      const existingIndex = updatedRosters.findIndex(r => r.teamId === currentTeamRoster.teamId)
-      if (existingIndex >= 0) {
-        updatedRosters[existingIndex] = updatedCurrentRoster
-      } else {
-        updatedRosters.push(updatedCurrentRoster)
-      }
+      updatedTeamIds.add(currentTeamRoster.teamId)
     }
   }
+
+  // Find athletes that are being removed from this team
+  const removedAthletes = existingTeamRoster.athletes.filter(a =>
+    !teamRoster.athletes.some(na => na.athleteUciId === a.athleteUciId)
+  )
+  // Move removed athletes to independent (teamId = 0)
+  removedAthletes.forEach(athlete => {
+    rosterByTeamIds[0] = {
+      teamId: 0,
+      athletes: [
+        ...(rosterByTeamIds[0]?.athletes || []).filter(a => a.athleteUciId !== athlete.athleteUciId), // Remove if already exists to avoid duplicates
+        {
+          athleteUciId: athlete.athleteUciId,
+          source: 'manual' as const,
+          lastUpdated: new Date().toISOString(),
+        }
+      ],
+    }
+
+    updatedTeamIds.add(0)
+  })
+
+  const updatedRosters = Array.from(updatedTeamIds).map(teamId => {
+    const roster = rosterByTeamIds[teamId]
+
+    if (!roster) {
+      console.error(`Team roster not found for team ID ${teamId}`)
+      return null
+    }
+
+    return roster
+  }).filter(roster => !!roster) as TeamRoster[]
 
   // Add the target team roster (with new athletes)
   updatedRosters.push({
@@ -344,14 +365,6 @@ const PutTeamRosterRoute = async (request: FastifyRequest, response: FastifyRepl
 
   // Update all affected team rosters in a single operation
   await data.update.teamRosters(updatedRosters, CURRENT_YEAR)
-
-  // Log the changes for debugging/audit
-  if (conflictingAthletes.length > 0) {
-    console.log(`🔄 Moved ${conflictingAthletes.length} athletes to team ${teamId}:`)
-    conflictingAthletes.forEach(({ athleteUciId, currentTeamId }) => {
-      console.log(`  - Athlete ${athleteUciId}: Team ${currentTeamId} → Team ${teamId}`)
-    })
-  }
 
   // Rebuild athletes view to apply the team roster changes in athletes' teams
   const athleteUciIds = teamRoster.athletes.map(a => a.athleteUciId)
