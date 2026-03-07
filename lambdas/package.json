@@ -19,6 +19,7 @@
     "jest": "^30.2.0",
     "ts-jest": "^29.4.6"
   },
+  "type": "module",
   "dependencies": {
     "colors": "^1.4.0",
     "lodash-es": "^4.17.21",

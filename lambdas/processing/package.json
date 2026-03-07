@@ -15,6 +15,7 @@
   "author": "Alex Clement",
   "license": "ISC",
   "description": "",
+  "type": "module",
   "devDependencies": {
     "@types/lodash-es": "^4.17.12",
     "@types/node": "^22.15.26",

@@ -26,19 +26,39 @@ import {
   updateRawEventAthletes, updateRawIngestionData
 } from './data/ingestion.ts'
 import { updateSeries, updateSerieResults } from './data/series.ts'
-import { getTeams } from './data/teams.ts'
+import { deleteTeam, getTeamRosters, getTeams, restoreTeam, updateTeam, updateTeamRosters } from './data/teams.ts'
 import {
   getAthleteProfile,
   getViewAthletes,
   updateAthleteProfile,
   updateViewAthletes,
-  updateViewRecentlyUpgradedAthletes
+  updateViewRecentlyUpgradedAthletes,
 } from './data/views.ts'
+
+export const DataErrorCode = {
+  FILE_NOT_FOUND: 'FILE_NOT_FOUND',
+  INVALID_DATA: 'INVALID_DATA',
+  UNKNOWN_ERROR: 'UNKNOWN_ERROR',
+  ENTITY_NOT_FOUND: 'ENTITY_NOT_FOUND'
+} as const
+
+export type DataErrorCode = typeof DataErrorCode[keyof typeof DataErrorCode]
+
+export class DataError extends Error {
+  code: DataErrorCode
+
+  constructor(message: string, code: DataError['code']) {
+    super(message)
+    this.name = 'DataError'
+    this.code = code
+    Object.setPrototypeOf(this, DataError.prototype)
+  }
+}
 
 export default {
   get: {
     baseAthletes: getBaseAthletes,
-    viewAthletes: getViewAthletes,
+    athletes: getViewAthletes,
     athleteManualEdits: getAthleteManualEdits,
     athletesCategories: getAthletesCategories,
     athletesLookup: getAthletesLookup,
@@ -59,10 +79,11 @@ export default {
     rawAthletesUpgradePoints: getRawAthletesUpgradePoints,
     rawIngestionData: getRawIngestionData,
     teams: getTeams,
+    teamRosters: getTeamRosters,
   },
   update: {
     baseAthletes: updateBaseAthletes,
-    viewAthletes: updateViewAthletes,
+    athletes: updateViewAthletes,
     athleteManualEdits: updateAthleteManualEdits,
     athletesCategories: updateAthleteCategories,
     athletesLookup: updateAthletesLookup,
@@ -72,8 +93,6 @@ export default {
     events: updateEvents,
     eventResults: updateEventResults,
     lastCheckDate: updateLastCheckDate,
-    series: updateSeries,
-    serieResults: updateSerieResults,
     rawBCMemberships: updateRawBCMemberships,
     rawEventAthletes: updateRawEventAthletes,
     rawAthletesRaceResults: updateRawAthletesRaceResults,
@@ -81,5 +100,15 @@ export default {
     rawAthletesUpgradePoints: updateRawAthletesUpgradePoints,
     rawIngestionData: updateRawIngestionData,
     viewRecentlyUpgradedAthletes: updateViewRecentlyUpgradedAthletes,
-  }
+    series: updateSeries,
+    serieResults: updateSerieResults,
+    team: updateTeam,
+    teamRosters: updateTeamRosters,
+  },
+  restore: {
+    team: restoreTeam,
+  },
+  delete: {
+    team: deleteTeam,
+  },
 }

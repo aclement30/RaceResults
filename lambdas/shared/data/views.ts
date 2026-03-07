@@ -2,12 +2,24 @@ import type { Athlete, AthleteProfile, RecentlyUpgradedAthletes } from '../../..
 import { s3 as RRS3 } from '../utils.ts'
 import { PUBLIC_BUCKET_FILES, PUBLIC_BUCKET_PATHS } from '../../../src/config/s3.ts'
 
-export const getViewAthletes = async (): Promise<Athlete[]> => {
+export async function getViewAthletes(): Promise<Athlete[]>
+export async function getViewAthletes(athleteUciId: string): Promise<Athlete>
+
+export async function getViewAthletes(athleteUciId?: string): Promise<Athlete[] | Athlete | null> {
   const fileContent = await RRS3.fetchFile(PUBLIC_BUCKET_FILES.athletes.list, true)
 
-  if (!fileContent) return []
+  if (!fileContent) {
+    if (athleteUciId) return null
+    return []
+  }
 
-  return JSON.parse(fileContent as any) as Athlete[]
+  const athletes = JSON.parse(fileContent as any) as Athlete[]
+
+  if (athleteUciId) {
+    return athletes.find(a => a.uciId === athleteUciId) || null
+  }
+
+  return athletes
 }
 
 export const updateViewAthletes = async (athletes: Athlete[]): Promise<void> => {

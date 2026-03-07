@@ -7,23 +7,35 @@ import {
   CLEAN_ATHLETE_UPGRADE_POINTS_PATH,
   DUPLICATE_ATHLETES_FILE
 } from '../../processing/config.ts'
-import { PUBLIC_BUCKET_FILES, PUBLIC_BUCKET_PATHS } from '../../../src/config/s3.ts'
+import { PUBLIC_BUCKET_FILES } from '../../../src/config/s3.ts'
 import type { AthleteOverrides, CleanAthleteRaceResult } from '../../processing/types.ts'
 import { CLEAN_ATHLETE_CATEGORIES_FILE, CONFIG_FILES } from '../config.ts'
 import type {
-  Athlete, AthleteManualEdit,
-  AthleteProfile,
+  Athlete,
+  AthleteManualEdit,
   AthleteSkillCategory,
   AthleteUpgradeDate,
   BaseAthleteUpgradePoint
 } from '../types.ts'
 
-export const getBaseAthletes = async (): Promise<Athlete[]> => {
+export async function getBaseAthletes(athleteUciId: string): Promise<Athlete | null>
+export async function getBaseAthletes(): Promise<Athlete[]>
+
+export async function getBaseAthletes(athleteUciId?: string): Promise<Athlete | null | Athlete[]> {
   const fileContent = await RRS3.fetchFile(BASE_ATHLETES_FILE, true)
 
-  if (!fileContent) return []
+  if (!fileContent) {
+    if (athleteUciId) return null
+    return []
+  }
 
-  return JSON.parse(fileContent as any) as Athlete[]
+  const athletes = JSON.parse(fileContent as any) as Athlete[]
+
+  if (athleteUciId) {
+    return athletes.find(a => a.uciId === athleteUciId) || null
+  }
+
+  return athletes
 }
 
 export const updateBaseAthletes = async (athletes: Athlete[]): Promise<void> => {
@@ -38,24 +50,40 @@ export const updateBaseAthletes = async (athletes: Athlete[]): Promise<void> => 
   await RRS3.writeFile(BASE_ATHLETES_FILE, JSON.stringify(combinedAthletes))
 }
 
-export const getAthleteManualEdits = async (): Promise<AthleteManualEdit[]> => {
+export async function getAthleteManualEdits(athleteUciId: string): Promise<AthleteManualEdit | null>
+export async function getAthleteManualEdits(): Promise<AthleteManualEdit[]>
+
+export async function getAthleteManualEdits(athleteUciId?: string): Promise<AthleteManualEdit | null | AthleteManualEdit[]> {
   const fileContent = await RRS3.fetchFile(ATHLETE_MANUAL_EDITS_FILE, true)
 
-  if (!fileContent) return []
+  if (!fileContent) {
+    if (athleteUciId) return null
+    return []
+  }
 
-  return JSON.parse(fileContent as any) as AthleteManualEdit[]
+  const manualEdits = JSON.parse(fileContent as any) as AthleteManualEdit[]
+
+  if (athleteUciId) {
+    return manualEdits.find(a => a.uciId === athleteUciId) || null
+  }
+
+  return manualEdits
 }
 
-export const updateAthleteManualEdits = async (athleteEdits: AthleteManualEdit[]): Promise<void> => {
+type AthleteManualEditWithOptionalMeta = Omit<AthleteManualEdit, 'meta'> & {
+  meta?: AthleteManualEdit['meta']
+}
+
+export const updateAthleteManualEdits = async (athleteEdits: Array<AthleteManualEditWithOptionalMeta>): Promise<void> => {
   const existingAthleteManualEdits = await getAthleteManualEdits()
 
-  const updatedAthleteUciIds = existingAthleteManualEdits.map(a => a.uciId)
+  const updatedAthleteUciIds = athleteEdits.map(a => a.uciId)
   const combinedAthleteManualEdits = [
     ...existingAthleteManualEdits.filter(a => !updatedAthleteUciIds.includes(a.uciId)),
     ...athleteEdits.map(athleteManualEdit => {
       const existingEdit = existingAthleteManualEdits.find(e => e.uciId === athleteManualEdit.uciId)
       return {
-        athleteManualEdit,
+        ...athleteManualEdit,
         meta: {
           createdAt: existingEdit ? existingEdit.meta.createdAt : new Date().toISOString(),
           updatedAt: new Date().toISOString()

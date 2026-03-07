@@ -2,9 +2,9 @@ import defaultLogger from '../../shared/logger.ts'
 import { SCRIPT_NAME } from '../config.ts'
 import type { RawAthleteTeam } from '../types.ts'
 import { TeamParser } from '../../shared/team-parser.ts'
-import { DEBUG } from '../../shared/config.ts'
 import data from '../../shared/data.ts'
-import type { Athlete } from '../../shared/types.ts'
+import type { TeamRoster } from '../../shared/types.ts'
+import { keyBy } from 'lodash-es'
 
 const logger = defaultLogger.child({ parser: SCRIPT_NAME })
 
@@ -13,8 +13,6 @@ type PartialTeam = {
   name?: string,
 }
 
-const currentYear = new Date().getFullYear()
-
 export const cleanAthletesTeams = async ({ athleteIds, year }: { athleteIds: string[], year: number }) => {
   await TeamParser.init()
 
@@ -22,49 +20,85 @@ export const cleanAthletesTeams = async ({ athleteIds, year }: { athleteIds: str
     allAthletes,
     rawAthletesTeamsForYear,
     rawAthletesTeamsForPreviousYear,
+    allTeamRosters,
   ] = await Promise.all([
-    data.get.baseAthletes(),
+    data.get.athletes(),
     data.get.rawAthletesTeams(year),
     data.get.rawAthletesTeams(year - 1),
+    data.get.teamRosters(year),
   ])
 
-  let updatedAthletes = allAthletes.filter(({ uciId }) => athleteIds.includes(uciId))
+  const updatedAthletes = allAthletes.filter(({ uciId }) => athleteIds.includes(uciId))
 
-  updatedAthletes = updatedAthletes.map((athlete) => {
+  const rosterByTeamIds = keyBy(allTeamRosters, 'teamId')
+  const updatedTeamIds = new Set<number>()
+
+  updatedAthletes.forEach((athlete) => {
     const { uciId: athleteUciId } = athlete
-    const athleteTeams = {
+    const currentTeamId = athlete.teams?.[year]?.id || 0
+    const currentTeamRoster = rosterByTeamIds[currentTeamId]
+
+    // Check if athlete has a manually assigned team roster for the current year, if so we should not override their team
+    if (currentTeamRoster && currentTeamRoster.athletes.find(athlete => athlete.athleteUciId === athleteUciId)?.source === 'manual') {
+      return
+    }
+
+    const rawAthleteTeams = {
       ...(rawAthletesTeamsForYear[athleteUciId] || {}),
       ...(rawAthletesTeamsForPreviousYear[athleteUciId] || {}),
     }
 
-    const years = [...new Set(Object.keys(athleteTeams).map(date => +date.slice(0, 4)))]
+    const team = resolveAthleteTeamForYear(year, rawAthleteTeams, athleteUciId)
+    if (team?.name && !team.id) {
+      logger.warn(`Team "${team.name}" for athlete ${athlete.firstName} ${athlete.lastName} (${athlete.uciId}) in year ${year} could not be matched to an existing team`, {
+        athleteUciId,
+        teamName: team.name,
+      })
+    }
+    
+    const newTeamId = team?.id || 0
 
-    if (!years.includes(currentYear)) years.push(currentYear)
+    if (currentTeamId !== newTeamId) {
+      logger.info(`Updating team for athlete ${athlete.firstName} ${athlete.lastName} (${athlete.uciId}) for year ${year}: ${currentTeamId} -> ${newTeamId}`)
 
-    const athleteTeamByYears: Athlete['teams'] = {}
-
-    years.forEach(year => {
-      const team = resolveAthleteTeamForYear(year, athleteTeams, athleteUciId)
-      if (team) athleteTeamByYears[year] = {
-        id: team.id,
-        name: team.name
+      // If the athlete was previously assigned to a team, remove them from that team roster
+      if (currentTeamRoster && currentTeamRoster.teamId !== newTeamId) {
+        currentTeamRoster.athletes = currentTeamRoster.athletes.filter(athlete => athlete.athleteUciId !== athleteUciId)
+        updatedTeamIds.add(currentTeamId)
       }
-    })
 
-    return {
-      ...athlete,
-      teams: athleteTeamByYears
-    } as Athlete
+      if (!rosterByTeamIds[newTeamId]) rosterByTeamIds[newTeamId] = { teamId: newTeamId, athletes: [] }
+
+      const newTeamRoster = rosterByTeamIds[newTeamId]
+      newTeamRoster.athletes = [
+        ...(newTeamRoster.athletes || []).filter(athlete => athlete.athleteUciId !== athleteUciId),
+        { athleteUciId, lastUpdated: new Date().toISOString() },
+      ]
+      updatedTeamIds.add(newTeamId)
+    }
   })
+
+  const updatedRosters = Array.from(updatedTeamIds).map(teamId => {
+    const roster = rosterByTeamIds[teamId]
+
+    if (!roster) {
+      logger.error(`Team roster not found for team ID ${teamId}`)
+      return null
+    }
+
+    return roster
+  }).filter(roster => !!roster) as TeamRoster[]
 
   logger.info(`Total athletes processed: ${updatedAthletes.length}`)
 
   try {
-    logger.info(`Saving ${updatedAthletes.length} athletes with updated teams`)
+    logger.info(`Saving ${updatedRosters.length} updated team rosters`)
 
-    await data.update.baseAthletes(updatedAthletes)
+    if (updatedRosters.length) {
+      await data.update.teamRosters(updatedRosters, year)
+    }
   } catch (error) {
-    logger.error(`Failed to save athletes: ${(error as Error).message}`, { error })
+    logger.error(`Failed to save team rosters: ${(error as Error).message}`, { error })
   }
 }
 

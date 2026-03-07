@@ -1,5 +1,6 @@
 import type { Team } from './types.ts'
 import data from './data.ts'
+import { keyBy } from 'lodash-es'
 
 class TeamParserSingleton {
   private _teams: Record<string, Team>
@@ -17,7 +18,7 @@ class TeamParserSingleton {
     if (Object.keys(this._teams).length > 0) return
 
     try {
-      this._teams = await data.get.teams()
+      this._teams = await data.get.teams().then(teams => keyBy(teams, 'id'))
     } catch (error) {
       throw error
     }

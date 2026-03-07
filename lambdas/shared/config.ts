@@ -17,7 +17,7 @@ export const CONFIG_FILES = {
 
 export const WATCHER_LAST_CHECKS_PATH = `watcher_last_checks/`
 
-export const ENV: TEnv = process.env.ENV as TEnv || 'prod'
+export const ENV: TEnv = process.env.ENV as TEnv || 'dev'
 
 export const DEBUG = process.env.DEBUG === 'true' || true
 

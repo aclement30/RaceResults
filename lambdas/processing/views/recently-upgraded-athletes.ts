@@ -7,12 +7,14 @@ import type { TDiscipline } from '../../../src/types/results.ts'
 const logger = defaultLogger.child({ parser: SCRIPT_NAME })
 
 export const createViewRecentlyUpgradedAthletes = async () => {
-  const allathletes = await data.get.viewAthletes()
+  const allAthletes = await data.get.athletes()
+
+  logger.info(`Updating recently upgraded athletes view...`)
 
   const recentlyUpgradedAthletes: RecentlyUpgradedAthletes = []
 
   ;(['ROAD', 'CX'] as TDiscipline[]).forEach((discipline) => {
-    allathletes.forEach((athlete) => {
+    allAthletes.forEach((athlete) => {
       if (athlete.latestUpgrade?.[discipline]) {
         const latestUpgrade = athlete.latestUpgrade[discipline]
 
@@ -35,7 +37,7 @@ export const createViewRecentlyUpgradedAthletes = async () => {
     })
   })
 
-  logger.info(`Total athletes processed: ${allathletes.length}`)
+  logger.info(`Total athletes processed: ${allAthletes.length}`)
 
   try {
     logger.info(`Uploading ${recentlyUpgradedAthletes.length} recently upgraded athletes view`)

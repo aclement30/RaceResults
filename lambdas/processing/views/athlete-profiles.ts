@@ -13,6 +13,8 @@ export const createViewAthleteProfiles = async ({ athleteIds, year, eventHashes 
   year: number,
   eventHashes: string[]
 }) => {
+  logger.info(`Creating athlete profiles view for ${athleteIds.length} athletes...`)
+
   const allEvents = await data.get.events({ year, eventHashes }, { summary: false })
 
   const keyedEvents = keyBy(allEvents as RaceEvent[], 'hash')

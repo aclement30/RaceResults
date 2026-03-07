@@ -21,20 +21,14 @@ export type {
 } from '../../src/types/results.ts'
 
 export type {
-  Team
+  Team,
+  TeamRoster
 } from '../../src/types/team.ts'
 
 export type AthleteSkillCategory = {
   athleteUciId: string
   skillLevels: { ROAD?: Record<string, string>, CX?: Record<string, string> }
   ageCategory: string | null
-}
-
-export type AthleteTeam = {
-  athleteUciId: string
-  year: number
-  teamId?: number
-  teamName: string
 }
 
 export type EventSummary =
@@ -55,4 +49,4 @@ export type AthleteManualEdit = {
     updatedAt: string
     updatedBy?: string
   }
-} & Partial<Athlete>
+} & Omit<Partial<Athlete>, 'teams'>
