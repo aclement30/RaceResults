@@ -10,7 +10,7 @@ export type Athlete = {
   nationality?: string
   birthYear?: number
   licenses: Record<string, string[]>
-  teams?: Record<string, { id?: number, name?: string }>
+  teams?: Record<string, { id?: number, name?: string } | null>
   skillLevel?: { ROAD?: string; CX?: string }
   ageCategory?: { ROAD?: string; CX?: string } // e.g. 'ELITE', 'JUNIOR', 'U13', 'U15', 'U17', 'U19', 'U23', 'MASTER'
   latestUpgrade?: { ROAD?: { date: string, confidence: number }; CX?: { date: string, confidence: number } }

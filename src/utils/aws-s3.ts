@@ -12,13 +12,13 @@ import { PUBLIC_BUCKET_FILES, PUBLIC_BUCKET_PATHS } from '../config/s3'
 import type { Team } from '../types/team'
 import keyBy from 'lodash/keyBy'
 
-const { VITE_AWS_REGION, VITE_AWS_POOL_ID, VITE_RR_S3_BUCKET } = import.meta.env || {}
+const { VITE_AWS_REGION, VITE_PUBLIC_AWS_IDENTITY_POOL_ID, VITE_RR_S3_BUCKET } = import.meta.env || {}
 
 const s3Client = new S3Client({
   region: VITE_AWS_REGION,
   credentials: fromCognitoIdentityPool({
     clientConfig: { region: VITE_AWS_REGION },
-    identityPoolId: VITE_AWS_POOL_ID,
+    identityPoolId: VITE_PUBLIC_AWS_IDENTITY_POOL_ID,
   }),
 })
 
