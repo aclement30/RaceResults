@@ -1,7 +1,7 @@
 import fp from 'fastify-plugin'
-import type { AuthError, CognitoUser, RawWithRequestContext } from '../types.ts'
-import type { FastifyPluginAsync, FastifyReply, FastifyRequest } from 'fastify'
 import jwt from 'jsonwebtoken'
+import type { AuthError, CognitoUser } from '../types.ts'
+import type { FastifyPluginAsync, FastifyReply, FastifyRequest } from 'fastify'
 
 const AuthPlugin: FastifyPluginAsync = async (fastify) => {
   fastify.decorate('requireAuth', async (request: FastifyRequest, reply: FastifyReply): Promise<void> => {

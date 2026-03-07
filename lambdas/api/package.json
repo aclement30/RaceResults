@@ -8,7 +8,7 @@
     "postbuild": "cd dist && zip -r index.zip index.js*",
     "test": "node --experimental-strip-types test.ts",
     "dev": "nodemon --exec 'node --experimental-strip-types' dev-server.ts",
-    "deploy": "aws lambda update-function-code --function-name race-results-api-stage --output json --no-cli-pager --zip-file fileb://dist/index.zip",
+    "deploy": "aws lambda update-function-code --function-name race-results-api-stage --output json --no-cli-pager --zip-file fileb://dist/index.zip && aws lambda update-function-code --function-name race-results-api-prod --output json --no-cli-pager --zip-file fileb://dist/index.zip",
     "push": "npm run build && npm run deploy"
   },
   "author": "Alex Clement",
@@ -17,6 +17,7 @@
   "type": "module",
   "devDependencies": {
     "@types/aws-lambda": "^8.10.152",
+    "@types/jsonwebtoken": "^9.0.10",
     "@types/node": "^24.3.0",
     "esbuild": "^0.25.9",
     "nodemon": "^3.1.0"

@@ -1,7 +1,7 @@
 import { buildFastifyApp } from './index.ts'
 import logger from '../shared/logger.ts'
 import type { FastifyInstance } from 'fastify'
-import type { RawWithRequestContext } from './fastify.ts'
+import type { RawWithRequestContext } from './types.ts'
 
 const PORT = Number(process.env.PORT || 3001)
 
