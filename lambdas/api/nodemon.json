@@ -1,0 +1,24 @@
+{
+  "watch": [
+    "index.ts",
+    "routes/",
+    "plugins/",
+    "../shared/",
+    "config.ts",
+    "dev-server.ts",
+    "types.ts"
+  ],
+  "ext": "ts,js,json",
+  "ignore": [
+    "node_modules/",
+    "dist/",
+    "*.test.ts",
+    "*.spec.ts"
+  ],
+  "exec": "node --experimental-strip-types dev-server.ts",
+  "env": {
+    "NODE_ENV": "development"
+  },
+  "delay": 1000,
+  "verbose": true
+}
