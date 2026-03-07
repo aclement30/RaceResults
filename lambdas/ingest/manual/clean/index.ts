@@ -80,7 +80,9 @@ export default async (importRefFiles: string[]): Promise<{ hashes: string[], yea
   try {
     logger.info(`Saving ${allEvents.length} events for year ${requestYear}...`)
 
-    await data.update.events(allEvents, { year: requestYear! })
+    if (allEvents.length) {
+      await data.update.events(allEvents, { year: requestYear! })
+    }
   } catch (err) {
     logger.error(`Failed to save event data: ${(err as any).message}`, {
       error: err,
@@ -139,7 +141,7 @@ const cleanSerie = async (
     serie,
     serieResults
   } = parseRawSerie(bundle, payloads, athleteManualEdits)
-  
+
   await data.update.serieResults(serieResults, { eventHash: serieResults.hash, year })
 
   return serie

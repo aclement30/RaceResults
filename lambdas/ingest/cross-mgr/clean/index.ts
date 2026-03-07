@@ -82,7 +82,9 @@ export default async ({ year, sourceHashes }: {
   try {
     logger.info(`Saving ${allEvents.length} events for year ${year}...`)
 
-    await data.update.events(allEvents, { year })
+    if (allEvents.length) {
+      await data.update.events(allEvents, { year })
+    }
   } catch (err) {
     logger.error(`Failed to save event data: ${(err as any).message}`, {
       error: err,
@@ -92,7 +94,9 @@ export default async ({ year, sourceHashes }: {
   try {
     logger.info(`Saving ${allSeries.length} serie for ${year}...`)
 
-    await data.update.series(allSeries, { year })
+    if (allSeries.length) {
+      await data.update.series(allSeries, { year })
+    }
   } catch (err) {
     logger.error(`Failed to save serie data: ${(err as any).message}`, {
       error: err,
@@ -130,7 +134,7 @@ const cleanSerie = async (
     serie,
     serieResults
   } = parseRawSerie(bundle, payloads as CrossMgrSerieRawData['payloads'], athleteManualEdits)
-  
+
   await data.update.serieResults(serieResults, { eventHash: serieResults.hash, year })
 
   return serie

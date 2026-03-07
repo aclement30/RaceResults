@@ -2,7 +2,6 @@ import type { Context, EventBridgeEvent, S3Event } from 'aws-lambda'
 import { handler as ManualImportParser } from './manual'
 import { handler as CrossMgrParser } from './cross-mgr'
 import { handler as WebscorerParser } from './webscorer'
-import { handler as AthletesParser } from '../processing'
 import data from '../shared/data.ts'
 import { getModifiedRefFiles } from './manual/utils.ts'
 
@@ -70,11 +69,6 @@ export const handler = async (event: EventBridgeEvent<any, any> | S3Event, _?: C
         handlerResponses['webscorer'] = await WebscorerParser()
       }
     } else if (eventBridgeRule?.endsWith('1-day')) {
-      // Daily watcher
-      watcher = 'DAILY'
-      console.log('Watcher', watcher)
-
-      handlerResponses['athletes'] = await AthletesParser({ year: new Date().getFullYear() })
     } else {
       // Hourly watcher
       watcher = 'HOURLY'
@@ -82,11 +76,6 @@ export const handler = async (event: EventBridgeEvent<any, any> | S3Event, _?: C
 
       handlerResponses['cross-mgr'] = await CrossMgrParser()
       handlerResponses['webscorer'] = await WebscorerParser()
-
-      const isWatchHourActive = await isEventDayWatchHour()
-
-      // During event days, refresh athletes data every hour
-      if (isWatchHourActive) handlerResponses['athletes'] = await AthletesParser({ year: new Date().getFullYear() })
     }
   }
 

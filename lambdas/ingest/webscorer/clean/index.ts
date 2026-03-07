@@ -68,7 +68,9 @@ export default async ({ year, sourceHashes }: {
   try {
     logger.info(`Saving ${allEvents.length} events for year ${year}...`)
 
-    await data.update.events(allEvents, { year })
+    if (allEvents.length) {
+      await data.update.events(allEvents, { year })
+    }
   } catch (err) {
     logger.error(`Failed to save event data: ${(err as any).message}`, {
       error: err,
@@ -98,7 +100,7 @@ const cleanEvent = async (
     event,
     eventResults
   } = parseRawEvent(bundle, payload)
-  
+
   await data.update.eventResults(eventResults, { eventHash: event.hash, year })
 
   return event
