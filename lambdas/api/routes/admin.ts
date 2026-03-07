@@ -25,6 +25,7 @@ export const adminRoutes: FastifyPluginAsync = async (fastify) => {
   }>('/athletes/:athleteUciId', PutAthleteRoute)
   // Teams
   fastify.get<{ Reply: Team[] }>('/teams', GetTeamsRoute)
+  fastify.post<{ Body: Omit<Team, 'id'> }>('/teams', PostTeamRoute)
   fastify.put<{ Params: { teamId: string }; Body: Team }>('/teams/:teamId', PutTeamRoute)
   fastify.delete<{ Params: { teamId: string } }>('/teams/:teamId', DeleteTeamRoute)
   fastify.patch<{ Params: { teamId: string } }>('/teams/:teamId/restore', RestoreTeamRoute)
@@ -147,16 +148,60 @@ const GetTeamsRoute = async () => {
   return data.get.teams()
 }
 
+const PostTeamRoute = async (request: FastifyRequest, response: FastifyReply) => {
+  const team = omit(request.body as Team, 'id')
+
+  if (!team.name) {
+    response.status(400).send({ error: 'Invalid query: `name` is missing' })
+    return
+  }
+
+  const existingTeams = await data.get.teams()
+
+  // Next id is max existing id + 1
+  const newTeamId = Math.max(...existingTeams.map(t => t.id)) + 1
+
+  // Check for duplicate team id
+  if (existingTeams.some(t => t.id === newTeamId)) {
+    // This should never happen since we're generating the next id based on existing ids,
+    // but we check just in case to prevent accidental overwrites
+    response.status(500).send({ error: `Team with id ${newTeamId} already exists` })
+    return
+  }
+
+  // Check for duplicate team name
+  if (existingTeams.some(t => t.name.toLowerCase() === team.name.toLowerCase())) {
+    response.status(400).send({ error: `Team with name "${team.name}" already exists` })
+    return
+  }
+
+  const newTeam = {
+    id: +newTeamId,
+    ...team,
+  }
+
+  await data.update.team(newTeam)
+
+  response.status(201).send(newTeam)
+}
+
 const PutTeamRoute = async (request: FastifyRequest, response: FastifyReply) => {
   const { teamId } = request.params as { teamId: string }
   const team = omit(request.body as Team, 'id')
 
-  if (!teamId) {
+  if (!teamId || isNaN(+teamId)) {
     response.status(400).send({ error: 'Invalid query: `teamId` is missing' })
     return
   }
 
-  const existingTeam = await data.get.teams().then(teams => teams.find(t => t.id === +teamId))
+  const existingTeams = await data.get.teams()
+  const existingTeam = existingTeams.find(t => t.id === +teamId)
+
+  // Check for duplicate team name
+  if (existingTeams.some(t => t.id !== +teamId && t.name.toLowerCase() === team.name.toLowerCase())) {
+    response.status(400).send({ error: `Team with name "${team.name}" already exists` })
+    return
+  }
 
   await data.update.team({
     id: +teamId,
