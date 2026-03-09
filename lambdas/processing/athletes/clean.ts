@@ -133,7 +133,7 @@ const reconcileAthleteProfiles = (
     ].includes(key)) return // Skip licenses, teams and categories, handled separately
 
     // @ts-ignore
-    if (existingProfile[key] === null && !!newProfile[key]) mergedProfile[key] = newProfile[key]
+    if ((existingProfile[key] === null || existingProfile[key] === undefined) && !!newProfile[key]) mergedProfile[key] = newProfile[key]
     else { // @ts-ignore
       if (existingProfile[key] !== newProfile[key] && (newProfile[key] !== null && newProfile[key] !== undefined) && newProfile.lastUpdated >= existingProfile.lastUpdated) {
         // @ts-ignore
