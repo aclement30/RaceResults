@@ -19,7 +19,6 @@ const logger = defaultLogger.child({ provider: PROVIDER_NAME })
 export const parseRawSerie = (
   serieBundle: ManualImportSerieFile,
   payloads: ManualImportRawData['payloads'],
-  athleteManualEdits: Record<string, AthleteManualEdit>
 ): { serie: SerieSummary, serieResults: SerieResults } => {
   logger.info(`Importing serie results for: ${serieBundle.name}`)
 
@@ -46,7 +45,6 @@ export const parseRawSerie = (
       fields: serieBundle.fields,
       importCategory,
       year: serieBundle.year,
-      athleteManualEdits,
     })
     const categoryGender = importCategory.outputLabel.includes('Men') ? 'M' : importCategory.outputLabel.includes('Women') ? 'F' : 'X'
     const categoryLabel = transformCategory(importCategory.outputLabel)
@@ -82,12 +80,11 @@ export const parseRawSerie = (
 
 const parseSerieIndividualResults = (
   csvData: string,
-  { fields, importCategory, year, athleteManualEdits }:
+  { fields, importCategory, year }:
   {
     fields: Record<string, string>,
     importCategory: ManualImportCategory,
     year: number,
-    athleteManualEdits: Record<string, AthleteManualEdit>
   }
 ): AthleteSerieResult[] => {
   logger.info(`Parsing serie individual results for ${importCategory.outputLabel}`)
@@ -116,9 +113,9 @@ const parseSerieIndividualResults = (
     const formattedUCIId = shapedRecord.uciId?.replace(/\s/g, '').trim()
     let team = TeamParser.parseTeamName(shapedRecord.team)
     // If athlete has an override for the current year team, use that instead
-    const teamOverride = athleteManualEdits[formattedUCIId]?.teams?.[year]?.name
+    const teamOverride = TeamParser.getManualTeamForAthlete(formattedUCIId, year)
     if (teamOverride) {
-      team = TeamParser.getTeamByName(teamOverride)
+      team = teamOverride
     }
 
     return {

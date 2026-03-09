@@ -1,5 +1,4 @@
 import { S3ServiceException } from '@aws-sdk/client-s3'
-import { keyBy } from 'lodash-es'
 import defaultLogger from '../../../shared/logger.ts'
 import { createEventSerieHash, s3 as RRS3 } from '../../../shared/utils.ts'
 import { PROVIDER_NAME, RAW_MANUAL_IMPORT_DATA_PATH } from '../config.ts'
@@ -14,15 +13,11 @@ import {
 import { TeamParser } from '../../../shared/team-parser.ts'
 import data from '../../../shared/data.ts'
 import type { RaceEvent, SerieSummary } from '../../../../src/types/results.ts'
-import type { AthleteManualEdit } from '../../../shared/types.ts'
 
 const logger = defaultLogger.child({ provider: PROVIDER_NAME })
 
 export default async (importRefFiles: string[]): Promise<{ hashes: string[], year: number }> => {
   await TeamParser.init()
-
-  const athleteManualEdits = await data.get.athleteManualEdits()
-  const athleteManualEditsByUciId: Record<string, AthleteManualEdit> = keyBy(athleteManualEdits, 'athleteUciId')
 
   const promises = await Promise.allSettled(importRefFiles.map(async (filePath) => {
     let bundle
@@ -41,10 +36,10 @@ export default async (importRefFiles: string[]): Promise<{ hashes: string[], yea
 
     const { type } = bundle
     if (type === 'event') {
-      const event = await cleanEvent(bundle, payloads, bundle.year, athleteManualEditsByUciId)
+      const event = await cleanEvent(bundle, payloads, bundle.year)
       return { event }
     } else if (type === 'serie') {
-      const serie = await cleanSerie(bundle, payloads, bundle.year, athleteManualEditsByUciId)
+      const serie = await cleanSerie(bundle, payloads, bundle.year)
       return { serie }
     } else {
       throw new Error(`Unsupported reference file type: ${(bundle as ManualImportBaseFile).type}`)
@@ -109,7 +104,6 @@ const cleanEvent = async (
   bundle: ManualImportRaceResultsEventFile | ManualImportEventFile,
   payloads: Record<string, string>,
   year: number,
-  athleteManualEdits: Record<string, AthleteManualEdit>
 ) => {
   let event
   let eventResults
@@ -124,7 +118,7 @@ const cleanEvent = async (
     }
   }
 
-  ;({ event, eventResults } = parseRawEvent(bundle as ManualImportEventFile, payloads, athleteManualEdits))
+  ;({ event, eventResults } = parseRawEvent(bundle as ManualImportEventFile, payloads))
 
   await data.update.eventResults(eventResults, { eventHash: event.hash, year })
 
@@ -135,12 +129,11 @@ const cleanSerie = async (
   bundle: ManualImportSerieFile,
   payloads: Record<string, string>,
   year: number,
-  athleteManualEdits: Record<string, AthleteManualEdit>
 ) => {
   const {
     serie,
     serieResults
-  } = parseRawSerie(bundle, payloads, athleteManualEdits)
+  } = parseRawSerie(bundle, payloads)
 
   await data.update.serieResults(serieResults, { eventHash: serieResults.hash, year })
 

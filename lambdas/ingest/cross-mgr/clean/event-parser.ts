@@ -39,7 +39,6 @@ const logger = defaultLogger.child({ provider: PROVIDER_NAME })
 export const parseRawEvent = (
   eventBundle: CrossMgrEventBundle,
   payloads: CrossMgrEventRawData['payloads'],
-  athleteManualEdits: Record<string, AthleteManualEdit>
 ): { event: RaceEvent, eventResults: EventResults } => {
   const firstPayload = Object.values(payloads)[0]
   const eventName = startCase(firstPayload.raceNameText.split('-')[0])
@@ -188,9 +187,9 @@ export const parseRawEvent = (
       const formattedUCIId = resultRow.UCIID?.replace(/\s/g, '').trim()
       let team = TeamParser.parseTeamName(resultRow.Team)
       // If athlete has an override for the current year team, use that instead
-      const teamOverride = athleteManualEdits[formattedUCIId]?.teams?.[+eventBundle.year]?.name
+      const teamOverride = TeamParser.getManualTeamForAthlete(formattedUCIId, eventBundle.year)
       if (teamOverride) {
-        team = TeamParser.getTeamByName(teamOverride)
+        team = teamOverride
       }
 
       const athlete: EventAthlete = {

@@ -1,4 +1,3 @@
-import { keyBy } from 'lodash-es'
 import type {
   CrossMgrEventRawData,
   CrossMgrSerieRawData
@@ -10,7 +9,6 @@ import { parseRawSerie } from './serie-parser.ts'
 import { TeamParser } from '../../../shared/team-parser.ts'
 import data from '../../../shared/data.ts'
 import type { RaceEvent, SerieSummary } from '../../../../src/types/results.ts'
-import type { AthleteManualEdit } from '../../../shared/types.ts'
 
 const logger = defaultLogger.child({ provider: PROVIDER_NAME })
 
@@ -19,9 +17,6 @@ export default async ({ year, sourceHashes }: {
   sourceHashes: string[],
 }) => {
   await TeamParser.init()
-
-  const athleteManualEdits = await data.get.athleteManualEdits()
-  const athleteManualEditsByUciId: Record<string, AthleteManualEdit> = keyBy(athleteManualEdits, 'athleteUciId')
 
   const promises = await Promise.allSettled(sourceHashes.map(async (hash) => {
     let bundleWithPayloads: CrossMgrEventRawData | CrossMgrSerieRawData
@@ -40,10 +35,10 @@ export default async ({ year, sourceHashes }: {
 
     const { type } = bundleWithPayloads
     if (type === 'event') {
-      const event = await cleanEvent(bundleWithPayloads, year, athleteManualEditsByUciId)
+      const event = await cleanEvent(bundleWithPayloads, year)
       return { event }
     } else if (type === 'serie') {
-      const serie = await cleanSerie(bundleWithPayloads, year, athleteManualEditsByUciId)
+      const serie = await cleanSerie(bundleWithPayloads, year)
       return { serie }
     } else {
       logger.error(`Unsupported bundle type: ${type} for ${year}/${hash}`, {
@@ -109,14 +104,13 @@ export default async ({ year, sourceHashes }: {
 const cleanEvent = async (
   bundleWithPayloads: CrossMgrEventRawData,
   year: number,
-  athleteManualEdits: Record<string, AthleteManualEdit>
 ) => {
   const { payloads, ...bundle } = bundleWithPayloads
 
   const {
     event,
     eventResults
-  } = parseRawEvent(bundle, payloads as CrossMgrEventRawData['payloads'], athleteManualEdits)
+  } = parseRawEvent(bundle, payloads as CrossMgrEventRawData['payloads'])
 
   await data.update.eventResults(eventResults, { eventHash: event.hash, year })
 
@@ -126,14 +120,13 @@ const cleanEvent = async (
 const cleanSerie = async (
   bundleWithPayloads: CrossMgrSerieRawData,
   year: number,
-  athleteManualEdits: Record<string, AthleteManualEdit>
 ) => {
   const { payloads, ...bundle } = bundleWithPayloads
 
   const {
     serie,
     serieResults
-  } = parseRawSerie(bundle, payloads as CrossMgrSerieRawData['payloads'], athleteManualEdits)
+  } = parseRawSerie(bundle, payloads as CrossMgrSerieRawData['payloads'])
 
   await data.update.serieResults(serieResults, { eventHash: serieResults.hash, year })
 

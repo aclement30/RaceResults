@@ -26,7 +26,6 @@ const logger = defaultLogger.child({ provider: PROVIDER_NAME })
 export const parseRawSerie = (
   serieBundle: CrossMgrEventBundle,
   payloads: CrossMgrSerieRawData['payloads'],
-  athleteManualEdits: Record<string, AthleteManualEdit>
 ): { serie: SerieSummary, serieResults: SerieResults } => {
   const alias = transformSerieAlias(serieBundle.serie, serieBundle.organizer)!
   const serieName = formatSerieName(alias)
@@ -53,7 +52,7 @@ export const parseRawSerie = (
     const resultType = getSeriesResultType(payload)
 
     if (resultType === 'INDIVIDUAL') {
-      individualResults = parseSerieIndividualResults(payload, filename, serie, athleteManualEdits)!
+      individualResults = parseSerieIndividualResults(payload, filename, serie)!
     } else {
       if (payload.includes('<div id="catContent0">')) {
         teamResults = parseSerieTeamResults(payload, filename, serie)!
@@ -88,7 +87,6 @@ const parseSerieIndividualResults = (
   fileContent: string,
   sourceFile: string,
   serieSummary: Pick<SerieSummary, 'hash' | 'name' | 'year' | 'organizerAlias'>,
-  athleteManualEdits: Record<string, AthleteManualEdit>
 ): SerieResults['individual'] => {
   logger.info('Parsing team results from ' + sourceFile)
 
@@ -168,10 +166,9 @@ const parseSerieIndividualResults = (
 
       if (athleteResult.uciId) {
         // If athlete has an override for the current year team, use that instead
-        const teamOverride = athleteManualEdits[athleteResult.uciId]?.teams?.[serieSummary.year]?.name
+        const teamOverride = TeamParser.getManualTeamForAthlete(athleteResult.uciId, serieSummary.year)
         if (teamOverride) {
-          const team = TeamParser.getTeamByName(teamOverride)
-          if (team) athleteResult.team = team.name
+          athleteResult.team = teamOverride
         }
       }
 
