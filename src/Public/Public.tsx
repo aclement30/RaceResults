@@ -35,7 +35,7 @@ export const Public = () => {
 
         setAthletes(new Map(Object.entries(athletes)))
         setAthleteLookupTable(new Map(Object.entries(lookupTable)))
-        setTeams(new Map(Object.entries(teams).map(([id, team]) => [+id, team])))
+        setTeams(new Map(teams.map((team) => [+team.id, team])))
         setYears(years)
 
         setLoadingStartupData(false)

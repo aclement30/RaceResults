@@ -185,7 +185,7 @@ export async function fetchSeriesResults(year: number, hash: string, ifModifiedS
   return { serieResults, lastModified: response.lastModified }
 }
 
-export async function fetchTeamsList(): Promise<Record<string, Team>> {
+export async function fetchTeamsList(): Promise<Team[]> {
   let response
 
   try {
@@ -193,13 +193,13 @@ export async function fetchTeamsList(): Promise<Record<string, Team>> {
   } catch (error) {
     // If the file is not found, return an empty array
     if (error instanceof FetchError && error.type === FETCH_ERROR_TYPE.NotFound) {
-      return {}
+      return []
     }
 
     throw error
   }
 
-  return JSON.parse(response.content) as Record<string, Team>
+  return JSON.parse(response.content) as Team[]
 }
 
 export async function fetchAthletesList(): Promise<Record<string, Athlete>> {
