@@ -375,26 +375,74 @@ export const getCombinedRaceCategories = ({
       },
     ]
   } else if (organizerAlias === 'LocalRide' && year === 2026) {
-    categoriesOverrides = [
-      {
-        label: 'B Wave',
-        umbrellaCategory: 'wave-b-x',
-        categories: [
-          'b-m',
-          'b-w',
-          'b-masters-m',
-        ],
-      },
-      {
-        label: 'C Wave',
-        umbrellaCategory: 'wave-c-x',
-        categories: [
-          'c-m',
-          'c-w',
-          'c-masters-m',
-        ],
-      },
-    ]
+    if (name === 'Thunderbird') {
+      categoriesOverrides = [
+        {
+          label: 'B Wave',
+          umbrellaCategory: 'wave-b-x',
+          categories: [
+            'b-m',
+            'b-w',
+            'b-masters-m',
+          ],
+        },
+        {
+          label: 'C Wave',
+          umbrellaCategory: 'wave-c-x',
+          categories: [
+            'c-m',
+            'c-w',
+            'c-masters-m',
+          ],
+        },
+      ]
+    } else if (name === 'Thornhill') {
+      categoriesOverrides = [
+        {
+          label: 'B (M) + Masters (M)',
+          umbrellaCategory: 'b-m--masters-(m)',
+          categories: [
+            'b-m',
+            'b-masters-m',
+          ],
+        },
+        {
+          label: 'C/D (W) + D (M)',
+          umbrellaCategory: 'wave-c-d-x',
+          categories: [
+            'c-d-w',
+            'd-m',
+          ],
+        },
+      ]
+    } else if (name === 'Wix Brown') {
+      categoriesOverrides = [
+        {
+          label: 'B (M) + Masters (M)',
+          umbrellaCategory: 'b-m--masters-(m)',
+          categories: [
+            'b-m',
+            'b-masters-m',
+          ],
+        },
+        {
+          label: 'C (M) + Masters (M)',
+          umbrellaCategory: 'c-m--masters-(m)',
+          categories: [
+            'c-m',
+            'c-masters-m',
+          ],
+        },
+        {
+          label: 'C/D (W)',
+          umbrellaCategory: 'wave-c-d-w',
+          categories: [
+            'c-w',
+            'd-w',
+          ],
+        },
+      ]
+    }
   }
 
   if (categoriesOverrides.length) return categoriesOverrides

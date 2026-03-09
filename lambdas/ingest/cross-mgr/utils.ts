@@ -58,6 +58,19 @@ export const transformCategory = (
     } else if (catName === 'Cat 3/4/5 (Women)') {
       return 'Cat 4/5 (W)'
     }
+  } else if (eventSummary.year === 2026 && eventSummary.name === 'Thornhill') {
+    if (catName === 'D (Open)') return 'D (M)'
+    else if (catName === 'D (Women)') return 'C/D (W)'
+    else if (catName === 'C (Women)') return 'C/D (W)'
+    else if (catName === 'B (Open)') return 'B (M)'
+    else if (catName === 'B Open (Open)') return 'B (M) + Masters (M)'
+  } else if (eventSummary.year === 2026 && eventSummary.name === 'Wix Brown') {
+    if (catName === 'C Open (Open)') return 'C (M) + Masters (M)'
+    else if (catName === 'C (Open)') return 'C (M)'
+    else if (catName === 'D (Open)') return 'D (M)'
+    else if (catName === 'CD Women (Women)') return 'C/D (W)'
+    else if (catName === 'B (Open)') return 'B (M)'
+    else if (catName === 'B Open (Open)') return 'B (M) + Masters (M)'
   }
 
   return defaultTransformCategory(catName)
