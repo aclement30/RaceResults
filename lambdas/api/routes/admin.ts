@@ -11,6 +11,7 @@ import {
   PutTeamRoute,
   RestoreTeamRoute
 } from './admin/teams.ts'
+import { GetConfigurationFileRoute, PutConfigurationFileRoute } from './admin/settings.ts'
 // import { GetLambdaProcessingLatestRunsRoute } from './admin/lambdas.ts'
 
 export const adminRoutes: FastifyPluginAsync = async (fastify) => {
@@ -39,4 +40,12 @@ export const adminRoutes: FastifyPluginAsync = async (fastify) => {
     Body: PutTeamRosterRequestBody
   }>('/teams/:teamId/roster', PutTeamRosterRoute)
   // fastify.get<{}>('/lambdas/processing/latest-runs', GetLambdaProcessingLatestRunsRoute)
+  fastify.get<{
+    Params: { filename: string };
+    Reply: any
+  }>('/settings/config-files/:filename', GetConfigurationFileRoute)
+  fastify.put<{
+    Params: { filename: string };
+    Body: any
+  }>('/settings/config-files/:filename', PutConfigurationFileRoute)
 }
