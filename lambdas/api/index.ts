@@ -6,6 +6,7 @@ import cors from '@fastify/cors'
 import { adminRoutes } from './routes/admin.ts'
 import { authPlugin } from './plugins/auth.ts'
 import logger from '../shared/logger.ts'
+import { CORS } from '../shared/config.ts'
 
 const ENV = process.env.ENV || 'dev'
 export const BASE_PATH = ENV === 'prod' ? '/api' : '/api/stage'
@@ -16,13 +17,10 @@ export async function buildFastifyApp() {
   })
 
   await app.register(cors, {
-    origin: [
-      'http://localhost:5173',
-      'https://race-results.aclement.com',
-    ],
-    methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization'],
-    credentials: true
+    origin: CORS.allowedOrigins,
+    methods: CORS.allowedMethods,
+    allowedHeaders: CORS.allowedHeaders,
+    credentials: CORS.credentials,
   })
 
   // Register plugins first
