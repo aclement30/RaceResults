@@ -32,11 +32,13 @@ const AuthPlugin: FastifyPluginAsync = async (fastify) => {
 
     if (reply.sent) return
 
-    // const userRole = request.user?.['custom:role'] as UserRole || 'user'
-    // if (userRole !== 'admin') {
-    //   reply.code(403).send({ error: 'Admin access required' } as AuthError)
-    //   return
-    // }
+    const ADMIN_GROUPS = ['SuperAdmins']
+    const isAdmin = ADMIN_GROUPS.some(g => request.user?.['cognito:groups']?.includes(g))
+
+    if (!isAdmin) {
+      reply.code(403).send({ error: 'Admin access required' } as AuthError)
+      return
+    }
   })
 
   // fastify.decorate('requireRole', (requiredRole: UserRole) => {

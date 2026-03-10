@@ -18,6 +18,7 @@ export type CognitoUser = {
   email_verified: boolean;
   'custom:role'?: string;
   'cognito:username': string;
+  'cognito:groups'?: string[];
   aud: string;
   iss: string;
   exp: number;
