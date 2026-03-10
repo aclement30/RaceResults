@@ -21,6 +21,7 @@
   },
   "type": "module",
   "dependencies": {
+    "@aws-sdk/client-sns": "^3.1005.0",
     "colors": "^1.4.0",
     "lodash-es": "^4.17.21",
     "short-hash": "^1.0.0"

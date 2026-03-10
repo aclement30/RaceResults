@@ -50,3 +50,10 @@ export type AthleteManualEdit = {
     updatedBy?: string
   }
 } & Omit<Partial<Athlete>, 'teams'>
+
+export type IngestEvent = {
+  year: number
+  eventHashes: string[]
+  seriesHashes: string[]
+  provider: string
+}

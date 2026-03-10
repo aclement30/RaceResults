@@ -9,7 +9,10 @@ import data from '../../shared/data.ts'
 const logger = defaultLogger.child({ provider: PROVIDER_NAME })
 const currentYear = new Date().getFullYear()
 
-export default async ({ year: requestedYear }: { year?: number } = {}) => {
+export default async ({ year: requestedYear, eventHash: requestedEventHash }: {
+  year?: number,
+  eventHash?: string
+} = {}) => {
   const { year, ...sourceBundles } = await getEventResultsList(requestedYear)
 
   logger.info(`${sourceBundles.events?.length || 0} updated events`)
@@ -19,8 +22,9 @@ export default async ({ year: requestedYear }: { year?: number } = {}) => {
   const lastCheckDate = await data.get.lastCheckDate(PROVIDER_NAME)
 
   const combinedBundles = [...(sourceBundles.events || [])] // , ...(sourceBundles.series || [])]
+  const filteredBundles = requestedEventHash ? combinedBundles.filter(bundle => bundle.hash === requestedEventHash) : combinedBundles
 
-  const promises = await Promise.allSettled(combinedBundles.map(bundle => importRawData(bundle, requestedYear, lastCheckDate)))
+  const promises = await Promise.allSettled(filteredBundles.map(bundle => importRawData(bundle, requestedYear, lastCheckDate)))
 
   const importedHashes = promises.filter((promise) => promise.status === 'fulfilled').map((promise) => promise.value)
 

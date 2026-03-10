@@ -16,7 +16,10 @@ import type { RaceEvent, SerieSummary } from '../../../../src/types/results.ts'
 
 const logger = defaultLogger.child({ provider: PROVIDER_NAME })
 
-export default async (importRefFiles: string[]): Promise<{ hashes: string[], year: number }> => {
+export default async (importRefFiles: string[], options?: { eventHash?: string }): Promise<{
+  hashes: { events: string[]; series: string[] },
+  year: number
+}> => {
   await TeamParser.init()
 
   const promises = await Promise.allSettled(importRefFiles.map(async (filePath) => {
@@ -34,6 +37,11 @@ export default async (importRefFiles: string[]): Promise<{ hashes: string[], yea
       throw new Error(`Failed to fetch raw ingestion data from ${filePath}: ${(err as any).message}`)
     }
 
+    if (options?.eventHash && bundle.hash !== options.eventHash) {
+      logger.info(`Skipping file ${filePath} with hash ${bundle.hash}`)
+      return { hash: bundle.hash, skipped: true }
+    }
+
     const { type } = bundle
     if (type === 'event') {
       const event = await cleanEvent(bundle, payloads, bundle.year)
@@ -48,7 +56,7 @@ export default async (importRefFiles: string[]): Promise<{ hashes: string[], yea
 
   const allEvents: RaceEvent[] = []
   const allSeries: SerieSummary[] = []
-  const cleanHashes: string[] = []
+  const cleanHashes: { events: string[]; series: string[] } = { events: [], series: [] }
   let requestYear
 
   promises.forEach((promise, i) => {
@@ -58,15 +66,15 @@ export default async (importRefFiles: string[]): Promise<{ hashes: string[], yea
         file: importRefFiles[i],
       })
     } else {
-      if (promise.value.event) {
+      if (promise.value.event && !promise.value.skipped) {
         const { event } = promise.value
         allEvents.push(event)
-        cleanHashes.push(event.hash)
+        cleanHashes.events.push(event.hash)
         requestYear = event.year
-      } else if (promise.value.serie) {
+      } else if (promise.value.serie && !promise.value.skipped) {
         const { serie } = promise.value
         allSeries.push(serie)
-        cleanHashes.push(serie.hash)
+        cleanHashes.series.push(serie.hash)
         requestYear = serie.year
       }
     }

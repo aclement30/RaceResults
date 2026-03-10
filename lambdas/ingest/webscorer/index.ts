@@ -3,8 +3,9 @@ import { PROVIDER_NAME } from './config.ts'
 
 import importData from './import.ts'
 import cleanData from './clean/index.ts'
+import { IngestEvent } from '../../shared/types'
 
-export const handler = async (options?: { year: number }) => {
+export const handler = async (options?: { year: number, eventHash?: string }): Promise<IngestEvent> => {
   logger.info(`Parser: ${PROVIDER_NAME}`)
   logger.info(`Options: ${JSON.stringify(options)}`)
 
@@ -16,19 +17,16 @@ export const handler = async (options?: { year: number }) => {
     // ({ year, hashes: importedHashes } = await importData())
   } else {
     // Import all files for the current year
-    ({ year, hashes: importedHashes } = await importData({ year: options?.year }))
+    ({ year, hashes: importedHashes } = await importData(options))
   }
 
   // Clean imported data
   const cleanedHashes = await cleanData({ year: year!, sourceHashes: importedHashes })
 
   return {
-    statusCode: 200,
-    body: JSON.stringify({
-      year: year!,
-      import: importedHashes,
-      clean: cleanedHashes,
-      provider: PROVIDER_NAME
-    }),
+    year: year!,
+    eventHashes: cleanedHashes,
+    seriesHashes: [], // No series in Webscorer
+    provider: PROVIDER_NAME
   }
 }

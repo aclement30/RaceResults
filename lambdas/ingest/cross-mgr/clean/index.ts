@@ -53,7 +53,7 @@ export default async ({ year, sourceHashes }: {
 
   const allEvents: RaceEvent[] = []
   const allSeries: SerieSummary[] = []
-  const cleanHashes: string[] = []
+  const cleanHashes: { events: string[]; series: string[] } = { events: [], series: [] }
 
   promises.forEach((promise, i) => {
     if (promise.status === 'rejected') {
@@ -65,10 +65,10 @@ export default async ({ year, sourceHashes }: {
     } else {
       if (promise.value.event) {
         allEvents.push(promise.value.event)
-        cleanHashes.push(sourceHashes[i])
+        cleanHashes.events.push(sourceHashes[i])
       } else if (promise.value.serie) {
         allSeries.push(promise.value.serie)
-        cleanHashes.push(sourceHashes[i])
+        cleanHashes.series.push(sourceHashes[i])
       }
     }
   })

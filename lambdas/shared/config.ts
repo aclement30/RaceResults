@@ -37,3 +37,15 @@ export const NO_CACHE_FILES = [
 ]
 
 export const CLEAN_ATHLETE_CATEGORIES_FILE = 'athletes_skill_categories.json'
+
+export const CORS = {
+  allowedOrigins: [
+    'http://localhost:5173',
+    'https://race-results.aclement.com',
+  ],
+  allowedMethods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization'],
+  credentials: true
+}
+
+export const AWS_DATA_INGEST_TOPIC_ARN = `arn:aws:sns:us-west-2:545296359752:race-results-data-ingest-${ENV === 'prod' ? 'prod' : 'stage'}`
