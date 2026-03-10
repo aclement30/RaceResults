@@ -1,0 +1,135 @@
+.login-container {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: radial-gradient(circle at 20% 80%, #da272d 0%, transparent 50%),
+  radial-gradient(circle at 80% 20%, #fece02 0%, transparent 50%),
+  radial-gradient(circle at 40% 40%, #2251a3 0%, transparent 50%),
+  #2251a3;
+  padding: 2rem;
+}
+
+.login-card {
+  background: white;
+  border-radius: 16px;
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1),
+  0 10px 10px -5px rgba(0, 0, 0, 0.04);
+  padding: 2rem;
+  width: 100%;
+  max-width: 450px;
+  border: 1px solid hsl(var(--hue), 30%, 90%);
+}
+
+.login-header {
+  margin-bottom: 2rem;
+}
+
+.login-title {
+  font-size: 1.8rem;
+  font-style: oblique;
+  font-weight: 700;
+  margin: 0 0 0.5rem 0;
+  line-height: 1.2;
+}
+
+.login-title span {
+  color: darkgray;
+}
+
+.login-content {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.login-description {
+  font-size: 0.95rem;
+  line-height: 1.5;
+  margin: 0;
+  text-align: center;
+}
+
+.login-button {
+  background: #2251a3;
+  color: white;
+  border: none;
+  border-radius: 12px;
+  padding: 1rem 1.5rem;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.login-button:hover {
+  background: #1a3d7a;
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(34, 81, 163, 0.4);
+}
+
+.login-button:active {
+  transform: translateY(0);
+}
+
+.login-icon {
+  width: 20px;
+  height: 20px;
+}
+
+/* Dark theme support */
+@media (prefers-color-scheme: dark) {
+  .login-card {
+    background: hsl(var(--hue), 20%, 15%);
+    border-color: hsl(var(--hue), 20%, 25%);
+  }
+
+  .login-title {
+    color: hsl(var(--hue), 80%, 80%);
+  }
+
+  .login-subtitle {
+    color: hsl(var(--hue), 40%, 70%);
+  }
+
+  .login-description {
+    color: hsl(var(--hue), 20%, 70%);
+  }
+}
+
+/* Mobile responsiveness */
+@media (max-width: 640px) {
+  .login-container {
+    padding: 1rem;
+  }
+
+  .login-card {
+    padding: 2rem 1.5rem;
+  }
+
+  .login-title {
+    font-size: 1.875rem;
+  }
+}
+
+/* Animation on load */
+.login-card {
+  animation: fadeInUp 0.6s ease-out;
+}
+
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}

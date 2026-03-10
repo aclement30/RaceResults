@@ -10,7 +10,7 @@ import { UIContextProvider } from './UIContext'
 import { AppContextProvider } from './AppContext'
 import { Public } from './Public/Public'
 import { ToggleUmamiTracking } from './Shared/ToggleUmamiTracking'
-// import { Admin } from './Admin/Admin'
+import { Admin } from './Admin/Admin'
 
 const theme = createTheme({
   cursorType: 'pointer',
@@ -28,7 +28,7 @@ function App() {
 
               <Routes>
                 <Route path="/toggle-umami" element={<ToggleUmamiTracking/>}/>
-                {/*<Route path="/admin/*" element={<Admin/>}/>*/}
+                <Route path="/admin/*" element={<Admin/>}/>
                 <Route path="*" element={<Public/>}/>
               </Routes>
             </AppContextProvider>
