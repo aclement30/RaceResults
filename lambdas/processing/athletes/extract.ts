@@ -10,7 +10,7 @@ import type { EventSummary } from '../../shared/types.ts'
 const logger = defaultLogger.child({ parser: SCRIPT_NAME })
 
 export const extractAthletes = async (
-  options: { year: number, eventHash?: string }
+  options: { year: number, eventHashes?: string[] }
 ): Promise<{ eventHashes: string[] }> => {
   logger.info(`Extracting athletes for year ${options.year} with filters: ${JSON.stringify(options)}...`)
 
@@ -21,7 +21,7 @@ export const extractAthletes = async (
   return { eventHashes }
 }
 
-const extractAllEventAthletes = async (options: { year: number, eventHash?: string }) => {
+const extractAllEventAthletes = async (options: { year: number, eventHashes?: string[] }) => {
   const events = await data.get.events({ ...options, ...DEFAULT_EVENT_FILTERS })
 
   const promises = await Promise.allSettled(events.map(async (event) => extractEventAthletes(event)))
