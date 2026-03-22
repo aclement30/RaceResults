@@ -164,7 +164,7 @@ export const transformOrganizerAlias = (alias: string): string => {
   return alias
 }
 
-export const transformSerieAlias = (serieAlias: string | null | undefined, organizerAlias: string) => {
+export const transformSerieAlias = (serieAlias: string | null | undefined, organizerAlias: string, year: number) => {
   switch (organizerAlias) {
     case 'WTNC2024':
     case 'LMCX2024':
@@ -174,6 +174,10 @@ export const transformSerieAlias = (serieAlias: string | null | undefined, organ
     case 'WTNC2022':
     case 'WTNC2021':
       return organizerAlias
+    case 'Thrashers':
+      if (serieAlias === 'SpringSeries' && year === 2026) {
+        return 'ThrashersSpringSeries'
+      }
     default:
       if (serieAlias?.toUpperCase().startsWith('SEYMOUR')) return undefined
 
@@ -192,6 +196,7 @@ export const transformLocation = (locationStr: string): { city: string, province
 }
 
 export const formatSerieName = (alias: string): string => {
+  if (alias === 'ThrashersSpringSeries') return 'Thrashers Spring Series'
   return startCase(alias)
 }
 

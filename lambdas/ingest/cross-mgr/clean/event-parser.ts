@@ -1,30 +1,8 @@
-import { mapValues } from 'lodash-es'
-import { startCase } from 'lodash-es'
-import type {
-  CrossMgrEventBundle,
-  CrossMgrEventRawData,
-  CrossMgrEventResultPayload
-} from '../types.ts'
-import type {
-  AthleteManualEdit,
-  AthleteRaceResult,
-} from '../../../shared/types.ts'
+import { mapValues, startCase } from 'lodash-es'
 import type { EventAthlete, EventCategory, EventResults, RaceEvent, TGender } from '../../../../src/types/results.ts'
-import {
-  formatRaceNotes, getEventDiscipline,
-  transformCategory, transformLocation,
-  transformOrganizer,
-  transformSerieAlias
-} from '../utils.ts'
-import {
-  capitalize,
-  createUmbrellaCategories,
-  getCombinedRaceCategories,
-  formatCategoryAlias,
-  formatProvince, getBaseCategories, shapeCategoriesResults,
-} from '../../../shared/utils.ts'
-import { PROVIDER_NAME, SOURCE_URL_PREFIX } from '../config.ts'
 import defaultLogger from '../../../shared/logger.ts'
+import { TeamParser } from '../../../shared/team-parser.ts'
+import type { AthleteManualEdit, AthleteRaceResult, } from '../../../shared/types.ts'
 import {
   calculateBCUpgradePoints,
   calculateFieldSize,
@@ -32,7 +10,25 @@ import {
   hasDoubleUpgradePoints,
   hasUpgradePoints
 } from '../../../shared/upgrade-points.ts'
-import { TeamParser } from '../../../shared/team-parser.ts'
+import {
+  capitalize,
+  createUmbrellaCategories,
+  formatCategoryAlias,
+  formatProvince,
+  getBaseCategories,
+  getCombinedRaceCategories,
+  shapeCategoriesResults,
+} from '../../../shared/utils.ts'
+import { PROVIDER_NAME, SOURCE_URL_PREFIX } from '../config.ts'
+import type { CrossMgrEventBundle, CrossMgrEventRawData, CrossMgrEventResultPayload } from '../types.ts'
+import {
+  formatRaceNotes,
+  getEventDiscipline,
+  transformCategory,
+  transformLocation,
+  transformOrganizer,
+  transformSerieAlias
+} from '../utils.ts'
 
 const logger = defaultLogger.child({ provider: PROVIDER_NAME })
 
@@ -44,7 +40,7 @@ export const parseRawEvent = (
   const firstPayload = Object.values(payloads)[0]
   const eventName = startCase(firstPayload.raceNameText.split('-')[0])
   const organizerObj = transformOrganizer(eventBundle.organizer, firstPayload.organizer)
-  const serie = transformSerieAlias(eventBundle.serie, eventBundle.organizer) || null
+  const serie = transformSerieAlias(eventBundle.serie, eventBundle.organizer, eventBundle.year) || null
 
   logger.info(`Parsing raw data for ${eventBundle.type} ${eventBundle.hash}: ${eventName}`)
 

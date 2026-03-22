@@ -1,25 +1,19 @@
-import type {
-  CrossMgrEventBundle,
-  CrossMgrSerieRawData
-} from '../types.ts'
-import {
-  formatSerieName,
-  transformCategory,
-  transformOrganizerAlias,
-  transformSerieAlias
-} from '../utils.ts'
+import * as cheerio from 'cheerio'
 import type {
   AthleteSerieResult,
   SerieIndividualCategory,
   SerieResults,
-  SerieSummary, SerieTeamCategory, TeamSerieResult
+  SerieSummary,
+  SerieTeamCategory,
+  TeamSerieResult
 } from '../../../../src/types/results.ts'
-import { capitalize, formatCategoryAlias, getBaseCategories } from '../../../shared/utils.ts'
-import * as cheerio from 'cheerio'
 import defaultLogger from '../../../shared/logger.ts'
-import { PROVIDER_NAME, SOURCE_URL_PREFIX } from '../config.ts'
 import { TeamParser } from '../../../shared/team-parser.ts'
 import type { AthleteManualEdit } from '../../../shared/types.ts'
+import { capitalize, formatCategoryAlias, getBaseCategories } from '../../../shared/utils.ts'
+import { PROVIDER_NAME, SOURCE_URL_PREFIX } from '../config.ts'
+import type { CrossMgrEventBundle, CrossMgrSerieRawData } from '../types.ts'
+import { formatSerieName, transformCategory, transformOrganizerAlias, transformSerieAlias } from '../utils.ts'
 
 const logger = defaultLogger.child({ provider: PROVIDER_NAME })
 
@@ -28,7 +22,7 @@ export const parseRawSerie = (
   payloads: CrossMgrSerieRawData['payloads'],
   athleteManualEdits: Record<string, AthleteManualEdit>
 ): { serie: SerieSummary, serieResults: SerieResults } => {
-  const alias = transformSerieAlias(serieBundle.serie, serieBundle.organizer)!
+  const alias = transformSerieAlias(serieBundle.serie, serieBundle.organizer, serieBundle.year)!
   const serieName = formatSerieName(alias)
 
   logger.info(`Parsing raw data for ${serieBundle.type} ${serieBundle.hash}: ${serieName}`)

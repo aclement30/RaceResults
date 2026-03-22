@@ -1,7 +1,7 @@
 import { flatten } from 'lodash-es'
 import { type AwsFiles, AwsS3Client } from '../../../shared/aws-s3.ts'
-import type { CrossMgrEventBundle } from '../types.ts'
 import { createEventSerieHash } from '../../../shared/utils.ts'
+import type { CrossMgrEventBundle } from '../types.ts'
 
 const S3_BUCKET = 'wimseyraceresults'
 const AWS_REGION = 'us-west-2'
@@ -168,7 +168,7 @@ const parseBucketFiles = (files: AwsFiles): Partial<CrossMgrEventBundle>[] => {
       date: null,
     }
 
-    if (fileFilteringParams.series?.length && fileFilteringParams.series.some(keyword => basename.includes(keyword)) || basename.toLowerCase().includes('-series')) {
+    if ((fileFilteringParams.series?.length && fileFilteringParams.series.some(keyword => basename.includes(keyword)) || basename.toLowerCase().includes('-series')) || (filename.includes('Thrashers/SpringSeries') && basename.toLowerCase().match(/^\d{4}_(series|teams)\.html$/))) {
       return {
         ...shapedFile,
         type: 'serie' as const,
