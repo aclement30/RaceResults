@@ -1,10 +1,9 @@
 import { groupBy, keyBy, omit } from 'lodash-es'
-import defaultLogger from '../../shared/logger.ts'
+import { DEBUG } from 'shared/config.ts'
+import data from 'shared/data.ts'
+import defaultLogger from 'shared/logger.ts'
+import type { AthleteRace, AthleteUpgradePoint, RaceEvent } from 'shared/types.ts'
 import { SCRIPT_NAME } from '../config.ts'
-import { DEBUG } from '../../shared/config.ts'
-import data from '../../shared/data.ts'
-import type { RaceEvent } from '../../shared/types.ts'
-import type { AthleteRace, AthleteUpgradePoint } from '../../../src/types/athletes.ts'
 
 const logger = defaultLogger.child({ parser: SCRIPT_NAME })
 
@@ -15,7 +14,7 @@ export const createViewAthleteProfiles = async ({ athleteIds, year, eventHashes 
 }) => {
   logger.info(`Creating athlete profiles view for ${athleteIds.length} athletes...`)
 
-  const allEvents = await data.get.events({ year, eventHashes }, { summary: false })
+  const allEvents = await data.get.events({ year, eventHashes }, { summary: false, includeDrafts: false })
 
   const keyedEvents = keyBy(allEvents as RaceEvent[], 'hash')
 
@@ -47,16 +46,9 @@ const processAthletesRaces = async (
         return null // or skip this point
       }
 
-      const categoryLabel = event.categories.find(c => c.alias === race.category)?.label
-      if (!categoryLabel) {
-        logger.error(`Category not found for event: ${race.eventHash}`)
-        return null // or skip this point
-      }
-
       return {
         ...omit(race, ['athleteUciId', 'firstName', 'lastName', 'fieldSize', 'upgradePoints']),
         eventName: event.name,
-        categoryLabel,
       } as AthleteRace
     }).filter(race => !!race) as AthleteRace[]
 
@@ -107,16 +99,9 @@ const processAthletesUpgradePoints = async (
         return null // or skip this point
       }
 
-      const categoryLabel = event.categories.find(c => c.alias === point.category)?.label
-      if (!categoryLabel) {
-        logger.error(`Category not found for event: ${point.eventHash}`)
-        return null // or skip this point
-      }
-
       return {
         ...omit(point, ['athleteUciId']),
         eventName: event.name,
-        categoryLabel,
       } as AthleteUpgradePoint
     }).filter(point => !!point) as AthleteUpgradePoint[]
 

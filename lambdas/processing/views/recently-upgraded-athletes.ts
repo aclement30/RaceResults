@@ -1,8 +1,7 @@
-import defaultLogger from '../../shared/logger.ts'
+import data from 'shared/data.ts'
+import defaultLogger from 'shared/logger.ts'
+import type { RecentlyUpgradedAthletes, TDiscipline } from 'shared/types.ts'
 import { SCRIPT_NAME } from '../config.ts'
-import type { RecentlyUpgradedAthletes } from '../../../src/types/athletes.ts'
-import data from '../../shared/data.ts'
-import type { TDiscipline } from '../../../src/types/results.ts'
 
 const logger = defaultLogger.child({ parser: SCRIPT_NAME })
 
@@ -19,7 +18,7 @@ export const createViewRecentlyUpgradedAthletes = async () => {
         const latestUpgrade = athlete.latestUpgrade[discipline]
 
         // Ignore low confidence upgrades
-        if (latestUpgrade.confidence < 0.5) return
+        if (latestUpgrade.confidence < 0.5 || !latestUpgrade.date) return
 
         const lastUpgrade = new Date(latestUpgrade.date)
         const now = new Date()

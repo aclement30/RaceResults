@@ -1,10 +1,10 @@
-import defaultLogger from '../../shared/logger.ts'
+import { keyBy } from 'lodash-es'
+import data from 'shared/data.ts'
+import defaultLogger from 'shared/logger.ts'
+import { TeamParser } from 'shared/team-parser.ts'
+import type { TeamRoster } from 'shared/types.ts'
 import { SCRIPT_NAME } from '../config.ts'
 import type { RawAthleteTeam } from '../types.ts'
-import { TeamParser } from '../../shared/team-parser.ts'
-import data from '../../shared/data.ts'
-import type { TeamRoster } from '../../shared/types.ts'
-import { keyBy } from 'lodash-es'
 
 const logger = defaultLogger.child({ parser: SCRIPT_NAME })
 
@@ -55,7 +55,7 @@ export const cleanAthletesTeams = async ({ athleteIds, year }: { athleteIds: str
         teamName: team.name,
       })
     }
-    
+
     const newTeamId = team?.id || 0
 
     if (currentTeamId !== newTeamId) {

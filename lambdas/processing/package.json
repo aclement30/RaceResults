@@ -4,9 +4,9 @@
   "main": "index.ts",
   "scripts": {
     "prebuild": "rm -rf dist",
-    "build": "esbuild index.ts --bundle --external:@aws-sdk --sourcemap --platform=node --target=es2020 --metafile=dist/metadata.json --outfile=dist/index.js",
+    "build": "tsx build.ts",
     "postbuild": "cd dist && zip -r index.zip index.js*",
-    "local": "node --experimental-strip-types run-local.ts",
+    "local": "tsx run-local.ts",
     "test": "cd .. && npm test",
     "test:watch": "cd .. && npm run test:watch",
     "test:coverage": "cd .. && npm run test:coverage",

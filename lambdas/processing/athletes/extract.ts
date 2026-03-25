@@ -1,11 +1,11 @@
-import { validateUCIId } from '../utils.ts'
-import defaultLogger from '../../shared/logger.ts'
+import { DEBUG } from 'shared/config'
+import data from 'shared/data.ts'
+import defaultLogger from 'shared/logger.ts'
+import type { EventSummary } from 'shared/types'
+import { capitalize, formatProvince } from 'shared/utils'
 import { DEFAULT_EVENT_FILTERS, SCRIPT_NAME } from '../config.ts'
-import type { RawAthlete, RawAthleteRaceResult } from '../types.ts'
-import { capitalize, formatProvince } from '../../shared/utils.ts'
-import { DEBUG } from '../../shared/config.ts'
-import data from '../../shared/data.ts'
-import type { EventSummary } from '../../shared/types.ts'
+import type { RawAthlete } from '../types.ts'
+import { validateUCIId } from '../utils.ts'
 
 const logger = defaultLogger.child({ parser: SCRIPT_NAME })
 
@@ -14,17 +14,17 @@ export const extractAthletes = async (
 ): Promise<{ eventHashes: string[] }> => {
   logger.info(`Extracting athletes for year ${options.year} with filters: ${JSON.stringify(options)}...`)
 
-  const { allEventsAthletes, eventHashes } = await extractAllEventAthletes(options)
+  const { allEventsAthletes, eventHashes } = await extractAllEventParticipants(options)
 
   await saveAllAthletes(allEventsAthletes, options.year)
 
   return { eventHashes }
 }
 
-const extractAllEventAthletes = async (options: { year: number, eventHashes?: string[] }) => {
-  const events = await data.get.events({ ...options, ...DEFAULT_EVENT_FILTERS })
+const extractAllEventParticipants = async (options: { year: number, eventHashes?: string[] }) => {
+  const events = await data.get.events({ ...options, ...DEFAULT_EVENT_FILTERS }, { includeDrafts: false })
 
-  const promises = await Promise.allSettled(events.map(async (event) => extractEventAthletes(event)))
+  const promises = await Promise.allSettled(events.map(async (event) => extractEventParticipants(event)))
 
   const allEventsAthletes: Record<string, RawAthlete[]> = {}
   let totalAthletesCount = 0
@@ -36,9 +36,9 @@ const extractAllEventAthletes = async (options: { year: number, eventHashes?: st
       totalAthletesCount += parseResult.value.length
       eventHashes.push(events[i].hash)
     } else {
-      logger.error(`Error while processing event athletes: ${parseResult.reason}`, {
+      logger.error(`Error while processing event participants: ${parseResult.reason}`, {
         hash: events[i].hash,
-        year: events[i].year,
+        year: options.year,
         error: parseResult.reason
       })
     }
@@ -49,73 +49,75 @@ const extractAllEventAthletes = async (options: { year: number, eventHashes?: st
   return { allEventsAthletes, eventHashes }
 }
 
-const extractEventAthletes = async (event: EventSummary): Promise<RawAthlete[]> => {
-  const eventResults = await data.get.eventResults(event.hash, event.year)
+const extractEventParticipants = async (event: EventSummary): Promise<RawAthlete[]> => {
+  const eventResults = await data.get.eventResults(event.hash, +event.date.slice(0, 4))
 
   if (!eventResults) {
-    logger.warn(`No results found for event ${event.hash} (${event.name} - ${event.date}), skipping athlete extraction`)
+    logger.warn(`No results found for event ${event.hash} (${event.name} - ${event.date}), skipping participants extraction`)
     return []
   }
 
   const allAthletes: Record<string, RawAthlete> = {}
   const eventYear = +event.date.substring(0, 4)
 
-  Object.values(eventResults.athletes).forEach((eventAthlete) => {
-    const {
-      uciId,
-      firstName,
-      lastName,
-      gender,
-      city,
-      province,
-      license,
-      age,
-      nationality,
-    } = eventAthlete
+  eventResults.categories.forEach((category) => {
+    category.results.forEach((eventParticipant) => {
+      const {
+        uciId,
+        firstName,
+        lastName,
+        gender,
+        city,
+        province,
+        license,
+        age,
+        nationality,
+      } = eventParticipant
 
-    if (!uciId) return
+      if (!uciId) return
 
-    if (!validateUCIId(uciId)) {
-      logger.warn(`Invalid UCI ID format for athlete: ${uciId} (${firstName} ${lastName}), skipping`)
-      return
-    }
+      if (!validateUCIId(uciId)) {
+        logger.warn(`Invalid UCI ID format for participant: ${uciId} (${firstName} ${lastName}), skipping`)
+        return
+      }
 
-    if (allAthletes[uciId]) {
-      logger.warn(`Duplicate athlete found: ${firstName} ${lastName} with UCI ID ${uciId}, skipping`)
-      return
-    }
+      if (allAthletes[uciId]) {
+        logger.warn(`Duplicate participant found: ${firstName} ${lastName} with UCI ID ${uciId}, skipping`)
+        return
+      }
 
-    if (!firstName || !lastName) {
-      logger.warn('Missing first or last name for athlete', { eventAthlete })
-      return
-    }
+      if (!firstName || !lastName) {
+        logger.warn('Missing first or last name for participant', { eventParticipant })
+        return
+      }
 
-    // Validate and process license
-    const processedLicense = license?.trim()?.toUpperCase()
-    const validLicense = processedLicense && processedLicense !== 'TEMP' ? processedLicense : null
+      // Validate and process license
+      const processedLicense = license?.trim()?.toUpperCase()
+      const validLicense = processedLicense && processedLicense !== 'TEMP' ? processedLicense : null
 
-    // Validate gender
-    const validGender = gender && [
-      'M',
-      'F',
-      'X'
-    ].includes(gender.toUpperCase()) ? gender.toUpperCase() as 'M' | 'F' | 'X' : undefined
+      // Validate gender
+      const validGender = gender && [
+        'M',
+        'F',
+        'X'
+      ].includes(gender.toUpperCase()) ? gender.toUpperCase() as 'M' | 'F' | 'X' : undefined
 
-    allAthletes[uciId] = {
-      uciId,
-      firstName: capitalize(firstName),
-      lastName: capitalize(lastName),
-      gender: validGender,
-      city: capitalize(city),
-      province: formatProvince(province),
-      birthYear: age ? eventYear - age : undefined,
-      licenses: validLicense ? { [eventYear]: [validLicense] } : {},
-      nationality: nationality?.trim()?.toUpperCase(),
-      lastUpdated: event.date
-    }
+      allAthletes[uciId] = {
+        uciId,
+        firstName: capitalize(firstName),
+        lastName: capitalize(lastName),
+        gender: validGender,
+        city: capitalize(city),
+        province: formatProvince(province),
+        birthYear: age ? eventYear - age : undefined,
+        licenses: validLicense ? { [eventYear]: [validLicense] } : {},
+        nationality: nationality?.trim()?.toUpperCase(),
+        lastUpdated: event.date
+      }
+    })
   })
 
-  if (DEBUG) logger.info(`${event.hash} - ${event.name} (${event.date}): ${Object.keys(allAthletes).length || 0} athletes found`)
+  if (DEBUG) logger.info(`${event.hash} - ${event.name} (${event.date}): ${Object.keys(allAthletes).length || 0} participants found`)
 
   return Object.values(allAthletes)
 }

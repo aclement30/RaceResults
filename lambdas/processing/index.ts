@@ -1,24 +1,24 @@
 import { APIGatewayProxyEventV2, Context, EventBridgeEvent, SNSEvent } from 'aws-lambda'
-import { TeamParser } from '../shared/team-parser.ts'
 import { performance } from 'node:perf_hooks'
+import { AthleteFinder } from 'shared/athlete-finder.ts'
+import { CORS } from 'shared/config.ts'
+import { TeamParser } from 'shared/team-parser.ts'
+import { RaceEventChange } from 'shared/types.ts'
 
 // Steps
-import { extractAthletes } from './athletes/extract'
 import { cleanAthletes } from './athletes/clean.ts'
 import { createAthleteLookupTable } from './athletes/create-lookup-table.ts'
-import { extractRaceResults } from './race-results/extract'
+import { extractAthletes } from './athletes/extract'
 import { cleanRaceResults } from './race-results/clean'
-import { extractUpgradePoints } from './upgrade-points/extract.ts'
-import { cleanUpgradePoints } from './upgrade-points/clean.ts'
-import { processAthletesUpgradeDates } from './upgrade-dates/process.ts'
-import { extractAthletesTeams } from './teams/extract'
+import { extractRaceResults } from './race-results/extract'
 import { cleanAthletesTeams } from './teams/clean.ts'
-import { createViewAthletes } from './views/athletes.ts'
+import { extractAthletesTeams } from './teams/extract'
+import { processAthletesUpgradeDates } from './upgrade-dates/process.ts'
+import { cleanUpgradePoints } from './upgrade-points/clean.ts'
+import { extractUpgradePoints } from './upgrade-points/extract.ts'
 import { createViewAthleteProfiles } from './views/athlete-profiles.ts'
-import { AthleteFinder } from '../shared/athlete-finder.ts'
+import { createViewAthletes } from './views/athletes.ts'
 import { createViewRecentlyUpgradedAthletes } from './views/recently-upgraded-athletes.ts'
-import { CORS } from '../shared/config.ts'
-import type { IngestEvent } from '../shared/types.ts'
 
 type RunOptions = {
   year: number
@@ -34,7 +34,10 @@ const HEADERS = {
   'Content-Type': 'application/json',
 }
 
-export const handler = async (event: EventBridgeEvent<any, any> | APIGatewayProxyEventV2 | SNSEvent, _?: Context) => {
+export const handler = async (
+  event: EventBridgeEvent<any, RaceEventChange> | APIGatewayProxyEventV2 | SNSEvent,
+  _?: Context
+) => {
   const options: RunOptions = { year: new Date().getFullYear(), athleteUciIds: [] }
   const start = performance.now()
 
@@ -105,7 +108,7 @@ export const handler = async (event: EventBridgeEvent<any, any> | APIGatewayProx
   } else if ('Records' in event && (event as SNSEvent).Records) {
     for (const record of event.Records) {
       try {
-        const message: IngestEvent = JSON.parse(record.Sns.Message)
+        const message: RaceEventChange = JSON.parse(record.Sns.Message)
         const { year, eventHashes } = message
 
         console.log(`Processing SNS message ${record.Sns.MessageId}`)
