@@ -3,11 +3,10 @@ import { AdminNavbar } from '../Navbar/Navbar'
 import { useEffect, useState } from 'react'
 import { showErrorMessage } from '../../utils/showErrorMessage'
 import { adminApi } from '../utils/api'
-import type { Athlete } from '../../types/athletes'
 import { useParams } from 'react-router'
 import { AdminAthleteList } from './List/List'
 import { AdminAthleteEdit } from './Edit/Edit'
-import type { Team } from '../../types/team'
+import type { Athlete, Team } from '../../../shared/types'
 
 export const AdminAthletes = () => {
   const [loadingData, setLoadingData] = useState<boolean>(true)

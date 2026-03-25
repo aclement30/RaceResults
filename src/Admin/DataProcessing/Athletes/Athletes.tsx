@@ -5,7 +5,7 @@ import { IconCircleCheckFilled, IconExclamationCircleFilled, IconPlayerPlay } fr
 import { useEffect, useMemo, useState } from 'react'
 import { fetchEvents } from '../../../utils/aws-s3'
 import { showErrorMessage } from '../../../utils/showErrorMessage'
-import type { RaceEvent } from '../../../types/results'
+import type { RaceEvent } from '../../../../shared/types/events'
 import { adminApi } from '../../utils/api'
 
 const YEAR_OPTIONS = Array.from({ length: 3 }, (_, i) => {

@@ -1,15 +1,12 @@
 import React from 'react'
-import { useAuth } from 'react-oidc-context'
+import { useProfile } from '../../utils/useProfile'
 
 interface RequireAdminProps {
   children: React.ReactNode
 }
 
 export const RequireAdmin: React.FC<RequireAdminProps> = ({ children }) => {
-  const { user } = useAuth()
-
-  const userGroups = (user?.profile['cognito:groups'] || []) as string[]
-  const isAdmin = userGroups.includes('SuperAdmins')
+  const { isAdmin } = useProfile()
 
   if (!isAdmin) {
     return null

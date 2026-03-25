@@ -1,27 +1,14 @@
-import {
-  Divider,
-  Group,
-  LoadingOverlay,
-  TextInput,
-  Select,
-  Button,
-  Stack,
-  Grid,
-  Fieldset,
-  Text
-} from '@mantine/core'
-import { useForm } from '@mantine/form'
-import { useEffect, useMemo, useState } from 'react'
-import { useNavigate, useParams } from 'react-router'
+import { Button, Divider, Fieldset, Grid, Group, LoadingOverlay, Select, Stack, Text, TextInput } from '@mantine/core'
 import { DatePickerInput } from '@mantine/dates'
+import { useForm } from '@mantine/form'
+import React, { useEffect, useMemo, useState } from 'react'
+import { useNavigate, useParams } from 'react-router'
+import type { Athlete, TDiscipline, Team } from '../../../../shared/types'
+import { Loader } from '../../../Loader/Loader'
 import { showErrorMessage } from '../../../utils/showErrorMessage'
 import { showSuccessMessage } from '../../../utils/showSuccessMessage'
-import { Loader } from '../../../Loader/Loader'
 import { adminApi } from '../../utils/api'
-import type { Athlete } from '../../../types/athletes'
-import type { Team } from '../../../../lambdas/shared/types'
 import { useFormChanges } from '../../utils/useFormChanges'
-import type { TDiscipline } from '../../../types/results'
 
 type AdminAthleteEditProps = {
   teams: Team[]
@@ -41,8 +28,18 @@ const BIRTH_YEAR_OPTIONS = Array.from(
   }
 )
 
-type FormValues = Partial<Athlete> & {
-  birthYear: string
+type FormValues = Omit<Partial<Athlete>, 'birthYear' | 'latestUpgrade'> & {
+  birthYear?: string
+  latestUpgrade?: {
+    ROAD?: {
+      date?: string | null
+      confidence: number
+    }
+    CX?: {
+      date?: string | null
+      confidence: number
+    }
+  }
 }
 
 export const AdminAthleteEdit: React.FC<AdminAthleteEditProps> = ({ teams, loading, onChange }) => {
@@ -76,36 +73,36 @@ export const AdminAthleteEdit: React.FC<AdminAthleteEditProps> = ({ teams, loadi
     fetchData()
   }, [])
 
-  const initialValues = useMemo(() => {
-    if (!athlete) return {}
-
+  const initialValues: FormValues = useMemo(() => {
     return {
-      uciId: athlete.uciId!,
-      firstName: athlete.firstName || '',
-      lastName: athlete.lastName || '',
-      gender: athlete.gender,
-      city: athlete.city || '',
-      province: athlete.province || '',
-      nationality: athlete.nationality || '',
-      birthYear: athlete.birthYear?.toString() || '',
-      licenses: athlete.licenses || {},
-      teams: athlete.teams || {},
-      skillLevel: athlete.skillLevel || { ROAD: undefined, CX: undefined },
-      ageCategory: athlete.ageCategory || { ROAD: undefined, CX: undefined },
-      latestUpgrade: athlete.latestUpgrade || {
+      uciId: athlete?.uciId!,
+      firstName: athlete?.firstName || '',
+      lastName: athlete?.lastName || '',
+      gender: athlete?.gender,
+      city: athlete?.city || '',
+      province: athlete?.province || '',
+      nationality: athlete?.nationality || '',
+      birthYear: athlete?.birthYear?.toString() ?? '',
+      licenses: athlete?.licenses || {},
+      teams: athlete?.teams || {},
+      skillLevel: athlete?.skillLevel || { ROAD: undefined, CX: undefined },
+      ageCategory: athlete?.ageCategory || { ROAD: undefined, CX: undefined },
+      latestUpgrade: athlete?.latestUpgrade || {
         ROAD: { date: undefined, confidence: 0.8 },
         CX: { date: undefined, confidence: 0.8 }
       },
-    } as FormValues
+    }
   }, [athlete])
 
-  const form = useForm<FormValues>()
-
-  const { getFieldStyles, hasFormChanges } = useFormChanges(form.values, initialValues)
+  const { getFieldStyles, hasFormChanges, onFormValuesChange, resetInitialValues } = useFormChanges(initialValues)
+  const form = useForm<FormValues>({
+    onValuesChange: onFormValuesChange,
+  })
 
   // Reset form values whenever initialValues change (e.g., when athleteManualEdits are loaded)
   useEffect(() => {
     form.setValues(initialValues)
+    resetInitialValues(initialValues)
   }, [initialValues])
 
   const handleSubmit = async (values: typeof form.values) => {
@@ -117,11 +114,23 @@ export const AdminAthleteEdit: React.FC<AdminAthleteEditProps> = ({ teams, loadi
         return
       }
 
-      const formattedValues: Partial<Athlete> = { ...values }
+      const formattedValues: Partial<Athlete> = {
+          ...values,
+          birthYear: values.birthYear ? parseInt(values.birthYear) : undefined,
+          latestUpgrade: {
+            ROAD: values.latestUpgrade?.ROAD?.date !== undefined
+              ? { date: values.latestUpgrade.ROAD.date, confidence: 0.8 }
+              : undefined,
+            CX: values.latestUpgrade?.CX?.date !== undefined
+              ? { date: values.latestUpgrade.CX.date, confidence: 0.8 }
+              : undefined,
+          },
+        }
 
         // Remove empty strings to avoid overwriting existing data with empty values
       ;(Object.keys(formattedValues) as Array<keyof typeof formattedValues>).forEach((key) => {
         if (['skillLevel', 'ageCategory'].includes(key)) {
+          // @ts-ignore
           ;(Object.keys(formattedValues[key]) as Array<TDiscipline>).forEach((discipline) => {
             // @ts-ignore
             if (formattedValues[key][discipline] === '') {
@@ -130,6 +139,7 @@ export const AdminAthleteEdit: React.FC<AdminAthleteEditProps> = ({ teams, loadi
             }
           })
         } else if (formattedValues[key] === '') {
+          // @ts-ignore
           if (initialValues[key]) {
             // @ts-ignore
             formattedValues[key] = null // Set to null to indicate deletion of existing value

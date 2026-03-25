@@ -1,12 +1,12 @@
-import { ActionIcon, Anchor, Group, Table, Pagination } from '@mantine/core'
-import { useMemo, useState } from 'react'
+import { ActionIcon, Anchor, Group, Pagination, Table } from '@mantine/core'
+import { IconExternalLink, IconPencil } from '@tabler/icons-react'
 import * as React from 'react'
-import { EmptyState } from '../../../Shared/EmptyState'
-import { renderSkillLevelWithAgeCategory } from '../../../Athlete/utils'
-import type { Athlete } from '../../../types/athletes'
-import { SearchField } from '../../../Shared/SearchField'
-import { IconPencil, IconExternalLink } from '@tabler/icons-react'
+import { useMemo, useState } from 'react'
 import { useNavigate } from 'react-router'
+import type { Athlete } from '../../../../shared/types'
+import { renderSkillLevelWithAgeCategory } from '../../../Athlete/utils'
+import { EmptyState } from '../../../Shared/EmptyState'
+import { SearchField } from '../../../Shared/SearchField'
 
 const currentYear = new Date().getFullYear()
 

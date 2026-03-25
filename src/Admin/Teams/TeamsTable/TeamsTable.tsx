@@ -6,7 +6,7 @@ import { IconPencil, IconExternalLink, IconSquareX, IconRestore } from '@tabler/
 import { useNavigate } from 'react-router'
 import { EmptyState } from '../../../Shared/EmptyState'
 import { SearchField } from '../../../Shared/SearchField'
-import type { Team, TeamRoster } from '../../../types/team'
+import type { Team, TeamRoster } from '../../../../shared/types'
 import { adminApi } from '../../utils/api'
 import { showErrorMessage } from '../../../utils/showErrorMessage'
 

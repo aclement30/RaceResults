@@ -7,8 +7,7 @@ import { adminApi } from '../utils/api'
 import { useParams } from 'react-router'
 import { AdminTeamList } from './List/List'
 import { AdminTeamEdit } from './Edit/Edit'
-import type { Team, TeamRoster } from '../../types/team'
-import type { Athlete } from '../../types/athletes'
+import type { Athlete, Team, TeamRoster } from '../../../shared/types'
 
 export const AdminTeams = () => {
   const [loadingData, setLoadingData] = useState<boolean>(true)

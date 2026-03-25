@@ -1,16 +1,10 @@
-import {
-  AppShell,
-  Badge,
-  Burger, Button,
-  Group,
-  useMatches
-} from '@mantine/core'
-import { useContext } from 'react'
-import { UIContext } from '../../UIContext'
+import { AppShell, Badge, Burger, Button, Group, useMatches } from '@mantine/core'
 import { useDisclosure } from '@mantine/hooks'
+import { useContext } from 'react'
 import { useAuth } from 'react-oidc-context'
-import { ENV, LOGOUT_URL } from '../utils/config'
 import { useNavigate } from 'react-router'
+import { UIContext } from '../../UIContext'
+import { ENV, LOGOUT_URL } from '../utils/config'
 
 const badgeStyles: React.CSSProperties = {
   fontStyle: 'normal',
@@ -48,7 +42,6 @@ export const AdminHeader = () => {
         <Burger
           opened={isNavbarOpened}
           onClick={toggleNavbar}
-          hiddenFrom="md"
           size="sm"
           data-umami-event="toggle-navbar"
         />

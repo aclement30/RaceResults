@@ -2,7 +2,7 @@ import { Button, Divider, Group, LoadingOverlay } from '@mantine/core'
 import { IconPlus } from '@tabler/icons-react'
 import { useNavigate } from 'react-router'
 import { Loader } from '../../../Loader/Loader'
-import type { Team, TeamRoster } from '../../../types/team'
+import type { Team, TeamRoster } from '../../../../shared/types'
 import { TeamsTable } from '../TeamsTable/TeamsTable'
 
 type AdminTeamListProps = {

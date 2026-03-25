@@ -1,20 +1,30 @@
-import { AppShell, Button, Divider, Grid, Group, NavLink, Stack, Text, Center, LoadingOverlay } from '@mantine/core'
+import {
+  Alert,
+  AppShell,
+  Button,
+  Center,
+  Divider,
+  Grid,
+  Group,
+  LoadingOverlay,
+  NavLink,
+  Stack,
+  Text
+} from '@mantine/core'
 import { IconCloudDownload, IconFileText } from '@tabler/icons-react'
-import { AdminNavbar } from '../Navbar/Navbar'
-import { JsonEditor, isValidJson } from 'modern-json-react'
-import { useState, useEffect, useMemo } from 'react'
-import { showErrorMessage } from '../../utils/showErrorMessage'
-import { adminApi } from '../utils/api'
-
-import 'modern-json-react/styles.css'
-import { ENV } from '../utils/config'
+import { highlight, languages } from 'prismjs/components/prism-core'
+import 'prismjs/components/prism-json'
+import 'prismjs/themes/prism.css'
+import './AdminConfigurationFileEditor.css'
+import { useEffect, useMemo, useState } from 'react'
+import Editor from 'react-simple-code-editor'
+import { EDITABLE_FILES } from '../../../shared/config'
 import { Loader } from '../../Loader/Loader'
+import { showErrorMessage } from '../../utils/showErrorMessage'
+import { AdminNavbar } from '../Navbar/Navbar'
 
-const EDITABLE_FILES: Record<string, string> = {
-  'athlete_overrides.json': 'Athlete Overrides',
-  'athlete_duplicates.json': 'Duplicate Athletes',
-  'event_days.json': 'Event Days',
-}
+import { adminApi } from '../utils/api'
+import { ENV } from '../utils/config'
 
 export const AdminConfigurationFileEditor = () => {
   const [selectedFile, setSelectedFile] = useState<string | null>()
@@ -23,6 +33,15 @@ export const AdminConfigurationFileEditor = () => {
   const [alternateVersionData, setAlternateVersionData] = useState<any>()
   const [saving, setSaving] = useState<boolean>(false)
   const [loading, setLoading] = useState<boolean>(false)
+
+  // Calculate line count to match editor behavior
+  const lineCount = useMemo(() => {
+    if (!data) return 1
+    // Count line breaks and add 1, but ensure minimum of 1
+    const matches = data.match(/\r?\n/g)
+    const count = matches ? matches.length + 1 : 1
+    return count
+  }, [data])
 
   // Check if current data differs from original loaded data
   const hasFormChanges = useMemo(() => {
@@ -35,6 +54,47 @@ export const AdminConfigurationFileEditor = () => {
     return JSON.stringify(alternateVersionData) !== JSON.stringify(data)
   }, [alternateVersionData, data])
 
+  const jsonValidationError = useMemo(() => {
+    if (!data) return null
+
+    try {
+      JSON.parse(data)
+      return null
+    } catch (e) {
+      const error = e as Error
+      const message = error.message
+
+      // Try to extract line number from error message
+      const lineMatch = message.match(/at position (\d+)/) || message.match(/line (\d+)/) || message.match(/at (\d+):/)
+      let lineNumber = null
+
+      if (lineMatch) {
+        const position = parseInt(lineMatch[1])
+        // If it's a character position, convert to line number
+        if (message.includes('position')) {
+          const textUpToPosition = data.substring(0, position)
+          lineNumber = textUpToPosition.split(/\r?\n/).length
+        } else {
+          lineNumber = position
+        }
+      }
+
+      let formattedMessage = message.replace('JSON.parse:', '').replace('of the JSON data', '').trim()
+      formattedMessage = formattedMessage.charAt(0).toUpperCase() + formattedMessage.slice(1)
+
+      return {
+        message: formattedMessage,
+        lineNumber: lineNumber
+      }
+    }
+  }, [data])
+
+  // Track error lines for highlighting
+  const errorLines = useMemo(() => {
+    if (!jsonValidationError?.lineNumber) return new Set()
+    return new Set([jsonValidationError.lineNumber])
+  }, [jsonValidationError])
+
   useEffect(() => {
     const fetchData = async () => {
       if (!selectedFile) return
@@ -42,8 +102,10 @@ export const AdminConfigurationFileEditor = () => {
       setLoading(true)
       try {
         const fileContent = await adminApi.get.settingConfigFile(selectedFile)
-        setData(fileContent)
-        setOriginalData(fileContent) // Store original data for comparison
+
+        const jsonString = JSON.stringify(fileContent, null, 2)
+        setData(jsonString)
+        setOriginalData(jsonString) // Store original data for comparison
       } catch (error) {
         showErrorMessage({
           title: 'File Loading Error',
@@ -83,8 +145,11 @@ export const AdminConfigurationFileEditor = () => {
     try {
       if (!selectedFile) return
 
-      if (!isValidJson(JSON.stringify(data))) {
-        showErrorMessage({ title: 'JSON Error', message: 'Please make sure that the file content is valid JSON' })
+      if (jsonValidationError) {
+        showErrorMessage({
+          title: 'JSON Error',
+          message: 'Please make sure that the file content is valid JSON before saving changes.'
+        })
         return
       }
 
@@ -202,7 +267,23 @@ export const AdminConfigurationFileEditor = () => {
                     </Group>
                   </Group>
 
-                  <div style={{ flex: '1 1 auto', minHeight: 0, height: '100%' }}>
+                  <div style={{
+                    flex: '1 1 auto',
+                    minHeight: 0,
+                    height: '100%',
+                    overflow: 'auto',
+                    border: '1px solid var(--mantine-color-gray-3)',
+                    borderRadius: 'var(--mantine-radius-default)',
+                    background: 'var(--mantine-color-body)',
+                    transition: 'border-color 0.2s',
+                  }} className="editor-with-line-numbers">
+                    <div
+                      className="line-numbers-bg"
+                      style={{
+                        height: `${lineCount * 1.5 * 12}px` /* No padding buffer needed */
+                      }}
+                    />
+
                     <LoadingOverlay
                       visible={loading} overlayProps={{ radius: 'sm', blur: 2 }}
                       loaderProps={{
@@ -210,13 +291,40 @@ export const AdminConfigurationFileEditor = () => {
                       }}
                     />
 
-                    <JsonEditor
-                      theme="auto"
+                    <div className="line-numbers">
+                      {Array.from({ length: lineCount }, (_, i) => {
+                        const lineNum = i + 1
+                        const hasError = errorLines.has(lineNum)
+                        return (
+                          <div
+                            key={i}
+                            className={hasError ? 'error-line' : ''}
+                            style={hasError ? { color: '#e03131', fontWeight: 'bold' } : {}}
+                          >
+                            {lineNum}
+                          </div>
+                        )
+                      })}
+                    </div>
+
+                    <Editor
                       value={data}
-                      onChange={(value: any) => setData(value)}
-                      height="100%"
+                      onValueChange={value => setData(value)}
+                      highlight={value => !!value && highlight(value, languages.json)}
+                      padding={0}
+                      style={{
+                        fontFamily: '"Fira code", "Fira Mono", monospace',
+                        fontSize: 12,
+                        outline: 'none',
+                      }}
                     />
                   </div>
+
+                  {!!jsonValidationError && (
+                    <Alert variant="light" color="red" radius={0} title="JSON Syntax Error" mt="sm" pt="xs">
+                      {jsonValidationError?.message}
+                    </Alert>
+                  )}
                 </div>
               ) : (
                 <Center h="100%">

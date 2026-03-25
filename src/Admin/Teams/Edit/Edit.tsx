@@ -1,24 +1,14 @@
-import React, { useEffect, useMemo, useState } from 'react'
-import {
-  Divider,
-  Group,
-  LoadingOverlay,
-  TextInput,
-  Button,
-  Stack,
-  Grid,
-  Tabs,
-} from '@mantine/core'
+import { Button, Divider, Grid, Group, LoadingOverlay, Stack, Tabs, TextInput, } from '@mantine/core'
 import { useForm } from '@mantine/form'
+import React, { useEffect, useMemo, useState } from 'react'
 import { useNavigate } from 'react-router'
+import type { Athlete, Team, TeamRoster } from '../../../../shared/types'
+import { Loader } from '../../../Loader/Loader'
 import { showErrorMessage } from '../../../utils/showErrorMessage'
 import { showSuccessMessage } from '../../../utils/showSuccessMessage'
-import { Loader } from '../../../Loader/Loader'
+import { TagInput } from '../../Shared/TagInput/TagInput'
 import { adminApi } from '../../utils/api'
 import { useFormChanges } from '../../utils/useFormChanges'
-import type { Athlete } from '../../../types/athletes'
-import type { Team, TeamRoster } from '../../../types/team'
-import { TagInput } from '../../Shared/TagInput/TagInput'
 import { TeamRosterForm } from './TeamRoster/TeamRoster'
 
 type AdminTeamEditProps = {
@@ -32,7 +22,7 @@ type AdminTeamEditProps = {
 }
 
 type FormValues = {
-  id: number
+  id?: number
   name: string
   city: string
   website: string
@@ -53,9 +43,7 @@ export const AdminTeamEdit: React.FC<AdminTeamEditProps> = ({
   const [activeTab, setActiveTab] = useState<string | null>('info')
   const navigate = useNavigate()
 
-  const form = useForm<FormValues>()
-
-  const initialValues = useMemo(() => ({
+  const initialValues: FormValues = useMemo(() => ({
     id: team?.id,
     name: team?.name || '',
     city: team?.city || '',
@@ -64,7 +52,8 @@ export const AdminTeamEdit: React.FC<AdminTeamEditProps> = ({
     uniqueKeywords: team?.uniqueKeywords || []
   }), [team])
 
-  const { getFieldStyles, hasFormChanges } = useFormChanges(form.values, initialValues)
+  const { getFieldStyles, hasFormChanges } = useFormChanges(initialValues)
+  const form = useForm<FormValues>()
 
   // Reset form values whenever team changes
   useEffect(() => {
@@ -80,7 +69,7 @@ export const AdminTeamEdit: React.FC<AdminTeamEditProps> = ({
         await adminApi.create.team(values)
       } else {
         // Update existing team
-        await adminApi.update.team(values)
+        await adminApi.update.team(values as Team)
       }
 
       showSuccessMessage({

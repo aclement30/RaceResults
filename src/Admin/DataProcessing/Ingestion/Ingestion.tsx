@@ -5,9 +5,8 @@ import { IconCircleCheckFilled, IconExclamationCircleFilled, IconPlayerPlay } fr
 import { useEffect, useMemo, useState } from 'react'
 import { fetchEvents } from '../../../utils/aws-s3'
 import { showErrorMessage } from '../../../utils/showErrorMessage'
-import type { RaceEvent } from '../../../types/results'
 import { adminApi } from '../../utils/api'
-import type { IngestEvent } from '../../../../lambdas/shared/types'
+import type { IngestEvent, RaceEvent } from '../../../../lambdas/shared/types'
 
 const YEAR_OPTIONS = Array.from({ length: 3 }, (_, i) => {
   const year = new Date().getFullYear() - i
@@ -118,7 +117,7 @@ export const ResultsProcessor: React.FC = () => {
     if (form.values.providers && form.values.providers.length > 0) {
       // Filter events based on selected providers
       filteredEvents = filteredEvents.filter(e =>
-        form.values.providers?.includes(e.provider)
+        e.source === 'ingest' && e.provider && form.values.providers?.includes(e.provider)
       )
     }
 

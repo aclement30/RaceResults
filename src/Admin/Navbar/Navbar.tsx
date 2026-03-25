@@ -1,19 +1,39 @@
 import { AppShell, Divider, NavLink } from '@mantine/core'
-import { useLocation, useNavigate } from 'react-router'
 import { useContext } from 'react'
+import { useLocation, useNavigate, useSearchParams } from 'react-router'
 import { Credit } from '../../Shared/Credit'
 import { UIContext } from '../../UIContext'
+import { AdminContext } from '../Shared/AdminContext'
 import { RequireAdmin } from '../Shared/RequireAdmin/RequireAdmin'
 
 export const AdminNavbar: React.FC = () => {
   const navigate = useNavigate()
   const location = useLocation()
   const { closeNavbar } = useContext(UIContext)
+  const { years: eventYears } = useContext(AdminContext)
+  const [searchParams] = useSearchParams()
 
   const isActive = (
-    path: string,
+    { path, query }: {
+      path: string;
+      query?: Record<string, string | number> | null;
+    },
     exact?: boolean
-  ) => exact ? location.pathname === path : location.pathname.startsWith(path)
+  ) => {
+    if (query !== undefined) {
+      // If query is null, we want to check that there are no query parameters in the URL
+      if (query === null && Array.from(searchParams.keys()).length !== 0) return false
+
+      // Check that all query parameters in the provided query object match the current URL's search parameters
+      if (query) {
+        const queryEntries = Object.entries(query)
+        const hasMatchingQuery = queryEntries.every(([key, value]) => searchParams.get(key) === value.toString())
+        if (!hasMatchingQuery) return false
+      }
+    }
+
+    return exact ? location.pathname === path : location.pathname.startsWith(path)
+  }
 
   return (
     <AppShell.Navbar p="md">
@@ -23,7 +43,7 @@ export const AdminNavbar: React.FC = () => {
             closeNavbar()
             navigate(`/admin/athletes`)
           }}
-          active={isActive('/admin/athletes')}
+          active={isActive({ path: '/admin/athletes' })}
           label="Athletes"
         />
 
@@ -32,7 +52,7 @@ export const AdminNavbar: React.FC = () => {
             closeNavbar()
             navigate(`/admin/teams`)
           }}
-          active={isActive('/admin/teams')}
+          active={isActive({ path: '/admin/teams' })}
           label="Teams"
         />
 
@@ -41,7 +61,7 @@ export const AdminNavbar: React.FC = () => {
             closeNavbar()
             navigate(`/admin/data-processing`)
           }}
-          active={isActive('/admin/data-processing')}
+          active={isActive({ path: '/admin/data-processing' })}
           label="Data Processing"
         />
 
@@ -50,7 +70,7 @@ export const AdminNavbar: React.FC = () => {
             closeNavbar()
             navigate(`/admin/settings`)
           }}
-          active={isActive('/admin/settings', true)}
+          active={isActive({ path: '/admin/settings' }, true)}
           label="Settings"
           defaultOpened
         >
@@ -60,7 +80,7 @@ export const AdminNavbar: React.FC = () => {
               navigate('/admin/settings/config-files')
             }}
             label="Configuration Files"
-            active={isActive('/admin/settings/config-files')}
+            active={isActive({ path: '/admin/settings/config-files' })}
           />
         </NavLink>
         <Divider style={{ marginBottom: '1rem' }}/>
@@ -68,12 +88,51 @@ export const AdminNavbar: React.FC = () => {
 
       <NavLink
         onClick={() => {
-          closeNavbar()
           navigate(`/admin/events`)
         }}
-        active={isActive('/admin/events')}
+        active={isActive({ path: '/admin/events', query: null }, true)}
+        opened={isActive({ path: '/admin/events' })}
         label="Events"
-      />
+      >
+        {eventYears.map(year => (
+          <NavLink
+            key={year}
+            onClick={() => {
+              closeNavbar()
+              navigate(`/admin/events?year=${year}`)
+            }}
+            label={year}
+            active={isActive({
+              path: `/admin/events`,
+              query: { year }
+            }, true) || isActive({ path: `/admin/events/${year}` })}
+          />
+        ))}
+      </NavLink>
+
+      <NavLink
+        onClick={() => {
+          navigate(`/admin/series`)
+        }}
+        active={isActive({ path: '/admin/series', query: null }, true)}
+        opened={isActive({ path: '/admin/series' })}
+        label="Series"
+      >
+        {eventYears.map(year => (
+          <NavLink
+            key={year}
+            onClick={() => {
+              closeNavbar()
+              navigate(`/admin/series?year=${year}`)
+            }}
+            label={year}
+            active={isActive({
+              path: `/admin/series`,
+              query: { year }
+            }, true) || isActive({ path: `/admin/series/${year}` })}
+          />
+        ))}
+      </NavLink>
 
       <Credit/>
     </AppShell.Navbar>

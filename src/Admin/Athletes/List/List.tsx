@@ -1,6 +1,7 @@
 import { Divider, Group, LoadingOverlay } from '@mantine/core'
+import React from 'react'
+import type { Athlete } from '../../../../shared/types'
 import { Loader } from '../../../Loader/Loader'
-import type { Athlete } from '../../../types/athletes'
 import { AthletesTable } from '../AthletesTable/AthletesTable'
 
 type AdminAthleteListProps = {
