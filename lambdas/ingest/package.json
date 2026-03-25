@@ -4,10 +4,10 @@
   "main": "index.ts",
   "scripts": {
     "prebuild": "rm -rf dist",
-    "build": "esbuild index.ts --bundle --external:@aws-sdk --sourcemap --platform=node --target=es2020 --metafile=dist/metadata.json --outfile=dist/index.js",
+    "build": "tsx build.ts",
     "postbuild": "cd dist && zip -r index.zip index.js*",
     "build-visualizer": "esbuild-visualizer --metadata dist/metadata.json --filename dist/stats.html --open",
-    "local": "node --experimental-strip-types run-local.ts",
+    "local": "tsx run-local.ts",
     "deploy": "aws lambda update-function-code --function-name race-results-watcher-stage --output json --no-cli-pager --zip-file fileb://dist/index.zip && aws lambda update-function-code --function-name race-results-watcher-prod --output json --no-cli-pager --zip-file fileb://dist/index.zip"
   },
   "author": "Alex Clement",

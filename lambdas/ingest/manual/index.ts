@@ -1,9 +1,8 @@
-import logger from '../../shared/logger.ts'
+import logger from 'shared/logger.ts'
+import type { IngestEvent } from 'shared/types.ts'
+import cleanData from './clean/index.ts'
 import { PROVIDER_NAME } from './config.ts'
 import { listRefFiles } from './utils.ts'
-
-import cleanData from './clean/index.ts'
-import { IngestEvent } from '../../shared/types'
 
 export const handler = async (options: {
   year?: number,
@@ -35,7 +34,7 @@ export const handler = async (options: {
   const { hashes: cleanedHashes, year } = await cleanData(importRefFiles, options)
 
   return {
-    year: options.year!,
+    year,
     eventHashes: cleanedHashes.events,
     seriesHashes: cleanedHashes.series,
     provider: PROVIDER_NAME

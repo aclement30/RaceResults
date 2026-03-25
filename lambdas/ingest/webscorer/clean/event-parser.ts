@@ -1,82 +1,80 @@
 import * as cheerio from 'cheerio'
-import shortHash from 'short-hash'
-import { mapValues, omitBy } from 'lodash-es'
 import {
-  calculateBCUpgradePoints,
-  calculateFieldSize,
-  getSanctionedEventType,
-  hasDoubleUpgradePoints,
-  hasUpgradePoints
-} from '../../../shared/upgrade-points.ts'
-import type {
-  AthleteRaceResult,
-  EventAthlete,
-  EventCategory,
-  EventResults,
-  RaceEvent
-} from '../../../../src/types/results.ts'
-import {
-  capitalize,
   createUmbrellaCategories,
-  formatCategoryAlias, getBaseCategories,
-  getCombinedRaceCategories, shapeCategoriesResults
-} from '../../../shared/utils.ts'
-import { TeamParser } from '../../../shared/team-parser.ts'
-import defaultLogger from '../../../shared/logger.ts'
+  formatCategoryAlias,
+  getCombinedRaceCategories,
+  getIgnoredCategories,
+  transformCategoryLabel
+} from 'shared/categories'
+import { getEventDiscipline, getRaceType, getSanctionedEventType } from 'shared/events'
+import defaultLogger from 'shared/logger.ts'
+import { TeamParser } from 'shared/team-parser'
+import type {
+  CreateEventCategory,
+  CreateEventResults,
+  ParticipantResult,
+  TParticipantStatus,
+  UpdateEvent
+} from 'shared/types.ts'
+import { calculateBCUpgradePoints, calculateFieldSize, hasUpgradePoints } from 'shared/upgrade-points'
+import { capitalize } from 'shared/utils'
+import shortHash from 'short-hash'
+import { formatDurationToSeconds } from '../../manual/utils.ts'
 import { PROVIDER_NAME } from '../config.ts'
 import type { WebscorerEvent } from '../types.ts'
-import { getEventDiscipline, getIgnoredCategories, transformCategory } from '../utils.ts'
-import { formatDurationToSeconds } from '../../manual/utils.ts'
 
 const logger = defaultLogger.child({ provider: PROVIDER_NAME })
 
-export const parseRawEvent = (
+export const parseRawEvent = async (
   eventBundle: WebscorerEvent,
   payload: string,
-): { event: RaceEvent, eventResults: EventResults } => {
+): Promise<{ event: UpdateEvent, eventResults: CreateEventResults }> => {
   const raceSummary = extractRaceSummary(payload)
-  const discipline = getEventDiscipline(raceSummary.sport)
+  const discipline = await getEventDiscipline({ sport: raceSummary.sport })
   const isTimeTrial = raceSummary.startType === 'Interval start'
 
   logger.info(`Parsing raw data for ${eventBundle.type} ${eventBundle.hash}: ${eventBundle.name}`)
 
-  const sanctionedEventType = getSanctionedEventType({
+  const sanctionedEventType = await getSanctionedEventType({
+    eventName: eventBundle.name,
     organizerAlias: eventBundle.organizer,
-    name: eventBundle.name,
-    serie: eventBundle.serie,
     year: eventBundle.year,
+    serieAlias: eventBundle.serie,
   })
 
-  const event: RaceEvent = {
+  const event: UpdateEvent = {
     hash: eventBundle.hash,
     date: eventBundle.date!,
-    year: eventBundle.year,
-    type: 'event',
     discipline,
     location: eventBundle.location,
     organizerAlias: eventBundle.organizer,
-    organizerName: eventBundle.organizer,
     name: eventBundle.name,
-    isTimeTrial,
-    serie: eventBundle.serie,
+    serie: eventBundle.serie || null,
     sanctionedEventType,
-    hasUpgradePoints: hasUpgradePoints(sanctionedEventType),
-    isDoubleUpgradePoints: hasDoubleUpgradePoints(sanctionedEventType),
+    raceType: null,
+    sourceUrls: [eventBundle.sourceUrl],
+    // Metadata
     provider: PROVIDER_NAME,
-    categories: [],
-    lastUpdated: eventBundle.lastUpdated!,
+    updatedAt: eventBundle.lastUpdated,
+    published: false,
   }
 
-  let { athletes: allEventAthletes, results: allEventCategories } = extractCategoriesResults(payload, eventBundle)
+  event.raceType = await getRaceType({ ...event, isTimeTrial })
+
+  let allEventCategories = await extractCategoriesResults(payload, eventBundle)
 
   // Filter out ignored categories
-  const ignoredCategories = getIgnoredCategories(event)
-  allEventCategories = omitBy(allEventCategories, (category: EventCategory) => {
-    return ignoredCategories.includes(category.alias)
-  })
+  const ignoredCategories = await getIgnoredCategories({ serieAlias: event.serie })
+  allEventCategories = allEventCategories.filter((category) => !ignoredCategories.includes(category.alias))
 
   // Check if some categories are combined
-  const combinedCategoryGroups = getCombinedRaceCategories(event)
+  const combinedCategoryGroups = await getCombinedRaceCategories({
+    eventHash: event.hash,
+    serieAlias: event.serie,
+    organizerAlias: event.organizerAlias,
+    eventName: event.name,
+    year: eventBundle.year,
+  })
 
   // Create umbrella categories for combined categories
   const {
@@ -95,28 +93,33 @@ export const parseRawEvent = (
     })
   }
 
-  if (event.hasUpgradePoints) {
+  if (hasUpgradePoints(sanctionedEventType)) {
+    const parentCategories = allEventCategories.reduce((acc, category) => {
+      if (category.parentCategory) acc.add(category.alias)
+      return acc
+    }, new Set<string>())
+
     // Calculate upgrade points for each category
-    allEventCategories = mapValues(allEventCategories, (category: EventCategory, categoryAlias: string) => {
+    allEventCategories = allEventCategories.map((category) => {
       let categoryGroup
       let fieldSize
 
-      if (category.combinedCategories) {
-        categoryGroup = combinedCategoryGroups.find(group => group.umbrellaCategory === category.alias)
+      if (parentCategories.has(category.alias)) {
+        categoryGroup = combinedCategoryGroups.find(group => group.parentCategory === category.alias)
 
-        // Dont calculate upgrade points for umbrella categories, unless specified
-        if (categoryGroup?.categoriesForPoints !== 'UMBRELLA') return category
+        // Dont calculate upgrade points for parent categories, unless specified
+        if (categoryGroup?.categoriesForPoints !== 'PARENT') return category
 
-        const combinedCategories = [category]
-        fieldSize = calculateFieldSize(combinedCategories)
+        const subCategories = [category]
+        fieldSize = calculateFieldSize(subCategories)
       } else {
-        categoryGroup = combinedCategoryGroups.find(group => group.categories.some(c => c === categoryAlias))
+        categoryGroup = combinedCategoryGroups.find(group => group.categories.some(c => c === category.alias))
 
         // Dont calculate upgrade points for combined categories, unless specified
-        if (categoryGroup?.categoriesForPoints === 'UMBRELLA') return category
+        if (categoryGroup?.categoriesForPoints === 'PARENT') return category
 
-        const combinedCategories = categoryGroup?.categories.map(alias => allEventCategories[alias]) || [category]
-        fieldSize = calculateFieldSize(combinedCategories)
+        const subCategories = categoryGroup?.categories.map(alias => allEventCategories.find(c => c.alias === alias)!) || [category]
+        fieldSize = calculateFieldSize(subCategories)
       }
 
       // Calculate upgrade points for the category/combined categories
@@ -126,43 +129,54 @@ export const parseRawEvent = (
         eventType: sanctionedEventType,
       })
 
+      if (eventBundle.hash === 'ff663175' && upgradePoints.some(p => !p.position)) console.log({
+        results: category.results,
+        upgradePoints
+      })
+
       return {
         ...category,
         fieldSize,
         upgradePoints,
-      } as EventCategory
+      }
     })
   }
 
-  event.categories = getBaseCategories(allEventCategories, { organizerAlias: event.organizerAlias, serie: event.serie })
+  if (Object.keys(allEventCategories).length) event.published = true
+
+
+  // Add last updated timestamp to each category
+  allEventCategories = allEventCategories.map(category => ({
+    ...category,
+    updatedAt: eventBundle.lastUpdated,
+  }))
 
   return {
     event,
     eventResults: {
       hash: event.hash,
-      athletes: allEventAthletes,
-      results: shapeCategoriesResults(allEventCategories),
-      sourceUrls: [eventBundle.sourceUrl],
-      lastUpdated: eventBundle.lastUpdated!,
+      categories: allEventCategories,
     }
   }
 }
 
-const extractCategoriesResults = (payload: string, eventSummary: WebscorerEvent) => {
+const extractCategoriesResults = async (
+  payload: string,
+  eventSummary: WebscorerEvent
+): Promise<CreateEventCategory[]> => {
   const $ = cheerio.load(payload)
 
   const resultPanels = $('#CPH1_upResultsPanel').children('div')
 
-  const allEventCategories: Record<string, EventCategory> = {}
-  const allEventAthletes: Record<string, EventAthlete> = {}
+  const allEventCategories: CreateEventCategory[] = []
 
-  resultPanels.toArray().forEach((panel) => {
-    const categoryName = transformCategory($(panel).find('.category-header .categoryTableTitle').text().trim(), eventSummary)
+  for (const panel of resultPanels.toArray()) {
+    const categoryName = await transformCategoryLabel($(panel).find('.category-header .categoryTableTitle').text().trim(), { serieAlias: eventSummary.serie })
     const categoryAlias = formatCategoryAlias(categoryName)
     const categoryGender = categoryName.includes('Male') ? 'M' : categoryName.includes('Female') ? 'F' : 'X'
     const raceTable = $(panel).find('table.results-table')
     const rows = raceTable.find('tbody tr')
-    const athleteRaceResults: AthleteRaceResult[] = []
+    const participantResults: ParticipantResult[] = []
 
     rows.toArray().forEach((row) => {
       let position: string | number = -1
@@ -170,7 +184,7 @@ const extractCategoriesResults = (payload: string, eventSummary: WebscorerEvent)
       let athleteName = ''
       let teamName = ''
       let ageCategory = null
-      let gender = 'X'
+      let gender = undefined
       let lapDurations: number[] = []
       let lapGaps: number[] = []
       let lapTimes: Array<number | null> = []
@@ -182,7 +196,12 @@ const extractCategoriesResults = (payload: string, eventSummary: WebscorerEvent)
         const cellClassname = $(cell).attr('class') || ''
 
         if (cellClassname === 'r-place') {
-          position = +$(cell).text().trim()
+          const rawPosition = $(cell).text().trim()
+          if (rawPosition === '-' || isNaN(+rawPosition)) {
+            position = -1
+          } else {
+            position = +rawPosition
+          }
         } else if (cellClassname === 'r-bibnumber') {
           bibNumber = $(cell).text().replace('-', '').trim()
         } else if (cellClassname === 'r-racername') {
@@ -217,80 +236,92 @@ const extractCategoriesResults = (payload: string, eventSummary: WebscorerEvent)
           })
         } else if (cellClassname === 'r-finish-time') {
           const finishTimeText = $(cell).text().trim()
-          if (!finishTimeText.includes('lap') && finishTimeText !== '-' && finishTimeText !== 'DNF') {
+          if (!finishTimeText.includes('lap') && finishTimeText !== '-' && !/^[A-Z]{2,3}$/.test(finishTimeText)) {
             finishTime = formatDurationToSeconds(finishTimeText)
           }
         } else if (cellClassname === 'r-difference') {
           const finishGapText = $(cell).find('.sel-D').text().trim()
 
-          if (finishGapText) {
-            if (finishGapText === '-') {
-              finishGap = 0
-            } else {
-              finishGap = formatDurationToSeconds(finishGapText)
+          try {
+            if (finishGapText) {
+              if (finishGapText === '-') {
+                finishGap = 0
+              } else {
+                finishGap = formatDurationToSeconds(finishGapText)
+              }
             }
+          } catch (e) {
+            logger.error(`Error parsing finish gap for athlete ${athleteName} in category ${categoryAlias}: ${(e as any).message}`, {
+              provider: PROVIDER_NAME,
+              eventHash: eventSummary.hash,
+              categoryAlias,
+              athleteName,
+              finishGapText,
+            })
           }
 
           totalLaps = +$(cell).find('.sel-L').text().trim()
         }
       })
 
-      let athleteId = bibNumber ? (bibNumber as number).toString() : shortHash(athleteName)
+      let participantId = bibNumber ? (bibNumber as number).toString() : shortHash(athleteName)
 
       const [firstName = '', ...lastNames] = athleteName.split(' ')
 
       let team = TeamParser.parseTeamName(teamName)
 
-      if (!allEventAthletes[athleteId]) {
-        allEventAthletes[athleteId] = {
-          bibNumber: bibNumber ? +bibNumber : undefined,
-          firstName: capitalize(firstName),
-          lastName: lastNames.length ? capitalize(lastNames.join(' ')) : undefined,
-          gender: gender as 'M' | 'F' | 'X',
-          team: team?.name,
-        }
-      }
-
       let isDNF = false
       if (!finishTime && lapTimes.length > 0) {
-        finishTime = Math.max(...lapTimes.filter(time => time !== null) as number[])
+        const nonNullLapTimes = lapTimes.filter(time => time !== null)
+        if (nonNullLapTimes.length) finishTime = Math.max(...nonNullLapTimes)
         isDNF = true
       }
 
-      const status: 'FINISHER' | 'DNF' | 'DNS' | 'OTL' = isDNF ? 'DNF' : finishTime ? 'FINISHER' : 'DNS'
+      const status: TParticipantStatus = isDNF ? 'DNF' : finishTime ? 'FINISHER' : 'DNS'
 
-      athleteRaceResults.push({
-        position,
-        athleteId,
-        bibNumber,
+      // Fix a weird bug in older events
+      if ((!position || position < 0) && status === 'FINISHER' && finishTime && rows.length === 1) position = 1
+
+      participantResults.push({
+        participantId,
+        bibNumber: bibNumber ? +bibNumber : undefined,
+        // Demographic data
+        firstName: capitalize(firstName),
+        lastName: lastNames.length ? capitalize(lastNames.join(' ')) : undefined,
+        gender: gender && (gender as string).length ? gender as 'M' | 'F' | 'X' : undefined,
+        team: team?.name,
+        // Finish position
+        position: position > 0 ? position : null,
+        status,
+        // Timing data
         lapDurations,
         lapGaps,
-        status,
-        finishTime: finishTime!,
-        finishGap,
+        finishTime: finishTime || null,
+        finishGap: finishGap || undefined,
       })
     })
 
-    const starters = athleteRaceResults.filter(result => result.status !== 'DNS').length
-    const finishers = athleteRaceResults.filter(result => result.status === 'FINISHER').length
+    // if (totalLaps > 0) participantResults = calculateLapGaps(participantResults, totalLaps)
 
-    allEventCategories[categoryAlias] = {
+    const starters = participantResults.filter(result => result.status !== 'DNS').length
+    const finishers = participantResults.filter(result => result.status === 'FINISHER').length
+
+    allEventCategories.push({
       alias: categoryAlias,
       label: categoryName,
       gender: categoryGender,
 
       starters,
       finishers,
-      distanceUnit: 'km',
 
-      results: athleteRaceResults,
-    } as EventCategory
-  })
+      results: participantResults,
 
-  return {
-    athletes: allEventAthletes,
-    results: allEventCategories,
+      primes: [],
+      upgradePoints: null, // Will be calculated later if applicable
+    })
   }
+
+  return allEventCategories
 }
 
 const extractRaceSummary = (payload: string) => {

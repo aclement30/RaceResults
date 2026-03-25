@@ -1,14 +1,14 @@
 import { APIGatewayProxyEventV2, Context, EventBridgeEvent, S3Event } from 'aws-lambda'
+import { performance } from 'node:perf_hooks'
+import { publishRaceEventChange } from '../shared/aws-sns'
+import { CORS } from '../shared/config'
+import data from '../shared/data.ts'
+import { IngestEvent } from '../shared/types'
+import { handler as CrossMgrParser } from './cross-mgr'
 
 import { handler as ManualImportParser } from './manual'
-import { handler as CrossMgrParser } from './cross-mgr'
-import { handler as WebscorerParser } from './webscorer'
-import data from '../shared/data.ts'
 import { getModifiedRefFiles } from './manual/utils.ts'
-import { CORS } from '../shared/config'
-import { performance } from 'node:perf_hooks'
-import { publishIngestEvent } from '../shared/aws-sns'
-import { IngestEvent } from '../shared/types'
+import { handler as WebscorerParser } from './webscorer'
 
 const WATCH_HOURS = { morning: [9, 12], afternoon: [12, 17], evening: [17, 21], day: [9, 17] }
 
@@ -165,7 +165,7 @@ export const handler = async (event: EventBridgeEvent<any, any> | S3Event | APIG
     // Skip if no events to process (e.g. no new events found)
     if (!event.eventHashes.length && !event.seriesHashes.length) continue
 
-    await publishIngestEvent(event)
+    await publishRaceEventChange(event)
   }
 
   const end = performance.now()

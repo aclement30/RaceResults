@@ -1,9 +1,8 @@
-import logger from '../../shared/logger.ts'
-import { PROVIDER_NAME } from './config.ts'
-
-import importData from './import.ts'
+import logger from 'shared/logger.ts'
+import type { IngestEvent } from 'shared/types.ts'
 import cleanData from './clean/index.ts'
-import { IngestEvent } from '../../shared/types'
+import { PROVIDER_NAME } from './config.ts'
+import importData from './import.ts'
 
 export const handler = async (options?: { year: number, eventHash?: string }): Promise<IngestEvent> => {
   logger.info(`Parser: ${PROVIDER_NAME}`)

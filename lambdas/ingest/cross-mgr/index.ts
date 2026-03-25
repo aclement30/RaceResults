@@ -1,9 +1,8 @@
+import type { IngestEvent } from 'shared/types.ts'
 import logger from '../../shared/logger.ts'
-import { PROVIDER_NAME } from './config.ts'
-
-import importData from './import/index.ts'
 import cleanData from './clean/index.ts'
-import type { IngestEvent } from '../../shared/types.ts'
+import { PROVIDER_NAME } from './config.ts'
+import importData from './import/index.ts'
 
 export const handler = async (options?: {
   year?: number,

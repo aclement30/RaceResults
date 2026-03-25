@@ -1,120 +1,116 @@
 import { parse } from 'csv-parse/sync'
 import { camelCase } from 'lodash-es'
-import { mapValues } from 'lodash-es'
-import defaultLogger from '../../../../../shared/logger.ts'
-import type {
-  AthleteRaceResult,
-  EventAthlete,
-  EventCategory, EventResults,
-  RaceEvent
-} from '../../../../../../src/types/results.ts'
-import { formatAthleteName, formatDurationToSeconds, transformOrganizer } from '../../../utils.ts'
 import {
   createUmbrellaCategories,
-  formatCategoryAlias, formatProvince, getBaseCategories,
-  getCombinedRaceCategories, shapeCategoriesResults,
-  transformCategory
-} from '../../../../../shared/utils.ts'
+  formatCategoryAlias,
+  getCombinedRaceCategories,
+  transformCategoryLabel
+} from 'shared/categories'
+import { getRaceType, getSanctionedEventType } from 'shared/events'
+import defaultLogger from 'shared/logger.ts'
+import { TeamParser } from 'shared/team-parser'
+import type {
+  CreateEventCategory,
+  CreateEventResults,
+  ParticipantResult,
+  TParticipantStatus,
+  UpdateEvent,
+} from 'shared/types.ts'
+import { calculateBCUpgradePoints, calculateFieldSize, hasUpgradePoints, } from 'shared/upgrade-points'
+import { formatProvince, formatStatus } from 'shared/utils'
 import { PROVIDER_NAME } from '../../../config.ts'
 import type { ManualImportCategory, ManualImportEventFile, ManualImportRawData } from '../../../types.ts'
-import {
-  calculateBCUpgradePoints,
-  calculateFieldSize,
-  getSanctionedEventType,
-  hasDoubleUpgradePoints,
-  hasUpgradePoints
-} from '../../../../../shared/upgrade-points.ts'
-import { TeamParser } from '../../../../../shared/team-parser.ts'
-import type { AthleteManualEdit } from '../../../../../shared/types.ts'
+import { formatAthleteName, formatDurationToSeconds } from '../../../utils.ts'
 
 const logger = defaultLogger.child({ provider: PROVIDER_NAME })
 
-export const parseRawEvent = (
+export const parseRawEvent = async (
   eventBundle: ManualImportEventFile,
   payloads: ManualImportRawData['payloads'],
-): { event: RaceEvent, eventResults: EventResults } => {
+): Promise<{ event: UpdateEvent, eventResults: CreateEventResults }> => {
   logger.info(`Importing event results for: ${eventBundle.name}`)
 
-  const organizerObj = transformOrganizer(eventBundle.organizer)
-
-  const sanctionedEventType = getSanctionedEventType({
-    organizerAlias: organizerObj.organizerAlias,
-    serie: eventBundle.series,
-    name: eventBundle.name,
+  const sanctionedEventType = await getSanctionedEventType({
+    eventName: eventBundle.name,
+    organizerAlias: eventBundle.organizer,
     year: eventBundle.year,
+    serieAlias: eventBundle.series,
   })
 
-  const event: RaceEvent = {
+  const event: UpdateEvent = {
     hash: eventBundle.hash,
-    year: eventBundle.year,
     date: eventBundle.date,
-    type: 'event',
     discipline: 'ROAD',
     location: eventBundle.location,
-    ...organizerObj,
+    organizerAlias: eventBundle.organizer,
     name: eventBundle.name,
-    serie: eventBundle.series,
-    provider: PROVIDER_NAME,
-    isTimeTrial: eventBundle.isTimeTrial || false,
+    serie: eventBundle.series || null,
     sanctionedEventType,
-    hasUpgradePoints: hasUpgradePoints(sanctionedEventType),
-    isDoubleUpgradePoints: hasDoubleUpgradePoints(sanctionedEventType),
-    categories: [],
-    lastUpdated: eventBundle.lastUpdated,
+    raceType: null,
+    sourceUrls: eventBundle.sourceUrls || [],
+    raceNotes: eventBundle.raceNotes?.length ? eventBundle.raceNotes.replace(/\n/g, '<br />') : '',
+    // Metadata
+    provider: PROVIDER_NAME,
+    updatedAt: eventBundle.lastUpdated,
+    published: true,
   }
 
-  let allEventAthletes: Record<string, EventAthlete> = {}
-  let allEventCategories: EventResults['results'] = {}
+  event.raceType = await getRaceType({ ...event, isTimeTrial: eventBundle.isTimeTrial || false })
+
+  let allEventCategories: CreateEventCategory[] = []
 
   if (!eventBundle.categories) throw new Error('No categories provided for event!')
 
-  eventBundle.categories.forEach(importCategory => {
+  for (const importCategory of eventBundle.categories) {
     const matchingFile = payloads[importCategory.filename]
 
     if (!matchingFile) throw new Error(`No matching file found for: ${importCategory.filename} (${importCategory.outputLabel})`)
 
-    const { athletes, results, corrections } = parseCategoryResults(matchingFile, {
+    const { results, corrections } = parseCategoryResults(matchingFile, {
       fields: eventBundle.fields,
       importCategory,
       year: eventBundle.year,
     })
     const categoryGender = importCategory.outputLabel.includes('Men') ? 'M' : importCategory.outputLabel.includes('Women') ? 'F' : 'X'
-    const categoryLabel = transformCategory(importCategory.outputLabel)
-    const alias = formatCategoryAlias(categoryLabel)
-
-    allEventAthletes = {
-      ...allEventAthletes,
-      ...athletes,
-    }
+    const categoryLabel = await transformCategoryLabel(importCategory.outputLabel)
+    const alias = formatCategoryAlias(importCategory.outputLabel)
 
     const starters = results.filter(r => r.status !== 'DNS').length
     const finishers = results.filter(r => r.status === 'FINISHER').length
 
-    allEventCategories[alias] = {
+    allEventCategories.push({
       alias,
       label: categoryLabel,
       gender: categoryGender,
       results,
       starters,
       finishers,
-      distanceUnit: 'km',
-      raceDistance: importCategory.distance,
+      raceDistanceKm: importCategory.distance,
       corrections,
-    }
-  })
+      primes: [],
+      upgradePoints: null,
+      updatedAt: eventBundle.lastUpdated,
+    })
+  }
 
   // Check if some categories are combined
-  const combinedCategoryGroups = getCombinedRaceCategories(event)
+  const combinedCategoryGroups = await getCombinedRaceCategories({
+    eventHash: event.hash,
+    serieAlias: event.serie,
+    organizerAlias: event.organizerAlias,
+    eventName: event.name,
+    year: eventBundle.year,
+  })
 
-  // Create umbrella categories for combined categories
+  // Create parent categories for combined categories
   const {
     categories: updatedCategories,
-    errors: umbrellaCategoriesErrors
+    errors: parentCategoryErrors
   } = createUmbrellaCategories(allEventCategories, combinedCategoryGroups)
 
   allEventCategories = updatedCategories
-  if (umbrellaCategoriesErrors?.length) {
-    umbrellaCategoriesErrors.forEach(error => {
+  if (parentCategoryErrors?.length) {
+    parentCategoryErrors.forEach(error => {
       logger.warn(error, {
         provider: PROVIDER_NAME,
         eventHash: eventBundle.hash,
@@ -123,34 +119,33 @@ export const parseRawEvent = (
     })
   }
 
-  // Clean athlete event categories (remove deleted categories & umbrella categories)
-  // allEventAthletes = mapValues(allEventAthletes, (athlete) => ({
-  //   ...athlete,
-  //   eventCategories: athlete.eventCategories.filter(catAlias => !!allEventCategories[catAlias] && !allEventCategories[catAlias].combinedCategories),
-  // }))
+  if (hasUpgradePoints(sanctionedEventType)) {
+    const parentCategories = allEventCategories.reduce((acc, category) => {
+      if (category.parentCategory) acc.add(category.alias)
+      return acc
+    }, new Set<string>())
 
-  if (event.hasUpgradePoints) {
     // Calculate upgrade points for each category
-    allEventCategories = mapValues(allEventCategories, (category: EventCategory, categoryAlias: string) => {
+    allEventCategories = allEventCategories.map((category) => {
       let categoryGroup
       let fieldSize
 
-      if (category.combinedCategories) {
-        categoryGroup = combinedCategoryGroups.find(group => group.umbrellaCategory === category.alias)
+      if (parentCategories.has(category.alias)) {
+        categoryGroup = combinedCategoryGroups.find(group => group.parentCategory === category.alias)
 
-        // Dont calculate upgrade points for umbrella categories, unless specified
-        if (categoryGroup?.categoriesForPoints !== 'UMBRELLA') return category
+        // Dont calculate upgrade points for parent categories, unless specified
+        if (categoryGroup?.categoriesForPoints !== 'PARENT') return category
 
-        const combinedCategories = [category]
-        fieldSize = calculateFieldSize(combinedCategories)
+        const subCategories = [category]
+        fieldSize = calculateFieldSize(subCategories)
       } else {
-        categoryGroup = combinedCategoryGroups.find(group => group.categories.some(c => c === categoryAlias))
+        categoryGroup = combinedCategoryGroups.find(group => group.categories.some(c => c === category.alias))
 
         // Dont calculate upgrade points for combined categories, unless specified
-        if (categoryGroup?.categoriesForPoints === 'UMBRELLA') return category
+        if (categoryGroup?.categoriesForPoints === 'PARENT') return category
 
-        const combinedCategories = categoryGroup?.categories.map(alias => allEventCategories[alias]) || [category]
-        fieldSize = calculateFieldSize(combinedCategories)
+        const subCategories = categoryGroup?.categories.map(alias => allEventCategories.find(c => c.alias === alias)!) || [category]
+        fieldSize = calculateFieldSize(subCategories)
       }
 
       // Calculate upgrade points for the category/combined categories
@@ -164,21 +159,15 @@ export const parseRawEvent = (
         ...category,
         fieldSize,
         upgradePoints,
-      } as EventCategory
+      }
     })
   }
-
-  event.categories = getBaseCategories(allEventCategories, { organizerAlias: event.organizerAlias, serie: event.serie })
 
   return {
     event,
     eventResults: {
       hash: event.hash,
-      athletes: allEventAthletes,
-      results: shapeCategoriesResults(allEventCategories),
-      sourceUrls: eventBundle.sourceUrls || [],
-      raceNotes: eventBundle.raceNotes?.length ? eventBundle.raceNotes.replace(/\n/g, '<br />') : '',
-      lastUpdated: eventBundle.lastUpdated,
+      categories: allEventCategories,
     }
   }
 }
@@ -192,8 +181,7 @@ const parseCategoryResults = (
     year: number,
   }
 ): {
-  athletes: Record<string, EventAthlete>,
-  results: AthleteRaceResult[],
+  results: ParticipantResult[],
   corrections: string | undefined
 } => {
   logger.info(`Parsing category results for: ${importCategory.outputLabel}`)
@@ -204,9 +192,7 @@ const parseCategoryResults = (
   }) as Record<string, string>[]
 
   // Transform records to series results
-  const athletes: Record<string, EventAthlete> = {}
-  const categoryResults: AthleteRaceResult[] = []
-  const categoryAlias = formatCategoryAlias(importCategory.outputLabel)
+  const participantResults: ParticipantResult[] = []
 
   inputRecords.forEach((record) => {
     const shapedRecord: Record<string, string> = Object.keys(record).reduce((acc, inputField) => {
@@ -244,8 +230,32 @@ const parseCategoryResults = (
       team = teamOverride
     }
 
-    athletes[bibNumber] = {
+    let position = -1
+    let status: TParticipantStatus | null = 'FINISHER'
+
+    if (shapedRecord.position && shapedRecord.position.match(/^\d+$/)) {
+      position = +shapedRecord.position
+    } else {
+      status = formatStatus(shapedRecord.position)
+    }
+
+    let finishTime = 0
+    let finishGap = null
+    if (shapedRecord.finishTime?.match(/^-(\d+)\slaps?$/i)) {
+      finishGap = +shapedRecord.finishTime.match(/^-(\d+)\slaps?$/i)![1] * -1
+    } else if (shapedRecord.finishTime?.match(/^[A-Z]+$/)) {
+      status = formatStatus(shapedRecord.finishTime)
+    } else {
+      finishTime = shapedRecord.finishTime ? formatDurationToSeconds(shapedRecord.finishTime) : 0
+    }
+    if (shapedRecord.finishGap) {
+      finishGap = formatDurationToSeconds(shapedRecord.finishGap)
+    }
+
+    participantResults.push({
+      participantId: bibNumber.toString(),
       bibNumber,
+      // Demographic data
       firstName,
       lastName,
       license: shapedRecord.license?.toUpperCase(),
@@ -254,45 +264,18 @@ const parseCategoryResults = (
       age: shapedRecord.age ? +shapedRecord.age : undefined,
       city: shapedRecord.city,
       province: formatProvince(shapedRecord.state || shapedRecord.province),
-      // eventCategories: [categoryAlias],
-    }
-
-    let position = -1
-    let status = 'FINISHER'
-
-    if (shapedRecord.position && shapedRecord.position.match(/^\d+$/)) {
-      position = +shapedRecord.position
-    } else {
-      status = shapedRecord.position?.toUpperCase()
-    }
-
-    let finishTime = 0
-    let finishGap = null
-    if (shapedRecord.finishTime?.match(/^-(\d+)\slaps?$/i)) {
-      finishGap = +shapedRecord.finishTime.match(/^-(\d+)\slaps?$/i)![1] * -1
-    } else if (shapedRecord.finishTime?.match(/^[A-Z]+$/)) {
-      status = shapedRecord.finishTime.toUpperCase()
-    } else {
-      finishTime = shapedRecord.finishTime ? formatDurationToSeconds(shapedRecord.finishTime) : 0
-    }
-    if (shapedRecord.finishGap) {
-      finishGap = formatDurationToSeconds(shapedRecord.finishGap)
-    }
-
-    categoryResults.push({
-      athleteId: bibNumber.toString(),
-      bibNumber,
+      // Finish position
       position,
-      status: status as any,
+      status,
+      // Timing data
       finishTime,
-      finishGap,
+      finishGap: finishGap || undefined,
       avgSpeed: shapedRecord.avgSpeed ? +shapedRecord.avgSpeed.replace('km/h', '').trim() : 0,
     })
   })
 
   return {
-    athletes,
-    results: categoryResults,
+    results: participantResults,
     corrections: importCategory.corrections,
   }
 }
