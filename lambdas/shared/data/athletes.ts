@@ -11,17 +11,22 @@ import { PUBLIC_BUCKET_FILES } from '../../../src/config/s3.ts'
 import type { AthleteOverrides, CleanAthleteRaceResult } from '../../processing/types.ts'
 import { CLEAN_ATHLETE_CATEGORIES_FILE, CONFIG_FILES } from '../config.ts'
 import type {
-  Athlete,
   AthleteManualEdit,
   AthleteSkillCategory,
   AthleteUpgradeDate,
   BaseAthleteUpgradePoint
 } from '../types.ts'
+import {
+  AthleteManualEditSchema,
+  BaseAthleteSchema,
+} from '../../../shared/schemas/athletes.ts'
+import { ZodError } from 'zod'
+import type { BaseAthlete, UpdateAthleteManualEdit } from '../../../shared/types/athletes.ts'
 
-export async function getBaseAthletes(athleteUciId: string): Promise<Athlete | null>
-export async function getBaseAthletes(): Promise<Athlete[]>
+export async function getBaseAthletes(athleteUciId: string): Promise<BaseAthlete | null>
+export async function getBaseAthletes(): Promise<BaseAthlete[]>
 
-export async function getBaseAthletes(athleteUciId?: string): Promise<Athlete | null | Athlete[]> {
+export async function getBaseAthletes(athleteUciId?: string): Promise<BaseAthlete | null | BaseAthlete[]> {
   const fileContent = await RRS3.fetchFile(BASE_ATHLETES_FILE, true)
 
   if (!fileContent) {
@@ -29,7 +34,7 @@ export async function getBaseAthletes(athleteUciId?: string): Promise<Athlete | 
     return []
   }
 
-  const athletes = JSON.parse(fileContent as any) as Athlete[]
+  const athletes = JSON.parse(fileContent as any) as BaseAthlete[]
 
   if (athleteUciId) {
     return athletes.find(a => a.uciId === athleteUciId) || null
@@ -38,16 +43,34 @@ export async function getBaseAthletes(athleteUciId?: string): Promise<Athlete | 
   return athletes
 }
 
-export const updateBaseAthletes = async (athletes: Athlete[]): Promise<void> => {
+export const updateBaseAthletes = async (athletes: BaseAthlete[]): Promise<{
+  validationErrors?: Record<string, ZodError>
+}> => {
   const existingAthletes = await getBaseAthletes()
 
-  const updatedAthleteUciIds = athletes.map(a => a.uciId)
+  const validationErrors: Record<string, ZodError> = {}
+
+  for (const athlete of athletes) {
+    try {
+      BaseAthleteSchema.parse(athlete)
+    } catch (error) {
+      validationErrors[athlete.uciId] = error as ZodError
+    }
+  }
+
+  const updatedAthleteUciIds = athletes.map(a => a.uciId).filter(a => !validationErrors[a])
+  const validAthletes = athletes.filter(a => !validationErrors[a.uciId])
+
   const combinedAthletes = [
     ...existingAthletes.filter(a => !updatedAthleteUciIds.includes(a.uciId)),
-    ...athletes
+    ...validAthletes
   ]
 
   await RRS3.writeFile(BASE_ATHLETES_FILE, JSON.stringify(combinedAthletes))
+
+  if (validationErrors && Object.keys(validationErrors).length > 0) return { validationErrors }
+
+  return {}
 }
 
 export async function getAthleteManualEdits(athleteUciId: string): Promise<AthleteManualEdit | null>
@@ -70,26 +93,23 @@ export async function getAthleteManualEdits(athleteUciId?: string): Promise<Athl
   return manualEdits
 }
 
-type AthleteManualEditWithOptionalMeta = Omit<AthleteManualEdit, 'meta'> & {
-  meta?: AthleteManualEdit['meta']
-}
-
-export const updateAthleteManualEdits = async (athleteEdits: Array<AthleteManualEditWithOptionalMeta>): Promise<void> => {
+export const updateAthleteManualEdit = async (athleteManualEdit: UpdateAthleteManualEdit): Promise<void> => {
   const existingAthleteManualEdits = await getAthleteManualEdits()
+  const existingEdit = existingAthleteManualEdits.find(e => e.uciId === athleteManualEdit.uciId)
 
-  const updatedAthleteUciIds = athleteEdits.map(a => a.uciId)
+  const updatedAthleteManualEdit: AthleteManualEdit = {
+    ...athleteManualEdit,
+    meta: {
+      createdAt: existingEdit ? existingEdit.meta.createdAt : new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    }
+  }
+
+  AthleteManualEditSchema.parse(updatedAthleteManualEdit)
+
   const combinedAthleteManualEdits = [
-    ...existingAthleteManualEdits.filter(a => !updatedAthleteUciIds.includes(a.uciId)),
-    ...athleteEdits.map(athleteManualEdit => {
-      const existingEdit = existingAthleteManualEdits.find(e => e.uciId === athleteManualEdit.uciId)
-      return {
-        ...athleteManualEdit,
-        meta: {
-          createdAt: existingEdit ? existingEdit.meta.createdAt : new Date().toISOString(),
-          updatedAt: new Date().toISOString()
-        }
-      }
-    })
+    ...existingAthleteManualEdits.filter(a => a.uciId !== athleteManualEdit.uciId),
+    updatedAthleteManualEdit,
   ]
 
   await RRS3.writeFile(ATHLETE_MANUAL_EDITS_FILE, JSON.stringify(combinedAthleteManualEdits))

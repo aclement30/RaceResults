@@ -1,9 +1,12 @@
 import { omit } from 'lodash-es'
-import type { Athlete, AthleteManualEdit } from './types.ts'
+import type { AthleteManualEdit, BaseAthlete } from './types.ts'
 
-const OBJECT_FIELDS = ['licenses', 'teams', 'skillLevel', 'ageCategory', 'latestUpgrade'] as (keyof Athlete)[]
+const OBJECT_FIELDS = ['licenses', 'teams', 'skillLevel', 'ageCategory', 'latestUpgrade'] as (keyof BaseAthlete)[]
 
-export const mergeAthleteChanges = (base: Partial<Athlete>, changes: Partial<Athlete>): Partial<Athlete> => {
+export const mergeAthleteChanges = (
+  base: Partial<BaseAthlete>,
+  changes: Partial<BaseAthlete>
+): Partial<BaseAthlete> => {
   const merged = {
     ...base,
     ...omit(changes, [
@@ -34,15 +37,15 @@ export const mergeAthleteChanges = (base: Partial<Athlete>, changes: Partial<Ath
 
 // Calculate the required manual edits to transform baseAthlete into targetAthlete, only including fields that differ from baseAthlete
 export const calculateRequiredManualEdits = (
-  baseAthlete: Athlete,
-  targetAthlete: Athlete
+  baseAthlete: BaseAthlete,
+  targetAthlete: BaseAthlete
 ): Omit<AthleteManualEdit, 'meta'> => {
   const manualEdits: Omit<AthleteManualEdit, 'meta'> = { uciId: baseAthlete.uciId }
 
-  ;(Object.keys(targetAthlete) as (keyof Athlete)[]).forEach((key) => {
+  ;(Object.keys(targetAthlete) as (keyof BaseAthlete)[]).forEach((key) => {
     if (key === 'uciId') return // Skip uciId
 
-    const fieldKey = key as keyof Athlete
+    const fieldKey = key as keyof BaseAthlete
     const baseValue = baseAthlete[fieldKey]
     const targetValue = targetAthlete[fieldKey]
 

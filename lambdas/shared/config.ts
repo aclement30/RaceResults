@@ -1,4 +1,7 @@
+import { config as dotEnvConfig } from 'dotenv'
 import { PUBLIC_BUCKET_FILES, PUBLIC_BUCKET_PATHS } from '../../src/config/s3.ts'
+
+dotEnvConfig({ path: '../.env.local' })
 
 const Environment = {
   prod: 'prod',
@@ -8,27 +11,36 @@ const Environment = {
 
 export type TEnv = typeof Environment[keyof typeof Environment];
 
-export const RAW_INGESTION_DATA_PATH = 'raw_ingestion_data/'
+export const ENV: TEnv = process.env.ENV as TEnv || 'dev'
 
+export const DEBUG = process.env.DEBUG === 'true' || true
+
+// AWS
+export const AWS_DEFAULT_CONFIG = {
+  region: 'us-west-2',
+}
+
+// S3
+export const RR_S3_BUCKET = ENV === 'prod' ? 'cycling-race-results' : 'cycling-race-results-stage'
+
+export const DRAFT_EVENTS_PATH = 'draft_events/'
+export const EVENTS_RESULTS_SNAPSHOTS_PATH = 'events_results_snapshots/'
+export const SERIES_RESULTS_SNAPSHOTS_PATH = 'series_results_snapshots/'
+export const RAW_INGESTION_DATA_PATH = 'raw_ingestion_data/'
+export const RULES_PATH = 'rules/'
+export const WATCHER_LAST_CHECKS_PATH = `watcher_last_checks/`
+
+export const CLEAN_ATHLETE_CATEGORIES_FILE = 'athletes_skill_categories.json'
 export const CONFIG_FILES = {
   athletesOverrides: 'athlete_overrides.json',
   eventDays: 'event_days.json',
 }
 
-export const WATCHER_LAST_CHECKS_PATH = `watcher_last_checks/`
-
-export const ENV: TEnv = process.env.ENV as TEnv || 'dev'
-
-export const DEBUG = process.env.DEBUG === 'true' || true
-
-export const RR_S3_BUCKET = ENV === 'prod' ? 'cycling-race-results' : 'cycling-race-results-stage'
-export const AWS_DEFAULT_CONFIG = {
-  region: 'us-west-2',
-}
+// Local storage (for local development and testing)
 export const LOCAL_STORAGE_PATH = process.env.LOCAL_STORAGE_PATH || '../../storage'
 
+// Caching
 const currentYear = new Date().getFullYear()
-
 export const NO_CACHE_FILES = [
   PUBLIC_BUCKET_FILES.athletes.list,
   PUBLIC_BUCKET_PATHS.athletesProfiles,
@@ -36,8 +48,7 @@ export const NO_CACHE_FILES = [
   `${PUBLIC_BUCKET_PATHS.eventsResults}${currentYear}`,
 ]
 
-export const CLEAN_ATHLETE_CATEGORIES_FILE = 'athletes_skill_categories.json'
-
+// CORS configuration for API Gateway
 export const CORS = {
   allowedOrigins: [
     'http://localhost:5173',
@@ -48,4 +59,5 @@ export const CORS = {
   credentials: true
 }
 
-export const AWS_DATA_INGEST_TOPIC_ARN = `arn:aws:sns:us-west-2:545296359752:race-results-data-ingest-${ENV === 'prod' ? 'prod' : 'stage'}`
+// SNS
+export const AWS_RACE_EVENT_CHANGE_TOPIC_ARN = process.env.AWS_RACE_EVENT_CHANGE_TOPIC_ARN

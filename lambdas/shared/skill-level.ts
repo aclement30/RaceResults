@@ -1,10 +1,11 @@
-import type { RaceEvent } from '../../src/types/results'
+import type { RaceEvent } from '../../shared/types'
 
 // Extract athlete skill level (or skill group) from race
 // Can be either a specific skill level (e.g. 1, 2, 3, etc.) or a skill range (e.g. elite -> [1, 2], 'cat 4/5' -> [4, 5], etc.)
+
 export const extractAthleteSkillLevel = (
   category: string,
-  eventSummary: Pick<RaceEvent, 'name' | 'year'>
+  eventSummary: Pick<RaceEvent, 'name' | 'date'>
 ): {
   level?: number
   range?: [number, number],
@@ -21,7 +22,7 @@ export const extractAthleteSkillLevel = (
   } else if (catAlias.match(/^(men|women|youth)-m?(\d)-\(/)) {
     const catNumber = +catAlias.match(/^(men|women|youth)-m?(\d)-\(/)?.[2]!
     if (ATHLETE_SKILL_CATEGORIES.includes(catNumber)) return { level: catNumber, confidence: 0.8 }
-  } else if (eventSummary.name.includes('CONCORD') && eventSummary.year === 2024) {
+  } else if (eventSummary.name.includes('CONCORD') && +eventSummary.date.slice(0, 4) === 2024) {
     switch (catAlias) {
       case 'mpro':
         return { range: [1, 2], confidence: 0.7 }

@@ -1,29 +1,13 @@
-import type { Athlete } from '../../src/types/athletes.ts'
-import type { RaceEvent, TDiscipline } from '../../src/types/results.ts'
+import type { RaceEvent, TDiscipline } from '../../shared/types/index.ts'
 
-export type {
-  Athlete,
-  AthleteProfile,
-  BaseAthleteUpgradePoint
-} from '../../src/types/athletes.ts'
+export type * from '../../shared/types/adminUsers.ts'
+export type * from '../../shared/types/athletes.ts'
+export type * from '../../shared/types/events.ts'
+export type * from '../../shared/types/series.ts'
+export type * from '../../shared/types/organizers.ts'
+export type * from '../../shared/types/teams.ts'
 
-export type {
-  AthleteRaceResult,
-  BaseCategory,
-  EventAthlete,
-  EventCategory,
-  EventResults,
-  RaceEvent,
-  SanctionedEventType,
-  SerieResults,
-  SerieSummary,
-  UpgradePointResult,
-} from '../../src/types/results.ts'
-
-export type {
-  Team,
-  TeamRoster
-} from '../../src/types/team.ts'
+// Lambdas-specific types
 
 export type AthleteSkillCategory = {
   athleteUciId: string
@@ -32,7 +16,7 @@ export type AthleteSkillCategory = {
 }
 
 export type EventSummary =
-  Pick<RaceEvent, 'hash' | 'year' | 'date' | 'sanctionedEventType' | 'name' | 'discipline' | 'organizerAlias' | 'location'>
+  Pick<RaceEvent, 'hash' | 'date' | 'sanctionedEventType' | 'name' | 'discipline' | 'organizerAlias' | 'location'>
 
 export type AthleteUpgradeDate = {
   athleteUciId: string,
@@ -41,19 +25,12 @@ export type AthleteUpgradeDate = {
   confidence: number
 }
 
-export type AthleteManualEdit = {
-  uciId: string
-  meta: {
-    createdAt: string
-    createdBy?: string
-    updatedAt: string
-    updatedBy?: string
-  }
-} & Omit<Partial<Athlete>, 'teams'>
-
-export type IngestEvent = {
+export type RaceEventChange = {
   year: number
   eventHashes: string[]
+}
+
+export type IngestEvent = RaceEventChange & {
   seriesHashes: string[]
   provider: string
 }
