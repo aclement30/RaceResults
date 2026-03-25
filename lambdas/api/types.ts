@@ -8,6 +8,13 @@ declare module 'fastify' {
   interface FastifyInstance {
     requireAuth: (request: FastifyRequest, reply: FastifyReply) => Promise<void>;
     requireAdmin: (request: FastifyRequest, reply: FastifyReply) => Promise<void>;
+    requireSuperAdmin: (request: FastifyRequest, reply: FastifyReply) => Promise<void>;
+    requireRaceDirector: (request: FastifyRequest, reply: FastifyReply) => Promise<void>;
+    requireGroups: (allowedGroups: string[], errorMessage?: string) => (
+      request: FastifyRequest,
+      reply: FastifyReply
+    ) => Promise<void>;
+    requireAnyGroup: (groups: string[]) => (request: FastifyRequest, reply: FastifyReply) => Promise<void>;
     requireRole: (role: string) => (request: FastifyRequest, reply: FastifyReply) => Promise<void>;
   }
 }
@@ -19,6 +26,7 @@ export type CognitoUser = {
   'custom:role'?: string;
   'cognito:username': string;
   'cognito:groups'?: string[];
+  'custom:organizer_alias'?: string;
   aud: string;
   iss: string;
   exp: number;

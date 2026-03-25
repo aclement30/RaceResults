@@ -1,12 +1,14 @@
-import fastify, { type FastifyError } from 'fastify'
 import { awsLambdaFastify } from '@fastify/aws-lambda'
-import type { APIGatewayProxyHandlerV2 } from 'aws-lambda'
 import cors from '@fastify/cors'
+import type { APIGatewayProxyHandlerV2 } from 'aws-lambda'
+import fastify, { type FastifyError } from 'fastify'
+import { serializerCompiler, validatorCompiler, type ZodTypeProvider } from 'fastify-type-provider-zod'
 
-import { adminRoutes } from './routes/admin.ts'
+import { CORS } from 'shared/config.ts'
+import logger from 'shared/logger.ts'
+
 import { authPlugin } from './plugins/auth.ts'
-import logger from '../shared/logger.ts'
-import { CORS } from '../shared/config.ts'
+import { adminRoutes } from './routes/admin.ts'
 
 const ENV = process.env.ENV || 'dev'
 export const BASE_PATH = ENV === 'prod' ? '/api' : '/api/stage'
@@ -14,7 +16,9 @@ export const BASE_PATH = ENV === 'prod' ? '/api' : '/api/stage'
 export async function buildFastifyApp() {
   const app = fastify({
     logger: false // We'll use our shared logger instead
-  })
+  }).withTypeProvider<ZodTypeProvider>()
+  app.setValidatorCompiler(validatorCompiler)
+  app.setSerializerCompiler(serializerCompiler)
 
   await app.register(cors, {
     origin: CORS.allowedOrigins,
@@ -26,31 +30,60 @@ export async function buildFastifyApp() {
   // Register plugins first
   await app.register(authPlugin)
 
-  await app.register(adminRoutes, { prefix: `${BASE_PATH}/admin` })
-
-  app.get('/health', async () => ({
-    status: 'ok',
-    timestamp: new Date().toISOString()
-  }))
+  app.addHook('onError', async (request, reply, error) => {
+    if (error.code === 'FST_ERR_RESPONSE_SERIALIZATION') {
+      if (process.env.NODE_ENV === 'development') {
+        console.error('Serialization Error:', {
+          message: error.message,
+          cause: (error as any).cause,
+          url: request.url,
+          method: request.method
+        })
+      } else {
+        logger.error('Response serialization error', {
+          error: {
+            message: error.message,
+            cause: (error as any).cause,
+          },
+          request: {
+            method: request.method,
+            url: request.url,
+          },
+        })
+      }
+    } else {
+      console.error('Error:', {
+        message: error.message,
+        cause: (error as any).cause,
+        url: request.url,
+        method: request.method
+      })
+    }
+  })
 
   // Error handling hooks
   app.setErrorHandler(async (error: FastifyError, request, reply) => {
-    // Log the error with Lambda context if available
-    logger.error(error, {
-      request: {
-        method: request.method,
-        url: request.url,
-        params: request.params,
-        query: request.query,
-        userAgent: request.headers['user-agent'],
-        requestId: (request.raw as any).requestContext?.requestId
-      },
-      lambda: {
-        functionName: process.env.AWS_LAMBDA_FUNCTION_NAME,
-        functionVersion: process.env.AWS_LAMBDA_FUNCTION_VERSION,
-        stage: ENV
-      }
-    })
+    // Log full error in development
+    if (process.env.NODE_ENV === 'development') {
+      console.error(error)
+    } else {
+      // Log the error with Lambda context if available
+      logger.error(error, {
+        request: {
+          method: request.method,
+          url: request.url,
+          params: request.params,
+          query: request.query,
+          userAgent: request.headers['user-agent'],
+          requestId: (request.raw as any).requestContext?.requestId
+        },
+        lambda: {
+          functionName: process.env.AWS_LAMBDA_FUNCTION_NAME,
+          functionVersion: process.env.AWS_LAMBDA_FUNCTION_VERSION,
+          stage: ENV
+        }
+      })
+    }
 
     // Send appropriate error response
     const statusCode = error.statusCode || 500
@@ -63,6 +96,38 @@ export async function buildFastifyApp() {
       requestId: (request.raw as any).requestContext?.requestId
     })
   })
+
+  await app.register(adminRoutes, { prefix: `${BASE_PATH}/admin` })
+
+  // Debug route to inspect JWT contents
+  app.get(`${BASE_PATH}/debug/auth`, {
+    preHandler: [app.requireAuth]
+  }, async (request, reply) => {
+    const authHeader = request.headers.authorization
+
+    // Decode the raw JWT to see all claims
+    const jwt = require('jsonwebtoken')
+    const decoded = jwt.decode(authHeader, { complete: true })
+
+    return {
+      message: 'Auth debug info',
+      user: request.user,
+      rawJwtHeader: decoded?.header,
+      rawJwtPayload: decoded?.payload,
+      availableClaims: Object.keys(decoded?.payload || {}),
+      customAttributes: Object.keys(decoded?.payload || {})
+      .filter(key => key.startsWith('custom:'))
+      .reduce((acc, key) => {
+        acc[key] = decoded?.payload[key]
+        return acc
+      }, {} as Record<string, any>)
+    }
+  })
+
+  app.get('/health', async () => ({
+    status: 'ok',
+    timestamp: new Date().toISOString()
+  }))
 
   // Hook for not found routes
   app.setNotFoundHandler(async (request, reply) => {

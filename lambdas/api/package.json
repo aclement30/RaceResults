@@ -4,10 +4,10 @@
   "main": "index.ts",
   "scripts": {
     "prebuild": "rm -rf dist",
-    "build": "esbuild index.ts --bundle --external:@aws-sdk --sourcemap --platform=node --target=es2020 --metafile=dist/metadata.json --outfile=dist/index.js",
+    "build": "tsx build.ts",
     "postbuild": "cd dist && zip -r index.zip index.js*",
-    "test": "node --experimental-strip-types test.ts",
-    "dev": "nodemon --exec 'node --experimental-strip-types' dev-server.ts",
+    "test": "tsx test.ts",
+    "dev": "nodemon --exec tsx dev-server.ts",
     "deploy": "aws lambda update-function-code --function-name race-results-api-stage --output json --no-cli-pager --zip-file fileb://dist/index.zip && aws lambda update-function-code --function-name race-results-api-prod --output json --no-cli-pager --zip-file fileb://dist/index.zip",
     "push": "npm run build && npm run deploy"
   },
@@ -26,6 +26,7 @@
     "aws-lambda": "1.0.7"
   },
   "dependencies": {
+    "@aws-sdk/client-cognito-identity-provider": "^3.1015.0",
     "@aws-sdk/client-dynamodb": "^3.873.0",
     "@aws-sdk/util-dynamodb": "^3.873.0",
     "@fastify/aws-lambda": "^6.4.0",
@@ -33,6 +34,7 @@
     "deep-object-diff": "^1.1.9",
     "fastify": "^5.7.4",
     "fastify-plugin": "^5.1.0",
+    "fastify-type-provider-zod": "^6.1.0",
     "jsonwebtoken": "^9.0.3"
   }
 }
