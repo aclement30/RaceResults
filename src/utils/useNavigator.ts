@@ -16,8 +16,8 @@ export const useNavigator = () => {
     navigate('/events')
   }
 
-  const navigateToEvent = (event: { hash: string, year: number }, category?: string) => {
-    navigate(`/events/${event.year}/${event.hash}?category=${category}`)
+  const navigateToEvent = (event: { hash: string, date: string }, category?: string) => {
+    navigate(`/events/${event.date.slice(0, 4)}/${event.hash}?category=${category}`)
   }
 
   const navigateToSerie = (serie: { hash: string, year: number }, params?: { category?: string, team?: string }) => {

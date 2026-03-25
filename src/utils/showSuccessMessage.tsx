@@ -10,3 +10,18 @@ export function showSuccessMessage({ title, message }: { message: string, title?
     position: 'top-center',
   })
 }
+
+export const showMessage = ({ title, message, icon, color }: {
+  message: string,
+  title: string,
+  icon: React.ReactNode,
+  color: string
+}) => {
+  notifications.show({
+    icon,
+    color,
+    title,
+    message,
+    position: 'top-center',
+  })
+}

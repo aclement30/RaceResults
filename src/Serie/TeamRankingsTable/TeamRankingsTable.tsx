@@ -1,4 +1,3 @@
-import type { SerieSummary, TeamSerieResult } from '../../types/results'
 import { Anchor, Table } from '@mantine/core'
 import { useContext, useMemo } from 'react'
 import { formatRacerPositionLabel } from '../../Event/Shared/columns'
@@ -8,9 +7,10 @@ import { AppContext } from '../../AppContext'
 import keyBy from 'lodash/keyBy'
 import { useNavigator } from '../../utils/useNavigator'
 import { UserFavoriteContext } from '../../UserFavoriteContext'
+import type { Serie, TeamSerieResult } from '../../../shared/types'
 
 type TeamRankingsTableProps = {
-  serie: SerieSummary
+  serie: Serie
   selectedCategory: string
   results: TeamSerieResult[]
 }
@@ -36,7 +36,7 @@ export const TeamRankingsTable: React.FC<TeamRankingsTableProps> = ({
     return keyBy(yearEvents.filter((e) => e.serie === serie.alias), 'date')
   }, [events, serie])
 
-  const racePointColumns = results?.[0].racePoints && Object.keys(results?.[0].racePoints).sort() || []
+  const racePointColumns = results?.[0]?.racePoints && Object.keys(results?.[0].racePoints).sort() || []
 
   const rows = useMemo(() => results.map((result) => {
     const isFavoriteRow = isFavorite({ team: result.team })

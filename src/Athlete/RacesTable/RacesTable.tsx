@@ -5,7 +5,7 @@ import {
   Text,
 } from '@mantine/core'
 import { useMemo } from 'react'
-import type { AthleteRace } from '../../types/athletes'
+import type { AthleteRace } from '../../../shared/types'
 import { useNavigate, useSearchParams } from 'react-router'
 import { columns } from '../../Event/Shared/columns'
 import { Dropdown } from '../../Shared/Dropdown'
@@ -51,7 +51,7 @@ export const RacesTable: React.FC<RacesTableProps> = ({
     const year = +race.date.slice(0, 4)
 
     return (
-      <Table.Tr key={`race-${race.eventHash}-${race.category}`}>
+      <Table.Tr key={`race-${race.eventHash}-${race.categoryAlias}`}>
         <Table.Td visibleFrom="sm">{race.date}</Table.Td>
         <Table.Td style={{
           overflow: 'hidden',
@@ -59,7 +59,7 @@ export const RacesTable: React.FC<RacesTableProps> = ({
           textOverflow: 'ellipsis'
         }}>
           <Anchor
-            onClick={() => navigate(`/events/${year}/${race.eventHash}?category=${race.category}`)}>
+            onClick={() => navigate(`/events/${year}/${race.eventHash}?category=${race.categoryAlias}`)}>
             {race.eventName}
           </Anchor>
           <Text c="dimmed" size="sm" hiddenFrom="sm">{race.date}</Text>

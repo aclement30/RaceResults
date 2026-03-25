@@ -1,6 +1,5 @@
-import type { AthleteSerieResult, SerieSummary } from '../../types/results'
 import { Anchor, Table, Text } from '@mantine/core'
-import { useContext, useMemo } from 'react'
+import React, { useContext, useMemo } from 'react'
 import { formatRacerPositionLabel, columns as sharedColumns } from '../../Event/Shared/columns'
 import { ResponsiveTable } from '../../Shared/ResponsiveTable'
 import { formatRaceDate } from '../utils'
@@ -9,16 +8,17 @@ import keyBy from 'lodash/keyBy'
 import { useHighlightedAthlete } from '../../utils/useHighlightedAthlete'
 import { useNavigator } from '../../utils/useNavigator'
 import { UserFavoriteContext } from '../../UserFavoriteContext'
+import type { ParticipantSerieResult, Serie } from '../../../shared/types'
 
 type IndividualRankingsTableProps = {
-  serie: SerieSummary
+  serie: Serie
   selectedCategory: string
-  results: AthleteSerieResult[]
+  results: ParticipantSerieResult[]
 }
 
 export const columns = {
   ...sharedColumns,
-  position: (row: Pick<AthleteSerieResult, 'position'>) => formatRacerPositionLabel(row.position),
+  position: (row: Pick<ParticipantSerieResult, 'position'>) => formatRacerPositionLabel(row.position),
 }
 
 export const IndividualRankingsTable: React.FC<IndividualRankingsTableProps> = ({

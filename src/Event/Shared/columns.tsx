@@ -1,7 +1,6 @@
-import type { EventAthlete, AthleteRaceResult, AthleteSerieResult } from '../../types/results'
 import { Anchor, Badge, Tooltip } from '@mantine/core'
 import { formatTimeDuration, formatGapTime, formatSpeed } from '../../utils/race-results'
-import type { Athlete } from '../../types/athletes'
+import type { Athlete, ParticipantResult, ParticipantSerieResult } from '../../../shared/types'
 
 export const formatRacerPositionLabel = (position: number, textOnly?: boolean) => {
   if (position > 3 || textOnly) return position
@@ -21,10 +20,10 @@ function renderEmptyValue(empty: string, textOnly?: boolean) {
 }
 
 export const columns = {
-  position: (row: Pick<AthleteRaceResult, 'status' | 'position'>, { text }: ColumnOptions = {}) => {
-    return row.status === 'FINISHER' ? formatRacerPositionLabel(row.position, text) : row.status
+  position: (row: Pick<ParticipantResult, 'status' | 'position'>, { text }: ColumnOptions = {}) => {
+    return row.status === 'FINISHER' && row.position ? formatRacerPositionLabel(row.position, text) : row.status
   },
-  name: (row: Partial<Pick<EventAthlete, 'firstName' | 'lastName' | 'uciId'>>, {
+  name: (row: Partial<Pick<ParticipantResult, 'firstName' | 'lastName' | 'uciId'>>, {
     text,
     short,
     onClick
@@ -45,7 +44,7 @@ export const columns = {
   city: (row: Pick<Athlete, 'city' | 'province'>) => {
     return [row.city, row.province].filter(Boolean).join(', ')
   },
-  bibNumber: (row: Pick<AthleteRaceResult | AthleteSerieResult, 'bibNumber'> | {
+  bibNumber: (row: Pick<ParticipantResult | ParticipantSerieResult, 'bibNumber'> | {
     bibNumber: number
   }, { text, onClick }: ColumnOptions & { onClick?: (bibNumber: number) => void } = {}) => {
     if (text) return row.bibNumber
@@ -61,22 +60,24 @@ export const columns = {
       {row.bibNumber}
     </Badge>
   },
-  time: (row: Pick<AthleteRaceResult, 'status' | 'position' | 'finishTime' | 'finishGap'>, {
+  time: (row: Pick<ParticipantResult, 'status' | 'position' | 'finishTime' | 'finishGap'>, {
     text,
     showGapTime
   }: ColumnOptions & {
     showGapTime?: boolean
   } = {}) => {
+    if (!row.status) return renderEmptyValue('-', text)
+
     if (![
       'FINISHER',
       'DNF'
     ].includes(row.status) || row.status === 'DNF' && row.finishTime === 0) return renderEmptyValue('-', text)
 
     if (row.position === 1 || (!showGapTime && row.status === 'FINISHER' && row.finishGap && row.finishGap >= 0)) {
-      const duration = formatTimeDuration(row.finishTime)
+      const duration = row.finishTime ? formatTimeDuration(row.finishTime) : '-'
       if (duration === '-') return renderEmptyValue('-', text)
       return duration
-    } else if (row.status === 'DNF' || row.finishGap !== null && row.finishGap < 0) return `(${formatTimeDuration(row.finishTime)})`
+    } else if (row.status === 'DNF' || row.finishGap !== undefined && row.finishGap < 0) return row.finishTime ? `(${formatTimeDuration(row.finishTime)})` : '-'
     else {
       if (text) {
         const value = formatGapTime(row.finishGap!)
@@ -85,18 +86,18 @@ export const columns = {
       }
 
       return <Tooltip
-        label={formatTimeDuration(row.finishTime)}><span>{formatGapTime(row.finishGap!)}</span></Tooltip>
+        label={!!row.finishTime && formatTimeDuration(row.finishTime)}><span>{formatGapTime(row.finishGap!)}</span></Tooltip>
     }
   },
-  gap: (row: Pick<AthleteRaceResult, 'status' | 'finishGap'>, { text }: ColumnOptions = {}) => {
-    if (!['FINISHER', 'DNF'].includes(row.status) || !row.finishGap) return renderEmptyValue('-', text)
+  gap: (row: Pick<ParticipantResult, 'status' | 'finishGap'>, { text }: ColumnOptions = {}) => {
+    if (!row.status || !['FINISHER', 'DNF'].includes(row.status) || !row.finishGap) return renderEmptyValue('-', text)
 
     const value = formatGapTime(row.finishGap)
     if (value === '-') return renderEmptyValue('-', text)
     return value
   },
-  avgSpeed: (row: Pick<AthleteRaceResult, 'status' | 'avgSpeed'>, { text }: ColumnOptions = {}) => {
-    if (!['FINISHER', 'DNF'].includes(row.status) || !row.avgSpeed) return renderEmptyValue('-', text)
+  avgSpeed: (row: Pick<ParticipantResult, 'status' | 'avgSpeed'>, { text }: ColumnOptions = {}) => {
+    if (!row.status || !['FINISHER', 'DNF'].includes(row.status) || !row.avgSpeed) return renderEmptyValue('-', text)
 
     const value = formatSpeed(row.avgSpeed)
     if (value === '-') return renderEmptyValue('-', text)

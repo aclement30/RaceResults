@@ -14,6 +14,7 @@ export const PUBLIC_BUCKET_FILES = {
     lookup: 'athletes_lookup.json',
     teams: 'teams.json',
   },
+  organizers: 'organizers.json',
   views: {
     recentlyUpgradedAthletes: 'views/recently_upgraded_athletes.json',
   }

@@ -25,9 +25,8 @@ export const Navbar: React.FC<NavbarProps> = ({ filters }) => {
   // List of series from events of the selected year (not actual series standings)
   const yearSeriesFilters = useMemo(() => {
     const yearEvents = events.get(filters.year)?.filter(({
-      year,
       location
-    }) => year === filters.year && location.province === 'BC' && location.country === 'CA') || []
+    }) => location.province === 'BC' && location.country === 'CA') || []
 
     return [...new Set(yearEvents.map(({ serie }) => serie).filter(Boolean) || [])]
   }, [filters.year, events])

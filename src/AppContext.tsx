@@ -1,7 +1,5 @@
 import { createContext, type ReactNode, useCallback, useState } from 'react'
-import type { RaceEvent, SerieSummary } from './types/results'
-import type { Athlete } from './types/athletes'
-import type { Team } from './types/team'
+import type { Athlete, RaceEvent, Serie, Team } from '../shared/types'
 
 export const AppContext = createContext({
   years: [] as number[],
@@ -10,8 +8,8 @@ export const AppContext = createContext({
   events: new Map<number, RaceEvent[]>(),
   setEvents: (_: RaceEvent[], __: number) => {
   },
-  series: new Map<number, SerieSummary[]>(),
-  setSeries: (_: SerieSummary[], __: number) => {
+  series: new Map<number, Serie[]>(),
+  setSeries: (_: Serie[], __: number) => {
   },
   athletes: new Map<string, Athlete>(),
   findAthlete: (_: { firstName?: string, lastName?: string, uciId?: string }) => null as Athlete | null,
@@ -34,14 +32,14 @@ export const AppContextProvider: React.FC<{ children: ReactNode }> = ({ children
   const [teams, setTeams] = useState<Map<number, Team>>(new Map<number, Team>())
   const [athleteLookupTable, setAthleteLookupTable] = useState<Map<string, string>>(new Map<string, string>())
   const [events, setAllEvents] = useState<Map<number, RaceEvent[]>>(new Map<number, RaceEvent[]>())
-  const [series, setAllSeries] = useState<Map<number, SerieSummary[]>>(new Map<number, SerieSummary[]>())
+  const [series, setAllSeries] = useState<Map<number, Serie[]>>(new Map<number, Serie[]>())
   const [loadingStartupData, setLoadingStartupData] = useState<boolean>(true)
 
   const setEvents = useCallback(async (events: RaceEvent[], year: number) => {
     setAllEvents((prevState) => (new Map(prevState).set(year, events)))
   }, [setAllEvents])
 
-  const setSeries = useCallback(async (series: SerieSummary[], year: number) => {
+  const setSeries = useCallback(async (series: Serie[], year: number) => {
     setAllSeries((prevState) => (new Map(prevState).set(year, series)))
   }, [setAllSeries])
 

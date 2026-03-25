@@ -10,7 +10,7 @@ import {
   Tooltip
 } from '@mantine/core'
 import { useEffect, useMemo, useState } from 'react'
-import type { Athlete, AthleteUpgradePoint } from '../../types/athletes'
+import type { Athlete, AthleteUpgradePoint } from '../../../shared/types'
 import { useNavigate, useSearchParams } from 'react-router'
 import { columns } from '../../Event/Shared/columns'
 import { getSanctionedEventTypeLabel, hasDoubleUpgradePoints } from '../../Event/utils'
@@ -49,7 +49,7 @@ export const UpgradePointsTable: React.FC<ResultsTableProps> = ({
     let selectedRows: string[] = []
     // Only select rows if there is no latest upgrade date or if the latest upgrade date has a good confidence level. Otherwise let the user select the rows manually.
     if (!latestUpgrade?.[selectedDiscipline] || latestUpgrade?.[selectedDiscipline]?.confidence && latestUpgrade[selectedDiscipline].confidence >= CONFIDENCE_LEVEL_THRESHOLD) {
-      selectedRows = upgradePoints?.filter(point => !isUpgradePointStale(point.date, latestUpgrade?.[point.discipline])).map(point => point.eventHash) || []
+      selectedRows = upgradePoints?.filter(point => !isUpgradePointStale(point.date, latestUpgrade?.[selectedDiscipline])).map(point => point.eventHash) || []
     }
     setSelectedRows(selectedRows)
   }, [upgradePoints, latestUpgrade, selectedDiscipline])
@@ -114,7 +114,7 @@ export const UpgradePointsTable: React.FC<ResultsTableProps> = ({
     const staleUpgradePoint = isUpgradePointStale(upgradePoint.date, latestUpgrade?.[upgradePoint.discipline])
 
     return (<>
-        <Table.Tr key={`upgrade-point-${upgradePoint.eventHash}-${upgradePoint.category}`}
+        <Table.Tr key={`upgrade-point-${upgradePoint.eventHash}-${upgradePoint.categoryAlias}`}
                   className={staleUpgradePoint ? '-dimmed' : ''}>
           <Table.Td>
             <Checkbox checked={selectedRows.includes(upgradePoint.eventHash)}
@@ -123,7 +123,7 @@ export const UpgradePointsTable: React.FC<ResultsTableProps> = ({
           <Table.Td visibleFrom="sm">{upgradePoint.date}</Table.Td>
           <Table.Td>
             <Anchor
-              onClick={() => navigate(`/events/${year}/${upgradePoint.eventHash}?category=${upgradePoint.category}`)}>
+              onClick={() => navigate(`/events/${year}/${upgradePoint.eventHash}?category=${upgradePoint.categoryAlias}`)}>
               {upgradePoint.eventName}
             </Anchor>
             <Text c="dimmed" size="sm" hiddenFrom="sm">{upgradePoint.date}</Text>
@@ -189,7 +189,7 @@ export const UpgradePointsTable: React.FC<ResultsTableProps> = ({
         row.fieldSize,
         row.position,
         row.points,
-        `${window.location.origin}/events/${row.date.slice(0, 4)}/${row.eventHash}?category=${row.category}`
+        `${window.location.origin}/events/${row.date.slice(0, 4)}/${row.eventHash}?category=${row.categoryAlias}`
       ]
     })
 
@@ -310,7 +310,7 @@ export const UpgradePointsTable: React.FC<ResultsTableProps> = ({
         <EmptyState>No points found</EmptyState>
       )}
 
-      {latestUpgrade?.[selectedDiscipline] && oldestPointDate && latestUpgrade?.[selectedDiscipline]?.date > oldestPointDate && (
+      {latestUpgrade?.[selectedDiscipline]?.date && oldestPointDate && latestUpgrade?.[selectedDiscipline]?.date > oldestPointDate && (
         <Alert variant="light" style={{ marginTop: '1rem' }}>
           {latestUpgrade[selectedDiscipline].confidence >= CONFIDENCE_LEVEL_THRESHOLD ? (
             <>

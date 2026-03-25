@@ -14,7 +14,7 @@ import {
 } from '@mantine/core'
 import { FETCH_ERROR_TYPE, fetchAthleteProfile, FetchError } from '../utils/aws-s3'
 import { Loader } from '../Loader/Loader'
-import type { AthleteProfile } from '../types/athletes'
+import type { AthleteProfile } from '../../shared/types'
 import { showErrorMessage } from '../utils/showErrorMessage'
 import { UpgradePointsTable } from './UpgradePointsTable/UpgradePointsTable'
 import { Navbar } from './Navbar/Navbar'

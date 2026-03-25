@@ -1,6 +1,6 @@
-import type { Athlete, AthleteUpgradePoint } from '../types/athletes.ts'
 import { Anchor } from '@mantine/core'
 import type { ReactNode } from 'react'
+import type { Athlete, AthleteUpgradePoint } from '../../shared/types/athletes'
 
 const currentYear = new Date().getFullYear()
 

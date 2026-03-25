@@ -1,11 +1,12 @@
-import type { SerieSummary } from '../../types/results'
+import React from 'react'
 import { useNavigate } from 'react-router'
 import { Button, Card, Group } from '@mantine/core'
 import { OrganizerBadge } from '../../Shared/OrganizerBadge'
 import { IconUsersGroup, IconUserStar } from '@tabler/icons-react'
+import type { Serie } from '../../../shared/types'
 
 type SerieCardProps = {
-  serie: SerieSummary
+  serie: Serie
 }
 
 export const SerieCard: React.FC<SerieCardProps> = ({ serie }) => {
@@ -39,7 +40,7 @@ export const SerieCard: React.FC<SerieCardProps> = ({ serie }) => {
         </Group>
       </Card.Section>
 
-      {serie.categories.team && (
+      {serie.types.includes('team') && (
         <Card.Section withBorder inheritPadding style={{ paddingTop: 5, paddingBottom: 5 }}>
           <Button variant="transparent" leftSection={<IconUsersGroup/>}
                   fullWidth justify="left"
@@ -49,7 +50,7 @@ export const SerieCard: React.FC<SerieCardProps> = ({ serie }) => {
         </Card.Section>
       )}
 
-      {serie.categories.individual && (
+      {serie.types.includes('team') && (
         <Card.Section withBorder inheritPadding style={{ paddingTop: 5, paddingBottom: 5 }}>
           <Button variant="transparent" leftSection={<IconUserStar/>}
                   fullWidth justify="left"

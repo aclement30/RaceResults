@@ -53,10 +53,10 @@ export const Events: React.FC = () => {
   const matchingSerie = filters.serie && series.get(filters.year)?.find((serieSummary) => serieSummary.alias === filters.serie)
 
   const recentlyUpdatedSeries = useMemo(() => {
-    return series.get(filters.year)?.filter((serie) => serie.lastUpdated >= last48hours).sort((
+    return series.get(filters.year)?.filter((serie) => (serie.updatedAt || serie.createdAt) >= last48hours).sort((
       a,
       b
-    ) => a.lastUpdated < b.lastUpdated ? 1 : -1) || []
+    ) => (a.updatedAt || a.createdAt) < (b.updatedAt || b.createdAt) ? 1 : -1) || []
   }, [filters.year, series])
 
   return (

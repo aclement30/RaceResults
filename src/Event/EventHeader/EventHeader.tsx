@@ -1,10 +1,10 @@
 import { Button, Group } from '@mantine/core'
-import type { BaseCategory, RaceEvent } from '../../types/results'
 import { useNavigate } from 'react-router'
 import { OrganizerBadge } from '../../Shared/OrganizerBadge'
 import { useContext } from 'react'
 import { AppContext } from '../../AppContext'
 import { getSerieLabel } from '../utils'
+import type { RaceEvent, BaseCategory } from '../../../shared/types/events'
 
 type EventHeaderProps = {
   event: RaceEvent
@@ -15,7 +15,8 @@ export const EventHeader: React.FC<EventHeaderProps> = ({ event, selectedCategor
   const navigate = useNavigate()
   const { series } = useContext(AppContext)
 
-  const yearSeries = series.get(event.year) || []
+  const eventYear = +event.date.slice(0, 4)
+  const yearSeries = series.get(eventYear) || []
 
   const renderSerieLabel = (eventSerieAlias: string | null | undefined): string | null => {
     if (!eventSerieAlias) return null
@@ -77,7 +78,7 @@ export const EventHeader: React.FC<EventHeaderProps> = ({ event, selectedCategor
             paddingLeft: 0, display: 'inline-block',
             alignSelf: 'flex-start',
           }}
-          onClick={() => navigate(`/events?year=${event.year}&series=${event.serie}`)}
+          onClick={() => navigate(`/events?year=${eventYear}&series=${event.serie}`)}
         >
           {renderSerieLabel(event.serie)}
         </Button>

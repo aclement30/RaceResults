@@ -1,24 +1,24 @@
-import { useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react'
-import { AppContext } from '../AppContext'
-import { useParams, useSearchParams } from 'react-router'
-import type { EventResults, RaceEvent } from '../types/results'
-import { ResultsTable } from './ResultsTable/ResultsTable'
-import { AppShell, Text, Divider, Tabs, LoadingOverlay, Blockquote, Group } from '@mantine/core'
+import { AppShell, Blockquote, Divider, Group, LoadingOverlay, Tabs, Text } from '@mantine/core'
 import { IconCoins, IconHelp, IconStars, IconStopwatch, IconTrophy } from '@tabler/icons-react'
+import { useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react'
+import { useParams, useSearchParams } from 'react-router'
+import type { EventResults, RaceEvent } from '../../shared/types'
+import { AppContext } from '../AppContext'
+import { Loader } from '../Loader/Loader'
+import { EmptyState } from '../Shared/EmptyState'
+import { ResourceNotFound } from '../Shared/ResourceNotFound'
+import { Source } from '../Shared/Source'
+import { UIContext } from '../UIContext'
+import { FETCH_ERROR_TYPE, FetchError, fetchEventResults } from '../utils/aws-s3'
+import { showErrorMessage } from '../utils/showErrorMessage'
+import { useEventsAndSeries } from '../utils/useEventsAndSeries'
 import { EventHeader } from './EventHeader/EventHeader'
 import { LapsTable } from './LapsTable/LapsTable'
-import { PrimesTable } from './PrimesTable/PrimesTable'
-import { useCategoryResults } from './utils'
-import { FETCH_ERROR_TYPE, FetchError, fetchEventResults } from '../utils/aws-s3'
 import { Navbar } from './Navbar/Navbar'
-import { useEventsAndSeries } from '../utils/useEventsAndSeries'
-import { Source } from '../Shared/Source'
 import { PointsTable } from './PointsTable/PointsTable'
-import { Loader } from '../Loader/Loader'
-import { ResourceNotFound } from '../Shared/ResourceNotFound'
-import { showErrorMessage } from '../utils/showErrorMessage'
-import { EmptyState } from '../Shared/EmptyState'
-import { UIContext } from '../UIContext'
+import { PrimesTable } from './PrimesTable/PrimesTable'
+import { ResultsTable } from './ResultsTable/ResultsTable'
+import { useCategoryResults } from './utils'
 
 const today = new Date().toLocaleDateString('sv', { timeZone: 'America/Vancouver' }).slice(0, 10)
 
@@ -37,11 +37,14 @@ export const Event: React.FC = () => {
   const eventHash = hash!
 
   const [searchParams, setSearchParams] = useSearchParams()
-  const selectedCategory = searchParams.get('category') || eventSummary?.categories[0].alias
+  const selectedCategory = searchParams.get('category') || eventResults && eventResults.categories[0]?.alias || undefined
   const activeTab = searchParams.get('tab') || 'results'
 
   const selectedEvent = useMemo(() => events.get(eventYear)?.find(({ hash }) => hash === eventHash), [events, params])
-  const selectedEventCategory = !!selectedCategory && eventResults?.results[selectedCategory] || undefined
+  const selectedEventCategory = useMemo(() => selectedCategory ? eventResults?.categories.find(c => c.alias === selectedCategory) : undefined, [
+    selectedCategory,
+    eventResults
+  ])
 
   const tabs = useMemo(() => {
     const tabs = ['results']
@@ -115,9 +118,7 @@ export const Event: React.FC = () => {
     }
   }, [eventYear, eventHash, events])
 
-  const {
-    sortedResults,
-  } = useCategoryResults(selectedEventCategory?.results || [], eventResults?.athletes || {})
+  const { sortedResults } = useCategoryResults(selectedEventCategory?.results || [])
 
   const handleTabChamge = (tab: string | null) => {
     if (!tab) {
@@ -138,7 +139,7 @@ export const Event: React.FC = () => {
       />
 
       <Navbar eventYear={eventYear} eventHash={eventHash} selectedCategory={selectedCategory}
-              categories={eventSummary?.categories}/>
+              categories={eventResults?.categories}/>
 
       <AppShell.Main>
         {!selectedEvent && !loadingResults && (
@@ -190,23 +191,22 @@ export const Event: React.FC = () => {
                     <ResultsTable
                       eventSummary={eventSummary!}
                       results={sortedResults}
-                      athletes={eventResults.athletes}
-                      raceNotes={eventResults.raceNotes}
                     />
                   )}
                 </Tabs.Panel>
 
                 {tabs.includes('primes') && (
                   <Tabs.Panel value="primes">
-                    <PrimesTable primes={selectedEventCategory?.primes || []} athletes={eventResults!.athletes}/>
+                    <PrimesTable participantResults={sortedResults} primes={selectedEventCategory?.primes || []}/>
                   </Tabs.Panel>
                 )}
 
                 {tabs.includes('laps') && (
                   <Tabs.Panel value="laps">
-                    <LapsTable lapCount={selectedEventCategory?.laps || 0}
-                               results={sortedResults}
-                               athletes={eventResults!.athletes}/>
+                    <LapsTable
+                      lapCount={selectedEventCategory?.laps || 0}
+                      results={sortedResults}
+                    />
                   </Tabs.Panel>
                 )}
 
@@ -216,7 +216,6 @@ export const Event: React.FC = () => {
                       eventSummary={eventSummary!}
                       eventResults={eventResults}
                       selectedCategory={selectedCategory}
-                      athletes={eventResults.athletes}
                     />
                   </Tabs.Panel>
                 )}
@@ -224,9 +223,10 @@ export const Event: React.FC = () => {
 
               <Divider/>
 
-              {!!eventResults && (
+              {!!(selectedEventCategory?.updatedAt || selectedEventCategory?.createdAt) && (
                 <Text c="dimmed" size="sm" style={{ padding: '1rem 0' }}>
-                  Last Updated: {new Date(eventResults.lastUpdated).toLocaleDateString('en-CA', {
+                  Last
+                  Updated: {new Date(selectedEventCategory.updatedAt || selectedEventCategory.createdAt).toLocaleDateString('en-CA', {
                   year: 'numeric',
                   month: 'long',
                   day: 'numeric',
@@ -256,7 +256,7 @@ export const Event: React.FC = () => {
                 </>
               )}
 
-              <Source sourceUrls={eventResults?.sourceUrls}/>
+              <Source sourceUrls={eventSummary?.sourceUrls}/>
             </>
           )}
         </div>

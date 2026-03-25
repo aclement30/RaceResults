@@ -8,7 +8,7 @@ import {
   Alert,
   Text, Tabs, Badge, ActionIcon
 } from '@mantine/core'
-import type { Athlete } from '../types/athletes'
+import type { Athlete } from '../../shared/types/athletes'
 import { Navbar } from '../Athlete/Navbar/Navbar'
 import { renderSkillLevelWithAgeCategory } from '../Athlete/utils'
 import {
@@ -30,7 +30,6 @@ export const Team: React.FC = () => {
   const params = useParams()
   const { teamId: teamIdStr } = params
   const teamId = +teamIdStr!
-  // const teamName = team!.replace(/-/g, ' ')
 
   const [searchParams, setSearchParams] = useSearchParams()
   const selectedTab = searchParams.get('tab')
