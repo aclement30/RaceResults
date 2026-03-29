@@ -192,18 +192,25 @@ export const EventResults: React.FC<EventResultsProps> = ({ results, year, event
     setSavedMapping(mapping)
   }
 
-  const doDeleteCategory = (alias: string) => {
-    setCategories(prev => {
-      const remaining = prev.filter(c => c.alias !== alias)
-      if (activeCategory === alias) setActiveCategory(remaining[0]?.alias ?? null)
-      return remaining
-    })
+  const doDeleteCategory = async (alias: string) => {
+    try {
+      await adminApi.delete.eventResultCategory(alias, { year, eventHash })
 
-    setDirtyCategories(prev => {
-      const next = new Set(prev)
-      next.delete(alias)
-      return next
-    })
+      setCategories(prev => {
+        const remaining = prev.filter(c => c.alias !== alias)
+        if (activeCategory === alias) setActiveCategory(remaining[0]?.alias ?? null)
+        return remaining
+      })
+
+      setDirtyCategories(prev => {
+        const next = new Set(prev)
+        next.delete(alias)
+        return next
+      })
+    } catch (error) {
+      showErrorMessage({ message: `Failed to delete category: ${(error as Error).message}`, title: 'Delete Error' })
+      return
+    }
   }
 
   const handleDeleteCategory = (alias: string) => {
@@ -211,7 +218,7 @@ export const EventResults: React.FC<EventResultsProps> = ({ results, year, event
     if (!cat) return
 
     if (cat.results.length > 0) {
-      modals.openConfirmModal({
+      const modalId = modals.openConfirmModal({
         title: 'Delete category',
         children: (
           <Text size="sm">
@@ -221,7 +228,12 @@ export const EventResults: React.FC<EventResultsProps> = ({ results, year, event
         ),
         labels: { confirm: 'Delete', cancel: 'Cancel' },
         confirmProps: { color: 'red' },
-        onConfirm: () => doDeleteCategory(alias),
+        closeOnConfirm: false,
+        onConfirm: async () => {
+          modals.updateModal({ modalId, confirmProps: { color: 'red', loading: true }, cancelProps: { disabled: true } })
+          await doDeleteCategory(alias)
+          modals.close(modalId)
+        },
       })
     } else {
       doDeleteCategory(alias)
