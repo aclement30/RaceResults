@@ -1,26 +1,41 @@
-import type { Team } from './types.ts'
+import type { Team, TeamRoster } from './types.ts'
 import data from './data.ts'
+import { keyBy } from 'lodash-es'
+
+const CURRENT_YEAR = new Date().getFullYear()
 
 class TeamParserSingleton {
   private _teams: Record<string, Team>
   private _teamsByNames: Record<string, Team>
   private _teamsByUniqueKeywords: Record<string, Team>
+  private _manualAthleteTeams: Record<string, Record<string, number>>
 
   constructor() {
     this._teams = {}
     this._teamsByNames = {}
     this._teamsByUniqueKeywords = {}
+    this._manualAthleteTeams = {}
   }
 
   public async init() {
     // Check if already initialized
     if (Object.keys(this._teams).length > 0) return
 
+    let teams, teamRosters
+
     try {
-      this._teams = await data.get.teams()
+      ;([
+        teams,
+        teamRosters,
+      ] = await Promise.all([
+        data.get.teams(),
+        data.get.teamRosters(CURRENT_YEAR),
+      ]))
     } catch (error) {
       throw error
     }
+
+    this._teams = keyBy(teams, 'id')
 
     // Create a lookup by team name
     const teamsByNames: Record<string, Team> = {}
@@ -44,6 +59,15 @@ class TeamParserSingleton {
 
     this._teamsByNames = teamsByNames
     this._teamsByUniqueKeywords = teamsByUniqueKeywords
+
+    // Create a lookup for manual athlete team assignments
+    const manualAthleteTeams: Record<string, Record<string, number>> = { [CURRENT_YEAR]: {} }
+    teamRosters.forEach((roster) => {
+      roster.athletes.forEach(({ athleteUciId, source }) => {
+        if (source === 'manual') manualAthleteTeams[CURRENT_YEAR][athleteUciId] = roster.teamId
+      })
+    })
+    this._manualAthleteTeams = manualAthleteTeams
   }
 
   public getTeamByName(name: string): Team | undefined {
@@ -52,6 +76,16 @@ class TeamParserSingleton {
     if (matchingTeam) return matchingTeam
 
     return this.getTeamByKeyword(name)
+  }
+
+  public getManualTeamForAthlete(athleteUciId: string, year: number): Team | null {
+    if (this._manualAthleteTeams[year] && this._manualAthleteTeams[year][athleteUciId]) {
+      const teamId = this._manualAthleteTeams[year][athleteUciId]
+      if (teamId === 0) return null // Explicitly marked as independent
+      return this._teams[teamId] || null
+    }
+
+    return null
   }
 
   public parseTeamName(name: string | undefined | null): { id?: number, name?: string } | undefined {

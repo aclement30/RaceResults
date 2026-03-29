@@ -9,16 +9,22 @@ import { EmptyState } from '../../Shared/EmptyState'
 import { AppContext } from '../../AppContext'
 import { renderSkillLevelWithAgeCategory } from '../../Athlete/utils'
 import { useNavigator } from '../../utils/useNavigator'
-import type { Athlete, AthleteCompilations } from '../../types/athletes'
+import type { Athlete, TDiscipline } from '../../../shared/types'
 import { IconCircleCheck } from '@tabler/icons-react'
 
 const currentYear = new Date().getFullYear()
 
-type PointsCollectorsTableProps = {
-  pointsCollectors?: AthleteCompilations['pointsCollectors']
+type PointsCollector = {
+  athleteUciId: string,
+  skillLevel: string,
+  discipline: TDiscipline,
+  points: { UPGRADE: number, SUBJECTIVE: number },
+  hasRacedUp: boolean,
 }
 
-type PointsCollector = AthleteCompilations['pointsCollectors'][0]
+type PointsCollectorsTableProps = {
+  pointsCollectors?: PointsCollector[]
+}
 
 export const PointsCollectorsTable: React.FC<PointsCollectorsTableProps> = ({
   pointsCollectors

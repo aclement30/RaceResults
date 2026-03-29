@@ -1,15 +1,18 @@
-import makeFetchCookie from 'fetch-cookie'
 import * as cheerio from 'cheerio'
+import makeFetchCookie from 'fetch-cookie'
+import data from 'shared/data.ts'
+import { createEventSerieHash, transformOrganizerAlias } from 'shared/events.ts'
+import defaultLogger from 'shared/logger.ts'
 import { PROVIDER_NAME, SOURCE_URL_PREFIX } from './config.ts'
 import type { WebscorerEvent } from './types.ts'
-import { createEventSerieHash } from '../../shared/utils.ts'
-import defaultLogger from '../../shared/logger.ts'
-import data from '../../shared/data.ts'
 
 const logger = defaultLogger.child({ provider: PROVIDER_NAME })
 const currentYear = new Date().getFullYear()
 
-export default async ({ year: requestedYear }: { year?: number } = {}) => {
+export default async ({ year: requestedYear, eventHash: requestedEventHash }: {
+  year?: number,
+  eventHash?: string
+} = {}) => {
   const { year, ...sourceBundles } = await getEventResultsList(requestedYear)
 
   logger.info(`${sourceBundles.events?.length || 0} updated events`)
@@ -19,8 +22,9 @@ export default async ({ year: requestedYear }: { year?: number } = {}) => {
   const lastCheckDate = await data.get.lastCheckDate(PROVIDER_NAME)
 
   const combinedBundles = [...(sourceBundles.events || [])] // , ...(sourceBundles.series || [])]
+  const filteredBundles = requestedEventHash ? combinedBundles.filter(bundle => bundle.hash === requestedEventHash) : combinedBundles
 
-  const promises = await Promise.allSettled(combinedBundles.map(bundle => importRawData(bundle, requestedYear, lastCheckDate)))
+  const promises = await Promise.allSettled(filteredBundles.map(bundle => importRawData(bundle, requestedYear, lastCheckDate)))
 
   const importedHashes = promises.filter((promise) => promise.status === 'fulfilled').map((promise) => promise.value)
 
@@ -137,14 +141,14 @@ const extractFormData = (html: string): Record<string, string> => {
   return formData
 }
 
-const extractEventsList = (html: string): WebscorerEvent[] => {
+const extractEventsList = async (html: string): Promise<WebscorerEvent[]> => {
   const $ = cheerio.load(html)
 
   const racesTable = $('table[id="liveRaceTable"]')
 
   const events: WebscorerEvent[] = []
 
-  racesTable.find('tbody tr').toArray().forEach((row) => {
+  for (const row of racesTable.find('tbody tr').toArray()) {
     let raceName = '', raceDate = '', raceLocation = { city: '', province: '', country: 'CA' }, raceUrl = ''
 
     $(row).find('td').toArray().forEach((cell, idx) => {
@@ -178,12 +182,11 @@ const extractEventsList = (html: string): WebscorerEvent[] => {
     })
 
     const year = +raceDate.slice(0, 4)
-    let organizer
-    try {
-      organizer = extractOrganizerFromName(raceName, raceLocation.city)
-    } catch (e) {
-      logger.error(e)
-      return
+    const organizer = await transformOrganizerAlias(raceName, { eventName: raceName, city: raceLocation.city, year })
+
+    if (organizer === raceName) {
+      logger.error(`Unknown organizer for event "${raceName}" — skipping`)
+      continue
     }
 
     if (!isEventIgnored(year, organizer, raceName, raceLocation)) {
@@ -200,26 +203,11 @@ const extractEventsList = (html: string): WebscorerEvent[] => {
         sourceUrl: `${SOURCE_URL_PREFIX}${raceUrl}`,
       })
     }
-  })
+  }
 
   return events
 }
 
-const extractOrganizerFromName = (name: string, city: string): string => {
-  if (name.includes('VCL')) {
-    return 'VictoriaCycling'
-  } else if (name.includes('Coastal Edge')) {
-    return 'CoastalEdge'
-  } else if (city === 'Victoria') {
-    return 'VictoriaCycling'
-  } else if (name === 'Canadian National Championship Masters Time Trial') {
-    return 'WheelhouseCyclingSociety'
-  } else if (name === '2025 Royal Bay Criterium') {
-    return 'AboutTheRideCycling'
-  } else {
-    throw new Error(`Unknown organizer for event ${name}!`)
-  }
-}
 
 const fetchEventRawData = async (sourceUrl: string) => {
   const getResponse = await fetch(sourceUrl.replace('/race?', '/racealldetails?'))

@@ -1,30 +1,27 @@
-import type { EventAthlete, AthleteRaceResult, RaceEvent } from '../../types/results'
 import { Blockquote, Button, Divider, Group, Table, Text } from '@mantine/core'
-import { useContext, useMemo, useState } from 'react'
 import { useDisclosure } from '@mantine/hooks'
-import debounce from 'lodash/debounce'
-import { columns } from '../Shared/columns'
-import { SearchField } from '../../Shared/SearchField'
-import { useHighlightedAthlete } from '../../utils/useHighlightedAthlete'
 import { IconFileDownload } from '@tabler/icons-react'
+import debounce from 'lodash/debounce'
+import React, { useContext, useMemo, useState } from 'react'
+import type { ParticipantResult, RaceEvent } from '../../../shared/types/events'
+import { AppContext } from '../../AppContext'
+import { RACE_TYPES } from '../../config/event-types'
+import { SearchField } from '../../Shared/SearchField'
+import { UserFavoriteContext } from '../../UserFavoriteContext'
 import { exportCSV } from '../../utils/exportCSV'
 import { showErrorMessage } from '../../utils/showErrorMessage'
-import { AppContext } from '../../AppContext'
+import { useHighlightedAthlete } from '../../utils/useHighlightedAthlete'
 import { useNavigator } from '../../utils/useNavigator'
-import { UserFavoriteContext } from '../../UserFavoriteContext'
+import { columns } from '../Shared/columns'
 
 type ResultsTableProps = {
   eventSummary: RaceEvent
-  results: AthleteRaceResult[]
-  athletes: Record<string, EventAthlete>,
-  raceNotes?: string
+  results: ParticipantResult[]
 }
 
 export const ResultsTable: React.FC<ResultsTableProps> = ({
   eventSummary,
   results,
-  athletes,
-  raceNotes,
 }) => {
   const { findAthlete } = useContext(AppContext)
   const { isFavorite } = useContext(UserFavoriteContext)
@@ -32,6 +29,7 @@ export const ResultsTable: React.FC<ResultsTableProps> = ({
   const [searchValue, setSearchValue] = useState('')
   const [loadingCsv, setLoadingCsv] = useState(false)
   const { navigateToAthlete } = useNavigator()
+  const eventYear = +eventSummary.date.slice(0, 4)
 
   const filteredResults = useMemo(() => {
     if (!searchValue) return results
@@ -40,7 +38,7 @@ export const ResultsTable: React.FC<ResultsTableProps> = ({
 
     return results.filter((raceResult) => {
       if (isNaN(+searchValueLower)) {
-        const { firstName, lastName, team } = athletes[raceResult.athleteId]
+        const { firstName, lastName, team } = raceResult
         const fullName = `${firstName} ${lastName}`.toLowerCase()
         const teamLower = team?.toLowerCase()
 
@@ -57,37 +55,34 @@ export const ResultsTable: React.FC<ResultsTableProps> = ({
   const isFiltered = filteredResults.length !== results.length
 
   const athleteColumns = useMemo(() => {
-    const resultAthletes = results.map((raceResult) => athletes[raceResult.athleteId])
     const athleteColumns = ['name']
 
-    // if (resultAthletes.some(result => !!result.team?.length)) athleteColumns.push('team')
-    if (resultAthletes.some(result => !!result.city?.length || !!result.province?.length)) athleteColumns.push('city')
-    if (resultAthletes.some(result => !!result.bibNumber)) athleteColumns.push('bibNumber')
+    if (results.some(result => !!result.city?.length || !!result.province?.length)) athleteColumns.push('city')
+    if (results.some(result => !!result.bibNumber)) athleteColumns.push('bibNumber')
     if (results.some(result => !!result.finishTime)) athleteColumns.push('finishTime')
     if (results.some(result => !!result.avgSpeed)) athleteColumns.push('avgSpeed')
 
     return athleteColumns
-  }, [results, athletes])
+  }, [results])
 
   const rows = useMemo(() => filteredResults.map((result) => {
-    const eventAthlete = athletes[result.athleteId]
-    const athleteProfile = findAthlete(eventAthlete)
-    const team = eventAthlete.team || athleteProfile?.teams?.[eventSummary.year]?.name
+    const athleteProfile = findAthlete(result)
+    const team = result.team || athleteProfile?.teams?.[eventYear]?.name
     const isFavoriteRow = isFavorite({ athleteUciId: athleteProfile?.uciId, team })
 
     return (
-      <Table.Tr key={`ranking-${result.athleteId}`}
+      <Table.Tr key={`ranking-${result.participantId}`}
                 className={`result-row ${highlightedBibNumber && +highlightedBibNumber === result.bibNumber ? ' highlighted' : ''} ${isFavoriteRow ? 'favorite' : ''}`}>
         <Table.Td>{columns.position(result)}</Table.Td>
         <Table.Td>
-          {columns.name(athleteProfile || eventAthlete, { onClick: athleteProfile ? navigateToAthlete : undefined })}
+          {columns.name(athleteProfile || result, { onClick: athleteProfile ? navigateToAthlete : undefined })}
           <Text size="sm" c="dimmed" hiddenFrom="sm" style={{
             overflow: 'hidden',
             whiteSpace: 'nowrap', textOverflow: 'ellipsis',
           }}>{team}</Text>
         </Table.Td>
         <Table.Td visibleFrom="sm">{team}</Table.Td>
-        {athleteColumns.includes('city') && <Table.Td visibleFrom="lg">{columns.city(eventAthlete)}</Table.Td>}
+        {athleteColumns.includes('city') && <Table.Td visibleFrom="lg">{columns.city(result)}</Table.Td>}
         {athleteColumns.includes('bibNumber') &&
           <Table.Td>{columns.bibNumber(result, { onClick: highlightAthlete })}</Table.Td>}
         {athleteColumns.includes('finishTime') && (
@@ -97,30 +92,29 @@ export const ResultsTable: React.FC<ResultsTableProps> = ({
             </div>
           </Table.Td>
         )}
-        {eventSummary.isTimeTrial && athleteColumns.includes('avgSpeed') && (
+        {eventSummary.raceType === RACE_TYPES.TT && athleteColumns.includes('avgSpeed') && (
           <Table.Td style={{ maxWidth: 100, whiteSpace: 'nowrap' }} visibleFrom="sm">
             {columns.avgSpeed(result)}
           </Table.Td>
         )}
       </Table.Tr>
     )
-  }), [filteredResults, athletes, showFinishTimes, highlightedBibNumber])
+  }), [filteredResults, showFinishTimes, highlightedBibNumber])
 
   const handleExportCSV = async () => {
     const exportedRows = filteredResults.map((result) => {
-      const eventAthlete = athletes[result.athleteId]
-      const athleteProfile = findAthlete(eventAthlete)
-      const team = eventAthlete.team || athleteProfile?.teams?.[eventSummary.year]?.name
+      const athleteProfile = findAthlete(result)
+      const team = result.team || athleteProfile?.teams?.[eventYear]?.name
 
       return [
         columns.position(result, { text: true }) as string,
-        columns.name(eventAthlete, { text: true }) as string,
+        columns.name(result, { text: true }) as string,
         team,
-        eventAthlete.city,
+        result.city,
         result.bibNumber,
         columns.time(result, { showGapTime: false, text: true }) as string,
         columns.gap(result, { text: true })?.replace('+ ', ''),
-        eventSummary.isTimeTrial ? columns.avgSpeed(result, { text: true }) : ''
+        eventSummary.raceType === RACE_TYPES.TT ? columns.avgSpeed(result, { text: true }) : ''
       ]
     })
 
@@ -135,7 +129,7 @@ export const ResultsTable: React.FC<ResultsTableProps> = ({
         'BibNumber',
         'FinishTime',
         'FinishGap',
-        ...(eventSummary.isTimeTrial ? ['AvgSpeed'] : [])
+        ...(eventSummary.raceType === RACE_TYPES.TT ? ['AvgSpeed'] : [])
       ], 'results')
     } catch (error) {
       // @ts-ignore
@@ -185,7 +179,7 @@ export const ResultsTable: React.FC<ResultsTableProps> = ({
             {athleteColumns.includes('city') && <Table.Th visibleFrom="lg">City</Table.Th>}
             {athleteColumns.includes('bibNumber') && <Table.Th style={{ width: 70 }}>Bib</Table.Th>}
             {athleteColumns.includes('finishTime') && <Table.Th style={{ width: 100 }}>Time</Table.Th>}
-            {eventSummary.isTimeTrial && athleteColumns.includes('avgSpeed') && (
+            {eventSummary.raceType === RACE_TYPES.TT && athleteColumns.includes('avgSpeed') && (
               <Table.Th style={{ width: 100 }} visibleFrom="sm">Avg. Speed</Table.Th>
             )}
           </Table.Tr>
@@ -195,10 +189,10 @@ export const ResultsTable: React.FC<ResultsTableProps> = ({
       </Table>
 
 
-      {raceNotes && (
+      {eventSummary.raceNotes && (
         <>
           <Blockquote color="gray" mt="lg" p="md">
-            <div dangerouslySetInnerHTML={{ __html: raceNotes }} style={{ fontSize: 'smaller' }}/>
+            <div dangerouslySetInnerHTML={{ __html: eventSummary.raceNotes }} style={{ fontSize: 'smaller' }}/>
           </Blockquote>
 
           <Divider/>

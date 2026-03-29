@@ -1,28 +1,29 @@
 import { S3ServiceException } from '@aws-sdk/client-s3'
-import { keyBy } from 'lodash-es'
-import defaultLogger from '../../../shared/logger.ts'
-import { createEventSerieHash, s3 as RRS3 } from '../../../shared/utils.ts'
+import data from 'shared/data.ts'
+import { createEventSerieHash } from 'shared/events'
+import defaultLogger from 'shared/logger.ts'
+import { RuleEngine } from 'shared/rule-engine'
+import { TeamParser } from 'shared/team-parser'
+import type { UpdateEvent, UpdateSerie } from 'shared/types.ts'
+import { s3 as RRS3 } from 'shared/utils.ts'
 import { PROVIDER_NAME, RAW_MANUAL_IMPORT_DATA_PATH } from '../config.ts'
-import { validateRefFile } from '../utils.ts'
 import type { ManualImportBaseFile, ManualImportEventFile, ManualImportSerieFile } from '../types.ts'
+import { validateRefFile } from '../utils.ts'
 import { parseRawEvent } from './parsers/default/event-parser.ts'
 import { parseRawSerie } from './parsers/default/serie-parser.ts'
 import {
   type ManualImportRaceResultsEventFile,
   parseRawEvent as raceResultsEventParser
 } from './parsers/race-results/event-parser.ts'
-import { TeamParser } from '../../../shared/team-parser.ts'
-import data from '../../../shared/data.ts'
-import type { RaceEvent, SerieSummary } from '../../../../src/types/results.ts'
-import type { AthleteManualEdit } from '../../../shared/types.ts'
 
 const logger = defaultLogger.child({ provider: PROVIDER_NAME })
 
-export default async (importRefFiles: string[]): Promise<{ hashes: string[], year: number }> => {
+export default async (importRefFiles: string[], options?: { eventHash?: string }): Promise<{
+  hashes: { events: string[]; series: string[] },
+  year: number
+}> => {
   await TeamParser.init()
-
-  const athleteManualEdits = await data.get.athleteManualEdits()
-  const athleteManualEditsByUciId: Record<string, AthleteManualEdit> = keyBy(athleteManualEdits, 'athleteUciId')
+  await RuleEngine.init()
 
   const promises = await Promise.allSettled(importRefFiles.map(async (filePath) => {
     let bundle
@@ -39,21 +40,26 @@ export default async (importRefFiles: string[]): Promise<{ hashes: string[], yea
       throw new Error(`Failed to fetch raw ingestion data from ${filePath}: ${(err as any).message}`)
     }
 
+    if (options?.eventHash && bundle.hash !== options.eventHash) {
+      logger.info(`Skipping file ${filePath} with hash ${bundle.hash}`)
+      return { hash: bundle.hash, skipped: true }
+    }
+
     const { type } = bundle
     if (type === 'event') {
-      const event = await cleanEvent(bundle, payloads, bundle.year, athleteManualEditsByUciId)
+      const event = await cleanEvent(bundle, payloads, bundle.year)
       return { event }
     } else if (type === 'serie') {
-      const serie = await cleanSerie(bundle, payloads, bundle.year, athleteManualEditsByUciId)
+      const serie = await cleanSerie(bundle, payloads, bundle.year)
       return { serie }
     } else {
       throw new Error(`Unsupported reference file type: ${(bundle as ManualImportBaseFile).type}`)
     }
   }))
 
-  const allEvents: RaceEvent[] = []
-  const allSeries: SerieSummary[] = []
-  const cleanHashes: string[] = []
+  const allEvents: UpdateEvent[] = []
+  const allSeries: UpdateSerie[] = []
+  const cleanHashes: { events: string[]; series: string[] } = { events: [], series: [] }
   let requestYear
 
   promises.forEach((promise, i) => {
@@ -63,15 +69,15 @@ export default async (importRefFiles: string[]): Promise<{ hashes: string[], yea
         file: importRefFiles[i],
       })
     } else {
-      if (promise.value.event) {
+      if (promise.value.event && !promise.value.skipped) {
         const { event } = promise.value
         allEvents.push(event)
-        cleanHashes.push(event.hash)
-        requestYear = event.year
-      } else if (promise.value.serie) {
+        cleanHashes.events.push(event.hash)
+        requestYear = +event.date.slice(0, 4)
+      } else if (promise.value.serie && !promise.value.skipped) {
         const { serie } = promise.value
         allSeries.push(serie)
-        cleanHashes.push(serie.hash)
+        cleanHashes.series.push(serie.hash)
         requestYear = serie.year
       }
     }
@@ -80,7 +86,19 @@ export default async (importRefFiles: string[]): Promise<{ hashes: string[], yea
   try {
     logger.info(`Saving ${allEvents.length} events for year ${requestYear}...`)
 
-    await data.update.events(allEvents, { year: requestYear! })
+    if (allEvents.length) {
+      const { skippedEvents } = await data.update.events(allEvents, {
+        year: requestYear!, updateSource: 'ingest',
+        userId: 'system-ingest-lambda'
+      })
+
+      if (skippedEvents?.length) {
+        logger.warn(`Skipped update for ${skippedEvents.length} events for year ${requestYear}: ${skippedEvents}`, {
+          skippedEvents,
+          year: requestYear,
+        })
+      }
+    }
   } catch (err) {
     logger.error(`Failed to save event data: ${(err as any).message}`, {
       error: err,
@@ -90,7 +108,19 @@ export default async (importRefFiles: string[]): Promise<{ hashes: string[], yea
   try {
     logger.info(`Saving ${allSeries.length} series for ${requestYear}...`)
 
-    await data.update.series(allSeries, { year: requestYear! })
+    if (allSeries.length) {
+      const { skippedSeries } = await data.update.series(allSeries, {
+        year: requestYear!, updateSource: 'ingest',
+        userId: 'system-ingest-lambda'
+      })
+
+      if (skippedSeries?.length) {
+        logger.warn(`Skipped update for ${skippedSeries.length} series for year ${requestYear}: ${skippedSeries}`, {
+          skippedSeries,
+          year: requestYear,
+        })
+      }
+    }
   } catch (err) {
     logger.error(`Failed to save serie data: ${(err as any).message}`, {
       error: err,
@@ -107,24 +137,27 @@ const cleanEvent = async (
   bundle: ManualImportRaceResultsEventFile | ManualImportEventFile,
   payloads: Record<string, string>,
   year: number,
-  athleteManualEdits: Record<string, AthleteManualEdit>
-) => {
+): Promise<UpdateEvent> => {
   let event
   let eventResults
 
   if (bundle.provider) {
     switch (bundle.provider) {
       case 'race-results':
-        ;({ event, eventResults } = raceResultsEventParser(bundle as ManualImportRaceResultsEventFile, payloads))
+        ;({ event, eventResults } = await raceResultsEventParser(bundle as ManualImportRaceResultsEventFile, payloads))
         break
       default:
         throw new Error(`Unsupported provider "${bundle.provider}" for manual import.`)
     }
+  } else {
+    ;({ event, eventResults } = await parseRawEvent(bundle as ManualImportEventFile, payloads))
   }
 
-  ;({ event, eventResults } = parseRawEvent(bundle as ManualImportEventFile, payloads, athleteManualEdits))
-
-  await data.update.eventResults(eventResults, { eventHash: event.hash, year })
+  await data.update.eventResults(eventResults, {
+    year,
+    updateSource: 'ingest',
+    userId: 'system-ingest-lambda'
+  })
 
   return event
 }
@@ -133,14 +166,17 @@ const cleanSerie = async (
   bundle: ManualImportSerieFile,
   payloads: Record<string, string>,
   year: number,
-  athleteManualEdits: Record<string, AthleteManualEdit>
-) => {
+): Promise<UpdateSerie> => {
   const {
     serie,
     serieResults
-  } = parseRawSerie(bundle, payloads, athleteManualEdits)
-  
-  await data.update.serieResults(serieResults, { eventHash: serieResults.hash, year })
+  } = await parseRawSerie(bundle, payloads)
+
+  await data.update.serieResults(serieResults, {
+    year,
+    updateSource: 'ingest',
+    userId: 'system-ingest-lambda'
+  })
 
   return serie
 }

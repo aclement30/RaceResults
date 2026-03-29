@@ -1,12 +1,10 @@
-import defaultLogger from '../../shared/logger.ts'
+import { DEBUG } from 'shared/config.ts'
+import data from 'shared/data.ts'
+import defaultLogger from 'shared/logger.ts'
+import type { BaseAthleteUpgradePoint } from 'shared/types.ts'
+import { hasUpgradePoints } from 'shared/upgrade-points.ts'
 import { SCRIPT_NAME } from '../config.ts'
-import type {
-  RawAthleteEventUpgradePoint,
-} from '../types.ts'
-import { hasUpgradePoints } from '../../shared/upgrade-points.ts'
-import { DEBUG } from '../../shared/config.ts'
-import data from '../../shared/data.ts'
-import type { BaseAthleteUpgradePoint } from '../../../src/types/athletes.ts'
+import type { RawAthleteEventUpgradePoint } from '../types.ts'
 
 const logger = defaultLogger.child({ parser: SCRIPT_NAME })
 
@@ -70,6 +68,7 @@ const extractUpgradePointsFromEvent = async (
 
     athleteUpgradePoints.push({
       ...raceResult,
+      position: raceResult.position!,
       points: raceResult.upgradePoints,
       fieldSize: raceResult.fieldSize,
       type: upgradePointsType,

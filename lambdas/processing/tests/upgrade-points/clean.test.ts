@@ -8,7 +8,7 @@ jest.mock('../../../shared/logger', () => createLoggerMock())
 
 import { cleanUpgradePoints } from '../../upgrade-points/clean'
 import data from '../../../shared/data'
-import { BaseAthleteUpgradePoint } from '../../../../src/types/athletes'
+import type { BaseAthleteUpgradePoint } from '../../../shared/types.ts'
 
 const mockData = data as jest.Mocked<typeof data>
 

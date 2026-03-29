@@ -1,6 +1,6 @@
-import type { Athlete, AthleteUpgradePoint } from '../types/athletes.ts'
 import { Anchor } from '@mantine/core'
 import type { ReactNode } from 'react'
+import type { Athlete, AthleteUpgradePoint } from '../../shared/types/athletes'
 
 const currentYear = new Date().getFullYear()
 
@@ -52,8 +52,8 @@ export const displayAthleteCurrentTeam = (athlete: Athlete, onClick?: (teamId: n
     label = athlete.teams[currentYear].name!
     teamId = athlete.teams[currentYear].id
   } else if (athlete.teams?.[currentYear - 1]) {
-    label = `(${athlete.teams[currentYear - 1].name!})`
-    teamId = athlete.teams[currentYear - 1].id
+    label = `(${athlete.teams[currentYear - 1]?.name})`
+    teamId = athlete.teams[currentYear - 1]?.id
   }
 
   if (onClick && teamId) {

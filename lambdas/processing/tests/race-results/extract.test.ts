@@ -15,7 +15,6 @@ jest.mock('../../config', () => ({
 import { extractRaceResults } from '../../race-results/extract'
 import data from '../../../shared/data'
 import type { RawAthleteRaceResult } from '../../types'
-import { EventAthlete, EventResults } from '../../../../src/types/results'
 
 const mockData = data as jest.Mocked<typeof data>
 
@@ -251,12 +250,12 @@ describe('extractRaceResults', () => {
     )
   })
 
-  it('should skip combined/umbrella categories', async () => {
+  it('should skip parent categories', async () => {
     const mockEventResults = createMockEventResults(baseMockEvent1,
         { '1': baseMockAthlete1 },
         {
           'Combined Cat': {
-            combinedCategories: ['Cat1', 'Cat2'], // This marks it as umbrella category
+            subCategories: ['Cat1', 'Cat2'], // This marks it as parent category
             fieldSize: 100,
             results: [
               {
@@ -536,8 +535,8 @@ describe('extractRaceResults', () => {
       clearLoggerMocks()
 
       const mockEventResults = createMockEventResults(baseMockEvent1,
-        { '1': scenario.athlete }
-      )
+          { '1': scenario.athlete }
+        )
 
       ;(mockData.get.events as jest.Mock).mockResolvedValue([baseMockEvent1])
       ;(mockData.get.eventResults as jest.Mock).mockResolvedValue(mockEventResults)

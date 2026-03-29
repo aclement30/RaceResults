@@ -6,19 +6,26 @@ import {
   S3ServiceException
 } from '@aws-sdk/client-s3'
 import { fromCognitoIdentityPool } from '@aws-sdk/credential-providers'
-import type { EventResults, RaceEvent, SerieResults, SerieSummary } from '../types/results'
-import type { Athlete, AthleteCompilations, AthleteProfile } from '../types/athletes'
+import type {
+  Athlete,
+  AthleteProfile,
+  RaceEvent,
+  EventResults,
+  Team,
+  Serie,
+  SerieResults,
+  RecentlyUpgradedAthletes
+} from '../../shared/types'
 import { PUBLIC_BUCKET_FILES, PUBLIC_BUCKET_PATHS } from '../config/s3'
-import type { Team } from '../types/team'
 import keyBy from 'lodash/keyBy'
 
-const { VITE_AWS_REGION, VITE_AWS_POOL_ID, VITE_RR_S3_BUCKET } = import.meta.env || {}
+const { VITE_AWS_REGION, VITE_PUBLIC_AWS_IDENTITY_POOL_ID, VITE_RR_S3_BUCKET } = import.meta.env || {}
 
 const s3Client = new S3Client({
   region: VITE_AWS_REGION,
   credentials: fromCognitoIdentityPool({
     clientConfig: { region: VITE_AWS_REGION },
-    identityPoolId: VITE_AWS_POOL_ID,
+    identityPoolId: VITE_PUBLIC_AWS_IDENTITY_POOL_ID,
   }),
 })
 
@@ -162,7 +169,7 @@ export async function fetchSeries(year: number, ifModifiedSince?: Date | null) {
     throw error
   }
 
-  const series: SerieSummary[] = JSON.parse(response.content)
+  const series: Serie[] = JSON.parse(response.content)
 
   return { series, lastModified: response.lastModified }
 }
@@ -185,7 +192,7 @@ export async function fetchSeriesResults(year: number, hash: string, ifModifiedS
   return { serieResults, lastModified: response.lastModified }
 }
 
-export async function fetchTeamsList(): Promise<Record<string, Team>> {
+export async function fetchTeamsList(): Promise<Team[]> {
   let response
 
   try {
@@ -193,13 +200,13 @@ export async function fetchTeamsList(): Promise<Record<string, Team>> {
   } catch (error) {
     // If the file is not found, return an empty array
     if (error instanceof FetchError && error.type === FETCH_ERROR_TYPE.NotFound) {
-      return {}
+      return []
     }
 
     throw error
   }
 
-  return JSON.parse(response.content) as Record<string, Team>
+  return JSON.parse(response.content) as Team[]
 }
 
 export async function fetchAthletesList(): Promise<Record<string, Athlete>> {
@@ -255,7 +262,7 @@ export async function fetchAthleteProfile(uciId: string): Promise<AthleteProfile
   return JSON.parse(response.content) as AthleteProfile
 }
 
-export async function fetchRecentlyUpgradedAthletesView(): Promise<AthleteCompilations['recentlyUpgradedAthletes']> {
+export async function fetchRecentlyUpgradedAthletesView(): Promise<RecentlyUpgradedAthletes> {
   let response
 
   try {
@@ -269,5 +276,5 @@ export async function fetchRecentlyUpgradedAthletesView(): Promise<AthleteCompil
     throw error
   }
 
-  return JSON.parse(response.content) as AthleteCompilations['recentlyUpgradedAthletes']
+  return JSON.parse(response.content) as RecentlyUpgradedAthletes
 }

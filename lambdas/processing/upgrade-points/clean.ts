@@ -1,7 +1,7 @@
-import defaultLogger from '../../shared/logger.ts'
+import data from 'shared/data.ts'
+import defaultLogger from 'shared/logger.ts'
+import type { BaseAthleteUpgradePoint } from 'shared/types.ts'
 import { SCRIPT_NAME } from '../config.ts'
-import data from '../../shared/data.ts'
-import type { BaseAthleteUpgradePoint } from '../../../src/types/athletes.ts'
 
 const logger = defaultLogger.child({ parser: SCRIPT_NAME })
 
@@ -38,9 +38,9 @@ const cleanEventUpgradePoints = async (eventHash: string, year: number) => {
   ]
 
   rawUpgradePoints.forEach((athleteUpgradePoint) => {
-    const { athleteUciId, eventHash, category } = athleteUpgradePoint
+    const { athleteUciId, eventHash, categoryAlias } = athleteUpgradePoint
 
-    const existingPoint = consolidatedUpgradePoints.findIndex(point => point.athleteUciId === athleteUciId && point.eventHash === eventHash && point.category === category)
+    const existingPoint = consolidatedUpgradePoints.findIndex(point => point.athleteUciId === athleteUciId && point.eventHash === eventHash && point.categoryAlias === categoryAlias)
     if (existingPoint === -1) {
       consolidatedUpgradePoints.push(athleteUpgradePoint)
     } else {

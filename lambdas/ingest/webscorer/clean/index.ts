@@ -1,10 +1,11 @@
+import data from 'shared/data.ts'
+import defaultLogger from 'shared/logger.ts'
+import { RuleEngine } from 'shared/rule-engine.ts'
+import { TeamParser } from 'shared/team-parser.ts'
+import type { UpdateEvent, UpdateSerie } from 'shared/types.ts'
 import { PROVIDER_NAME } from '../config.ts'
-import defaultLogger from '../../../shared/logger.ts'
-import { parseRawEvent } from './event-parser.ts'
-import { TeamParser } from '../../../shared/team-parser.ts'
 import type { WebscorerEventRawData } from '../types.ts'
-import data from '../../../shared/data.ts'
-import type { RaceEvent, SerieSummary } from '../../../shared/types.ts'
+import { parseRawEvent } from './event-parser.ts'
 
 const logger = defaultLogger.child({ provider: PROVIDER_NAME })
 
@@ -13,6 +14,7 @@ export default async ({ year, sourceHashes }: {
   sourceHashes: string[],
 }) => {
   await TeamParser.init()
+  await RuleEngine.init()
 
   const promises = await Promise.allSettled(sourceHashes.map(async (hash) => {
     let bundleWithPayload: WebscorerEventRawData
@@ -44,8 +46,8 @@ export default async ({ year, sourceHashes }: {
     }
   }))
 
-  const allEvents: RaceEvent[] = []
-  const allSeries: SerieSummary[] = []
+  const allEvents: UpdateEvent[] = []
+  const allSeries: UpdateSerie[] = []
   const cleanHashes: string[] = []
 
   promises.forEach((promise, i) => {
@@ -68,7 +70,20 @@ export default async ({ year, sourceHashes }: {
   try {
     logger.info(`Saving ${allEvents.length} events for year ${year}...`)
 
-    await data.update.events(allEvents, { year })
+    if (allEvents.length) {
+      const { skippedEvents } = await data.update.events(allEvents, {
+        year,
+        updateSource: 'ingest',
+        userId: 'system-ingest-lambda'
+      })
+
+      if (skippedEvents?.length) {
+        logger.warn(`Skipped update for ${skippedEvents.length} events for year ${year}: ${skippedEvents}`, {
+          skippedEvents,
+          year,
+        })
+      }
+    }
   } catch (err) {
     logger.error(`Failed to save event data: ${(err as any).message}`, {
       error: err,
@@ -97,9 +112,13 @@ const cleanEvent = async (
   const {
     event,
     eventResults
-  } = parseRawEvent(bundle, payload)
-  
-  await data.update.eventResults(eventResults, { eventHash: event.hash, year })
+  } = await parseRawEvent(bundle, payload)
+
+  await data.update.eventResults(eventResults, {
+    year,
+    updateSource: 'ingest',
+    userId: 'system-ingest-lambda'
+  })
 
   return event
 }

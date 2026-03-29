@@ -1,6 +1,7 @@
 import { flatten } from 'lodash-es'
-import { type AwsFiles, AwsS3Client } from '../../../shared/aws-s3.ts'
-import { createEventSerieHash } from '../../../shared/utils.ts'
+import { type AwsFiles, AwsS3Client } from 'shared/aws-s3'
+
+import { createEventSerieHash } from 'shared/events'
 import type { CrossMgrEventBundle } from '../types.ts'
 
 const S3_BUCKET = 'wimseyraceresults'

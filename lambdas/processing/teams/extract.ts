@@ -1,14 +1,14 @@
-import type { RawAthleteTeam } from '../types.ts'
-import { TeamParser } from '../../shared/team-parser.ts'
-import data from '../../shared/data.ts'
-import defaultLogger from '../../shared/logger.ts'
+import data from 'shared/data.ts'
+import defaultLogger from 'shared/logger.ts'
+import { TeamParser } from 'shared/team-parser.ts'
 import { SCRIPT_NAME } from '../config.ts'
+import type { RawAthleteTeam } from '../types.ts'
 
 const logger = defaultLogger.child({ parser: SCRIPT_NAME })
 
 export const extractAthletesTeams = async ({ year, eventHashes }: { year: number, eventHashes: string[] }) => {
   await TeamParser.init()
-  
+
   const rawAthletesTeamsForYear = await data.get.rawAthletesTeams(year)
 
   const extractionResults = await Promise.allSettled(eventHashes.map(async (eventHash) => {

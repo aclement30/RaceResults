@@ -1,11 +1,10 @@
 import { groupBy, keyBy } from 'lodash-es'
-import defaultLogger from '../../shared/logger.ts'
+import { DEBUG } from 'shared/config.ts'
+import data from 'shared/data.ts'
+import defaultLogger from 'shared/logger.ts'
+import type { AthleteSkillCategory, AthleteUpgradeDate, BaseAthlete, TDiscipline } from 'shared/types.ts'
 import { SCRIPT_NAME } from '../config.ts'
 import type { AthleteOverrides } from '../types.ts'
-import type { TDiscipline } from '../../../src/types/results.ts'
-import { DEBUG } from '../../shared/config.ts'
-import data from '../../shared/data.ts'
-import type { Athlete, AthleteSkillCategory, AthleteUpgradeDate } from '../../shared/types.ts'
 
 // This is the date of the first record of athlete skill levels in the database, so we assume that the confidence is lower for this date.
 const FIRST_RECORD_DATE = '2025-06-12'
@@ -43,7 +42,7 @@ export const processAthletesUpgradeDates = async ({ athleteIds }: { athleteIds: 
     return {
       ...athlete,
       latestUpgrade,
-    } as Athlete
+    }
   })
 
   logger.info(`Total athletes processed: ${updatedAthletes.length}`)
@@ -51,21 +50,25 @@ export const processAthletesUpgradeDates = async ({ athleteIds }: { athleteIds: 
   try {
     logger.info(`Saving ${updatedAthletes.length} athletes with updated upgrade dates`)
 
-    await data.update.baseAthletes(updatedAthletes)
+    const { validationErrors } = await data.update.baseAthletes(Object.values(updatedAthletes))
+
+    if (validationErrors && Object.keys(validationErrors).length > 0) {
+      logger.error(`Validation errors for ${Object.keys(validationErrors).length} athletes:`, { validationErrors })
+    }
   } catch (error) {
     logger.error(`Failed to save athletes: ${(error as Error).message}`, { error })
   }
 }
 
 const findUpgradeDate = (
-  athlete: Athlete,
+  athlete: BaseAthlete,
   { categories, previousUpgradeDates, athletesOverrides }: {
     categories?: AthleteSkillCategory,
     previousUpgradeDates: AthleteUpgradeDate[],
     athletesOverrides: AthleteOverrides
   },
-): Athlete['latestUpgrade'] => {
-  const upgradeDates: Athlete['latestUpgrade'] = {}
+): BaseAthlete['latestUpgrade'] => {
+  const upgradeDates: BaseAthlete['latestUpgrade'] = {}
 
   for (const discipline of ['ROAD', 'CX'] as TDiscipline[]) {
     // Check if athlete has overrides for skill levels

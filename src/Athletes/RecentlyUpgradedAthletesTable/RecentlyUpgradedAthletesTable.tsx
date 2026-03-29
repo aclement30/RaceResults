@@ -9,15 +9,15 @@ import { EmptyState } from '../../Shared/EmptyState'
 import { AppContext } from '../../AppContext'
 import { renderSkillLevelWithAgeCategory } from '../../Athlete/utils'
 import { useNavigator } from '../../utils/useNavigator'
-import type { Athlete, AthleteCompilations } from '../../types/athletes'
+import type { Athlete, RecentlyUpgradedAthletes } from '../../../shared/types'
 
 const currentYear = new Date().getFullYear()
 
 type RecentlyUpgradedAthletesTableProps = {
-  recentlyUpgradedAthletes?: AthleteCompilations['recentlyUpgradedAthletes']
+  recentlyUpgradedAthletes?: RecentlyUpgradedAthletes
 }
 
-type RecentlyUpgradedAthlete = AthleteCompilations['recentlyUpgradedAthletes'][0]
+type RecentlyUpgradedAthlete = RecentlyUpgradedAthletes[0]
 
 export const RecentlyUpgradedAthletesTable: React.FC<RecentlyUpgradedAthletesTableProps> = ({
   recentlyUpgradedAthletes

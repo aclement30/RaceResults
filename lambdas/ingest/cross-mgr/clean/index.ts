@@ -1,16 +1,13 @@
-import { keyBy } from 'lodash-es'
-import type {
-  CrossMgrEventRawData,
-  CrossMgrSerieRawData
-} from '../types.ts'
+import data from 'shared/data.ts'
+import defaultLogger from 'shared/logger.ts'
+import { RuleEngine } from 'shared/rule-engine'
+import { TeamParser } from 'shared/team-parser'
+import type { UpdateEvent, UpdateSerie } from 'shared/types.ts'
+import shortHash from 'short-hash'
 import { PROVIDER_NAME } from '../config.ts'
-import defaultLogger from '../../../shared/logger.ts'
+import type { CrossMgrEventRawData, CrossMgrSerieRawData } from '../types.ts'
 import { parseRawEvent } from './event-parser.ts'
 import { parseRawSerie } from './serie-parser.ts'
-import { TeamParser } from '../../../shared/team-parser.ts'
-import data from '../../../shared/data.ts'
-import type { RaceEvent, SerieSummary } from '../../../../src/types/results.ts'
-import type { AthleteManualEdit } from '../../../shared/types.ts'
 
 const logger = defaultLogger.child({ provider: PROVIDER_NAME })
 
@@ -19,9 +16,7 @@ export default async ({ year, sourceHashes }: {
   sourceHashes: string[],
 }) => {
   await TeamParser.init()
-
-  const athleteManualEdits = await data.get.athleteManualEdits()
-  const athleteManualEditsByUciId: Record<string, AthleteManualEdit> = keyBy(athleteManualEdits, 'athleteUciId')
+  await RuleEngine.init()
 
   const promises = await Promise.allSettled(sourceHashes.map(async (hash) => {
     let bundleWithPayloads: CrossMgrEventRawData | CrossMgrSerieRawData
@@ -40,10 +35,24 @@ export default async ({ year, sourceHashes }: {
 
     const { type } = bundleWithPayloads
     if (type === 'event') {
-      const event = await cleanEvent(bundleWithPayloads, year, athleteManualEditsByUciId)
-      return { event }
+      const subBundles = splitMixedEventBundles(bundleWithPayloads)
+      const results = await Promise.allSettled(subBundles.map(b => cleanEvent(b, year)))
+
+      const events = results.flatMap((result, i) => {
+        if (result.status === 'rejected') {
+          logger.error(`Failed to clean event bundle ${subBundles[i].hash}: ${result.reason}`, {
+            error: result.reason,
+            hash: subBundles[i].hash,
+            year,
+          })
+          return []
+        }
+        return [result.value]
+      })
+
+      return { events }
     } else if (type === 'serie') {
-      const serie = await cleanSerie(bundleWithPayloads, year, athleteManualEditsByUciId)
+      const serie = await cleanSerie(bundleWithPayloads, year)
       return { serie }
     } else {
       logger.error(`Unsupported bundle type: ${type} for ${year}/${hash}`, {
@@ -56,9 +65,9 @@ export default async ({ year, sourceHashes }: {
     }
   }))
 
-  const allEvents: RaceEvent[] = []
-  const allSeries: SerieSummary[] = []
-  const cleanHashes: string[] = []
+  const allEvents: UpdateEvent[] = []
+  const allSeries: UpdateSerie[] = []
+  const cleanHashes: { events: string[]; series: string[] } = { events: [], series: [] }
 
   promises.forEach((promise, i) => {
     if (promise.status === 'rejected') {
@@ -68,12 +77,12 @@ export default async ({ year, sourceHashes }: {
         year,
       })
     } else {
-      if (promise.value.event) {
-        allEvents.push(promise.value.event)
-        cleanHashes.push(sourceHashes[i])
+      if (promise.value.events) {
+        allEvents.push(...promise.value.events)
+        cleanHashes.events.push(sourceHashes[i])
       } else if (promise.value.serie) {
         allSeries.push(promise.value.serie)
-        cleanHashes.push(sourceHashes[i])
+        cleanHashes.series.push(sourceHashes[i])
       }
     }
   })
@@ -82,7 +91,20 @@ export default async ({ year, sourceHashes }: {
   try {
     logger.info(`Saving ${allEvents.length} events for year ${year}...`)
 
-    await data.update.events(allEvents, { year })
+    if (allEvents.length) {
+      const { skippedEvents } = await data.update.events(allEvents, {
+        year,
+        updateSource: 'ingest',
+        userId: 'system-ingest-lambda'
+      })
+
+      if (skippedEvents?.length) {
+        logger.warn(`Skipped update for ${skippedEvents.length} events for year ${year}: ${skippedEvents}`, {
+          skippedEvents,
+          year,
+        })
+      }
+    }
   } catch (err) {
     logger.error(`Failed to save event data: ${(err as any).message}`, {
       error: err,
@@ -92,7 +114,19 @@ export default async ({ year, sourceHashes }: {
   try {
     logger.info(`Saving ${allSeries.length} serie for ${year}...`)
 
-    await data.update.series(allSeries, { year })
+    if (allSeries.length) {
+      const { skippedSeries } = await data.update.series(allSeries, {
+        year, updateSource: 'ingest',
+        userId: 'system-ingest-lambda'
+      })
+
+      if (skippedSeries?.length) {
+        logger.warn(`Skipped update for ${skippedSeries.length} series for year ${year}: ${skippedSeries}`, {
+          skippedSeries,
+          year,
+        })
+      }
+    }
   } catch (err) {
     logger.error(`Failed to save serie data: ${(err as any).message}`, {
       error: err,
@@ -102,19 +136,36 @@ export default async ({ year, sourceHashes }: {
   return cleanHashes
 }
 
+const splitMixedEventBundles = (bundleWithPayloads: CrossMgrEventRawData): CrossMgrEventRawData[] => {
+  const { payloads, ...bundle } = bundleWithPayloads
+
+  const payloadEntries = Object.entries(payloads)
+  const ttPayloads = Object.fromEntries(payloadEntries.filter(([, p]) => p.isTimeTrial))
+  const roadPayloads = Object.fromEntries(payloadEntries.filter(([, p]) => !p.isTimeTrial))
+
+  if (Object.keys(ttPayloads).length > 0 && Object.keys(roadPayloads).length > 0) {
+    logger.warn(`Detected mixed TT/road payloads for ${bundle.hash} — splitting into two events`)
+    return [
+      { ...bundle, type: 'event' as const, payloads: roadPayloads },
+      { ...bundle, type: 'event' as const, hash: shortHash(bundle.hash + '-tt'), payloads: ttPayloads },
+    ]
+  }
+
+  return [bundleWithPayloads]
+}
+
 const cleanEvent = async (
   bundleWithPayloads: CrossMgrEventRawData,
   year: number,
-  athleteManualEdits: Record<string, AthleteManualEdit>
-) => {
+): Promise<UpdateEvent> => {
   const { payloads, ...bundle } = bundleWithPayloads
+  const { event, eventResults } = await parseRawEvent(bundle, payloads)
 
-  const {
-    event,
-    eventResults
-  } = parseRawEvent(bundle, payloads as CrossMgrEventRawData['payloads'], athleteManualEdits)
-
-  await data.update.eventResults(eventResults, { eventHash: event.hash, year })
+  await data.update.eventResults(eventResults, {
+    year,
+    updateSource: 'ingest',
+    userId: 'system-ingest-lambda'
+  })
 
   return event
 }
@@ -122,16 +173,19 @@ const cleanEvent = async (
 const cleanSerie = async (
   bundleWithPayloads: CrossMgrSerieRawData,
   year: number,
-  athleteManualEdits: Record<string, AthleteManualEdit>
-) => {
+): Promise<UpdateSerie> => {
   const { payloads, ...bundle } = bundleWithPayloads
 
   const {
     serie,
     serieResults
-  } = parseRawSerie(bundle, payloads as CrossMgrSerieRawData['payloads'], athleteManualEdits)
-  
-  await data.update.serieResults(serieResults, { eventHash: serieResults.hash, year })
+  } = await parseRawSerie(bundle, payloads as CrossMgrSerieRawData['payloads'])
+
+  await data.update.serieResults(serieResults, {
+    year,
+    updateSource: 'ingest',
+    userId: 'system-ingest-lambda'
+  })
 
   return serie
 }

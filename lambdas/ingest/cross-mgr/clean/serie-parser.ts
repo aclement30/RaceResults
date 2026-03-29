@@ -1,74 +1,79 @@
 import * as cheerio from 'cheerio'
+import { formatCategoryAlias, transformCategoryLabel } from 'shared/categories'
+import { formatSerieName, transformOrganizerAlias, transformSerieAlias } from 'shared/events'
+import defaultLogger from 'shared/logger.ts'
+import { TeamParser } from 'shared/team-parser'
 import type {
-  AthleteSerieResult,
-  SerieIndividualCategory,
-  SerieResults,
-  SerieSummary,
-  SerieTeamCategory,
-  TeamSerieResult
-} from '../../../../src/types/results.ts'
-import defaultLogger from '../../../shared/logger.ts'
-import { TeamParser } from '../../../shared/team-parser.ts'
-import type { AthleteManualEdit } from '../../../shared/types.ts'
-import { capitalize, formatCategoryAlias, getBaseCategories } from '../../../shared/utils.ts'
+  CreateSerieIndividualCategory,
+  CreateSerieResults,
+  CreateSerieTeamCategory,
+  ParticipantSerieResult,
+  TeamSerieResult,
+  UpdateSerie
+} from 'shared/types.ts'
+import { capitalize, } from 'shared/utils'
+import shortHash from 'short-hash'
 import { PROVIDER_NAME, SOURCE_URL_PREFIX } from '../config.ts'
 import type { CrossMgrEventBundle, CrossMgrSerieRawData } from '../types.ts'
-import { formatSerieName, transformCategory, transformOrganizerAlias, transformSerieAlias } from '../utils.ts'
 
 const logger = defaultLogger.child({ provider: PROVIDER_NAME })
 
-export const parseRawSerie = (
+export const parseRawSerie = async (
   serieBundle: CrossMgrEventBundle,
   payloads: CrossMgrSerieRawData['payloads'],
-  athleteManualEdits: Record<string, AthleteManualEdit>
-): { serie: SerieSummary, serieResults: SerieResults } => {
-  const alias = transformSerieAlias(serieBundle.serie, serieBundle.organizer, serieBundle.year)!
-  const serieName = formatSerieName(alias)
+): Promise<{ serie: UpdateSerie, serieResults: CreateSerieResults }> => {
+  const alias = await transformSerieAlias({
+    alias: serieBundle.serie!,
+    organizerAlias: serieBundle.organizer,
+    year: serieBundle.year
+  })
+  const serieName = formatSerieName({ alias: alias!, organizerAlias: serieBundle.organizer, year: serieBundle.year })
 
   logger.info(`Parsing raw data for ${serieBundle.type} ${serieBundle.hash}: ${serieName}`)
 
-  const serie: SerieSummary = {
+  const serie: UpdateSerie = {
     hash: serieBundle.hash,
     year: serieBundle.year,
-    type: 'serie',
-    organizerAlias: transformOrganizerAlias(serieBundle.organizer),
-    alias,
+    organizerAlias: await transformOrganizerAlias(serieBundle.organizer, {
+      organizerName: serieName,
+      year: serieBundle.year
+    }),
+    alias: alias!,
     name: serieName,
+    types: [],
+    // Metadata
     provider: PROVIDER_NAME,
-    categories: {},
-    lastUpdated: serieBundle.lastUpdated,
+    updatedAt: serieBundle.lastUpdated,
+    published: true,
   }
 
-  let individualResults: SerieResults['individual']
-  let teamResults: SerieResults['team']
+  let individualResults: CreateSerieResults['individual']
+  let teamResults: CreateSerieResults['team']
 
-  Object.keys(payloads).forEach((filename) => {
+  for (const filename of Object.keys(payloads)) {
     const payload = payloads[filename]
     const resultType = getSeriesResultType(payload)
 
     if (resultType === 'INDIVIDUAL') {
-      individualResults = parseSerieIndividualResults(payload, filename, serie, athleteManualEdits)!
+      individualResults = await parseSerieIndividualResults(payload, filename, serie)
     } else {
       if (payload.includes('<div id="catContent0">')) {
-        teamResults = parseSerieTeamResults(payload, filename, serie)!
+        teamResults = await parseSerieTeamResults(payload, filename, serie)
       } else {
-        teamResults = parseSerieTeamResultsFromOrangeTable(payload, filename, serie)!
+        teamResults = await parseSerieTeamResultsFromOrangeTable(payload, filename, serie)
       }
     }
-  })
-
-  serie.categories = {
-    individual: individualResults ? getBaseCategories(individualResults.results, { organizerAlias: serie.organizerAlias }) : undefined,
-    team: teamResults ? getBaseCategories(teamResults.results, { organizerAlias: serie.organizerAlias }) : undefined,
   }
+
+  if (individualResults?.categories.length) serie.types.push('individual')
+  if (teamResults?.categories.length) serie.types.push('team')
 
   return {
     serie,
     serieResults: {
-      hash: serie.hash,
+      hash: serie.hash!,
       individual: individualResults,
       team: teamResults,
-      lastUpdated: serieBundle.lastUpdated,
     }
   }
 }
@@ -78,23 +83,22 @@ const getSeriesResultType = (content: string): 'INDIVIDUAL' | 'TEAM' => {
   else return 'TEAM'
 }
 
-const parseSerieIndividualResults = (
+const parseSerieIndividualResults = async (
   fileContent: string,
   sourceFile: string,
-  serieSummary: Pick<SerieSummary, 'hash' | 'name' | 'year' | 'organizerAlias'>,
-  athleteManualEdits: Record<string, AthleteManualEdit>
-): SerieResults['individual'] => {
+  serieSummary: UpdateSerie,
+): Promise<CreateSerieResults['individual']> => {
   logger.info('Parsing team results from ' + sourceFile)
 
   const $ = cheerio.load(fileContent)
 
-  const combinedSeriesCategories: Record<string, SerieIndividualCategory> = {}
+  const combinedSeriesCategories: CreateSerieIndividualCategory[] = []
 
   const resultsTables = $('table.results')
 
   if (!resultsTables.length) throw new Error('No results tables found for ' + sourceFile)
 
-  resultsTables.each((i, resultTable) => {
+  for (const resultTable of resultsTables.toArray()) {
     const categoryName = $('h2', resultTable.parentNode).text().trim()
 
     const columns: { type: string | null, date?: string }[] = []
@@ -123,10 +127,10 @@ const parseSerieIndividualResults = (
       }
     })
 
-    const individualResults: AthleteSerieResult[] = []
+    const individualResults: ParticipantSerieResult[] = []
 
     $('tbody tr', resultTable).each((_, tr) => {
-      const athleteResult: Record<string, any> = {
+      const participantResult: Partial<ParticipantSerieResult> & { racePoints: Record<string, number> } = {
         racePoints: {}
       }
 
@@ -134,79 +138,84 @@ const parseSerieIndividualResults = (
         switch (columns[index].type) {
           case 'position':
           case 'totalPoints':
-            athleteResult[columns[index].type] = +$(td).text().trim()
+            participantResult[columns[index].type] = +$(td).text().trim()
             break
           case 'fullName': {
             const [lastName, firstName] = $(td).text().split(',')
-            athleteResult.lastName = capitalize(lastName.trim())
-            athleteResult.firstName = capitalize(firstName.trim())
+            participantResult.lastName = capitalize(lastName.trim())
+            participantResult.firstName = capitalize(firstName.trim())
+            participantResult.participantId = shortHash(`${participantResult.firstName} ${participantResult.lastName}`)
             break
           }
           case 'license':
-            athleteResult[columns[index].type] = $(td).text().trim()
+            // participantResult.license = $(td).text().trim()
             break
           case 'team':
             const team = TeamParser.parseTeamName($(td).text().trim())
 
-            athleteResult[columns[index].type] = team?.name
+            participantResult[columns[index].type] = team?.name
             break
           case 'uciId':
-            athleteResult[columns[index].type] = $(td).text().replace(/\s/g, '').trim()
+            participantResult[columns[index].type] = $(td).text().replace(/\s/g, '').trim()
             break
           case 'racePoints': {
-            athleteResult.racePoints[columns[index].date!] = +$(td).text().trim()
+            participantResult.racePoints[columns[index].date!] = +$(td).text().trim()
             break
           }
         }
       })
 
-      if (athleteResult.uciId) {
+      if (participantResult.uciId) {
         // If athlete has an override for the current year team, use that instead
-        const teamOverride = athleteManualEdits[athleteResult.uciId]?.teams?.[serieSummary.year]?.name
-        if (teamOverride) {
-          const team = TeamParser.getTeamByName(teamOverride)
-          if (team) athleteResult.team = team.name
-        }
+        const teamOverride = TeamParser.getManualTeamForAthlete(participantResult.uciId, serieSummary.year)
+        if (teamOverride) participantResult.team = teamOverride.name
       }
 
-      individualResults.push(athleteResult as AthleteSerieResult)
+      individualResults.push(participantResult as ParticipantSerieResult)
     })
 
     const categoryGender = categoryName.includes('Men') ? 'M' : categoryName.includes('Women') ? 'F' : 'X'
-    const categoryLabel = transformCategory(categoryName, serieSummary)
+    const categoryLabel = await transformCategoryLabel(categoryName, {
+      eventName: serieSummary.name,
+      organizerAlias: serieSummary.organizerAlias,
+      year: serieSummary.year!
+    })
     const alias = formatCategoryAlias(categoryLabel)
 
-    combinedSeriesCategories[alias] = {
+    combinedSeriesCategories.push({
       alias,
+
       label: categoryLabel,
       gender: categoryGender,
       results: individualResults,
-    }
-  })
+
+      updatedAt: serieSummary.updatedAt,
+    })
+  }
 
   return {
-    results: combinedSeriesCategories,
+    categories: combinedSeriesCategories,
     sourceUrls: [SOURCE_URL_PREFIX + sourceFile],
   }
 }
 
 // Classic green table
-function parseSerieTeamResults(
+async function parseSerieTeamResults(
   fileContent: string,
   sourceFile: string,
-  serieSummary: Pick<SerieSummary, 'hash' | 'name' | 'year' | 'organizerAlias'>,
-): SerieResults['team'] {
+  serieSummary: UpdateSerie,
+): Promise<CreateSerieResults['team']> {
   logger.info('Parsing team results from ' + sourceFile)
 
   const $ = cheerio.load(fileContent)
 
-  const combinedSeriesCategories: Record<string, SerieTeamCategory> = {}
+  const combinedSeriesCategories: CreateSerieTeamCategory[] = []
 
   const resultsTables = $('table.results')
 
   if (!resultsTables.length) throw new Error('No results tables found for ' + sourceFile)
 
-  resultsTables.each((i, resultTable) => {
+  for (const resultTable of resultsTables.toArray()) {
     const categoryName = $('h2', resultTable.parentNode).text().trim()
 
     const columns: { type: string | null, date?: string }[] = []
@@ -248,7 +257,7 @@ function parseSerieTeamResults(
           case 'team':
             const team = TeamParser.parseTeamName($(td).text().trim())
 
-            teamResult[columns[index].type] = team?.name
+            teamResult[columns[index].type] = team?.name || 'Independent'
             break
           case 'racePoints': {
             teamResult.racePoints[columns[index].date!] = +$(td).text().replace(/\([0-9]+[a-z]{1,2}\)/, '').trim()
@@ -261,38 +270,43 @@ function parseSerieTeamResults(
     })
 
     const categoryGender = categoryName.includes('Men') ? 'M' : categoryName.includes('Women') ? 'F' : 'X'
-    const categoryLabel = transformCategory(categoryName, serieSummary)
+    const categoryLabel = await transformCategoryLabel(categoryName, {
+      eventName: serieSummary.name,
+      organizerAlias: serieSummary.organizerAlias,
+      year: serieSummary.year!
+    })
     const alias = formatCategoryAlias(categoryLabel)
 
-    combinedSeriesCategories[alias] = {
+    combinedSeriesCategories.push({
       alias,
       label: categoryLabel,
       gender: categoryGender,
       results: teamResults,
-    }
-  })
+      updatedAt: serieSummary.updatedAt,
+    })
+  }
 
   return {
-    results: combinedSeriesCategories,
+    categories: combinedSeriesCategories,
     sourceUrls: [SOURCE_URL_PREFIX + sourceFile],
   }
 }
 
 // Orange table
-const parseSerieTeamResultsFromOrangeTable = (
+const parseSerieTeamResultsFromOrangeTable = async (
   fileContent: string,
   sourceFile: string,
-  serieSummary: Pick<SerieSummary, 'name' | 'year' | 'organizerAlias'>,
-): SerieResults['team'] => {
+  serieSummary: UpdateSerie,
+): Promise<CreateSerieResults['team']> => {
   const $ = cheerio.load(fileContent)
 
   logger.info('Parsing team results from ' + sourceFile)
-  const combinedSeriesCategories: Record<string, SerieTeamCategory> = {}
+  const combinedSeriesCategories: CreateSerieTeamCategory[] = []
 
   const categoryRows = $('table.dataframe tbody tr.category-row')
   if (!categoryRows.length) throw new Error('No category rows found: ' + sourceFile)
 
-  categoryRows.each((_, categoryRow) => {
+  for (const categoryRow of categoryRows.toArray()) {
     const categoryName = $('th.th-category-left', categoryRow).text().trim()
     const formattedCategoryName = categoryName.replace(/\s/g, '_')
     const resultRow = $(`table.dataframe tbody tr.hidden-category-row[data_category="data_category-${formattedCategoryName}"]`)
@@ -315,7 +329,7 @@ const parseSerieTeamResultsFromOrangeTable = (
         } else if (index === 1) {
           const team = TeamParser.parseTeamName($(cell).text().trim())
 
-          teamResult.team = team?.name
+          teamResult.team = team?.name || 'Independent'
         } else if (index === 2) teamResult.totalPoints = +$(cell).text().trim()
       })
 
@@ -323,19 +337,24 @@ const parseSerieTeamResultsFromOrangeTable = (
     })
 
     const categoryGender = categoryName.includes('Men') ? 'M' : categoryName.includes('Women') ? 'F' : 'X'
-    const categoryLabel = transformCategory(categoryName, serieSummary)
+    const categoryLabel = await transformCategoryLabel(categoryName, {
+      eventName: serieSummary.name,
+      organizerAlias: serieSummary.organizerAlias,
+      year: serieSummary.year!
+    })
     const alias = formatCategoryAlias(categoryLabel)
 
-    combinedSeriesCategories[alias] = {
+    combinedSeriesCategories.push({
       alias,
       label: categoryLabel,
       gender: categoryGender,
       results: teamResults,
-    }
-  })
+      updatedAt: serieSummary.updatedAt,
+    })
+  }
 
   return {
-    results: combinedSeriesCategories,
+    categories: combinedSeriesCategories,
     sourceUrls: [SOURCE_URL_PREFIX + sourceFile],
   }
 }

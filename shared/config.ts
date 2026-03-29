@@ -1,0 +1,15 @@
+export const EDITABLE_FILES: Record<string, string> = {
+  'athlete_overrides.json': 'Athlete Overrides',
+  'athlete_duplicates.json': 'Duplicate Athletes',
+  'event_days.json': 'Event Days',
+  'events/2026.json': 'Events 2026',
+  'organizers.json': 'Organizers',
+  'rules/category_labels.json': 'Rules / Category Labels',
+  'rules/combined_race_categories.json': 'Rules / Combined Race Categories',
+  'rules/event_disciplines.json': 'Rules / Event Disciplines',
+  'rules/ignored_categories.json': 'Rules / Ignored Categories',
+  'rules/organizer_aliases.json': 'Rules / Organizer Aliases',
+  'rules/race_types.json': 'Rules / Race Types',
+  'rules/sanctioned_event_types.json': 'Rules / Sanctioned Event Types',
+  'rules/serie_aliases.json': 'Rules / Series Aliases',
+}

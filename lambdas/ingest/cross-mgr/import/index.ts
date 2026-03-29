@@ -1,20 +1,21 @@
+import data from 'shared/data.ts'
+import defaultLogger from 'shared/logger.ts'
+import { PROVIDER_NAME } from '../config.ts'
 import type {
   CrossMgrEventBundle,
   CrossMgrEventRawData,
   CrossMgrEventResultPayload,
   CrossMgrSerieRawData,
 } from '../types.ts'
-import defaultLogger from '../../../shared/logger.ts'
 import { fetchCrossMgrBucketFile, fetchEventBundlesForYear, groupEventFiles } from './bucket.ts'
-import { PROVIDER_NAME } from '../config.ts'
-import data from '../../../shared/data.ts'
 
 const logger = defaultLogger.child({ provider: PROVIDER_NAME })
 
 // If no `year` provided, fetch only updated files since last check date
-export default async ({ year: requestedYear, lastModifiedSince }: {
+export default async ({ year: requestedYear, lastModifiedSince, eventHash }: {
   year?: number,
   lastModifiedSince?: Date
+  eventHash?: string
 } = {}) => {
   const { year, ...sourceBundles } = await getListOfSourceBundles({ year: requestedYear, lastModifiedSince })
 
@@ -23,7 +24,9 @@ export default async ({ year: requestedYear, lastModifiedSince }: {
 
   const combinedBundles = [...(sourceBundles.events || []), ...(sourceBundles.series || [])]
 
-  const promises = await Promise.allSettled(combinedBundles.map(bundle => importRawData(bundle, year)))
+  const filteredBundles = eventHash ? combinedBundles.filter(bundle => bundle.hash === eventHash) : combinedBundles
+
+  const promises = await Promise.allSettled(filteredBundles.map(bundle => importRawData(bundle, year)))
 
   const importedHashes = promises.filter((promise) => promise.status === 'fulfilled').map((promise) => promise.value)
 
@@ -42,7 +45,7 @@ const importRawData = async (bundle: CrossMgrEventBundle, year: number) => {
   } else {
     throw new Error(`Unsupported bundle type: ${bundle.type}`)
   }
-  
+
   try {
     await data.update.rawIngestionData({ ...bundle, payloads }, {
       provider: PROVIDER_NAME,

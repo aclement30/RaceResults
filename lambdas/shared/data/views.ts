@@ -1,25 +1,56 @@
-import type { Athlete, AthleteProfile, RecentlyUpgradedAthletes } from '../../../src/types/athletes.ts'
-import { s3 as RRS3 } from '../utils.ts'
+import { ZodError } from 'zod'
+import { AthleteSchema } from '../../../shared/schemas/athletes.ts'
 import { PUBLIC_BUCKET_FILES, PUBLIC_BUCKET_PATHS } from '../../../src/config/s3.ts'
+import type { Athlete, AthleteProfile, RecentlyUpgradedAthletes } from '../types.ts'
+import { s3 as RRS3 } from '../utils.ts'
 
-export const getViewAthletes = async (): Promise<Athlete[]> => {
+export async function getViewAthletes(): Promise<Athlete[]>
+export async function getViewAthletes(athleteUciId: string): Promise<Athlete>
+
+export async function getViewAthletes(athleteUciId?: string): Promise<Athlete[] | Athlete | null> {
   const fileContent = await RRS3.fetchFile(PUBLIC_BUCKET_FILES.athletes.list, true)
 
-  if (!fileContent) return []
+  if (!fileContent) {
+    if (athleteUciId) return null
+    return []
+  }
 
-  return JSON.parse(fileContent as any) as Athlete[]
+  const athletes = JSON.parse(fileContent as any) as Athlete[]
+
+  if (athleteUciId) {
+    return athletes.find(a => a.uciId === athleteUciId) || null
+  }
+
+  return athletes
 }
 
-export const updateViewAthletes = async (athletes: Athlete[]): Promise<void> => {
+export const updateViewAthletes = async (athletes: Athlete[]): Promise<{
+  validationErrors?: Record<string, ZodError>
+}> => {
   const existingAthletes = await getViewAthletes()
 
-  const updatedAthleteUciIds = athletes.map(a => a.uciId)
+  const validationErrors: Record<string, ZodError> = {}
+  for (const athlete of athletes) {
+    try {
+      AthleteSchema.parse(athlete)
+    } catch (error) {
+      validationErrors[athlete.uciId] = error as ZodError
+    }
+  }
+
+  const updatedAthleteUciIds = athletes.map(a => a.uciId).filter(a => !validationErrors[a])
+  const validAthletes = athletes.filter(a => !validationErrors[a.uciId])
+
   const combinedAthletes = [
     ...existingAthletes.filter(a => !updatedAthleteUciIds.includes(a.uciId)),
-    ...athletes
+    ...validAthletes
   ]
 
   await RRS3.writeFile(PUBLIC_BUCKET_FILES.athletes.list, JSON.stringify(combinedAthletes))
+
+  if (validationErrors && Object.keys(validationErrors).length > 0) return { validationErrors }
+
+  return {}
 }
 
 export const getAthleteProfile = async (athleteUciId: string): Promise<AthleteProfile | null> => {

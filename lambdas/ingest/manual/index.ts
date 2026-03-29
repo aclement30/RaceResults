@@ -1,10 +1,14 @@
-import logger from '../../shared/logger.ts'
+import logger from 'shared/logger.ts'
+import type { IngestEvent } from 'shared/types.ts'
+import cleanData from './clean/index.ts'
 import { PROVIDER_NAME } from './config.ts'
 import { listRefFiles } from './utils.ts'
 
-import cleanData from './clean/index.ts'
-
-export const handler = async (options: { year?: number, importRefFiles?: string[] }) => {
+export const handler = async (options: {
+  year?: number,
+  importRefFiles?: string[],
+  eventHash?: string
+}): Promise<IngestEvent> => {
   logger.info(`Parser: ${PROVIDER_NAME}`)
   logger.info(`Options: ${JSON.stringify(options)}`)
 
@@ -18,18 +22,21 @@ export const handler = async (options: { year?: number, importRefFiles?: string[
 
   if (!importRefFiles?.length) {
     logger.info(`No reference files found in S3 bucket for year ${options.year}, skipping manual import`)
-    return {}
+    return {
+      year: options.year!,
+      eventHashes: [],
+      seriesHashes: [],
+      provider: PROVIDER_NAME
+    }
   }
 
   // Clean imported data
-  const { hashes: cleanedHashes, year } = await cleanData(importRefFiles)
+  const { hashes: cleanedHashes, year } = await cleanData(importRefFiles, options)
 
   return {
-    statusCode: 200,
-    body: JSON.stringify({
-      year: options.year,
-      clean: cleanedHashes,
-      provider: PROVIDER_NAME
-    }),
+    year,
+    eventHashes: cleanedHashes.events,
+    seriesHashes: cleanedHashes.series,
+    provider: PROVIDER_NAME
   }
 }
