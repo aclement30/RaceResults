@@ -70431,20 +70431,21 @@ var settingRoutes = async (fastify2) => {
     }
   }, async (request, response) => {
     const { filename } = request.params;
-    if (!Object.keys(EDITABLE_FILES).includes(filename)) {
-      response.status(403).send({ error: `Invalid query: ${filename} is not editable` });
+    const formattedFilename = decodeFilename(filename);
+    if (!Object.keys(EDITABLE_FILES).includes(formattedFilename)) {
+      response.status(403).send({ error: `Invalid query: ${formattedFilename} is not editable` });
       return;
     }
     let fileContent;
     try {
-      fileContent = await s3.fetchFile(filename);
+      fileContent = await s3.fetchFile(formattedFilename);
     } catch (error95) {
       if (error95 instanceof import_client_s32.S3ServiceException && error95.name === "NoSuchKey") {
-        response.status(404).send({ error: `File ${filename} could not be found in S3 bucket` });
+        response.status(404).send({ error: `File ${formattedFilename} could not be found in S3 bucket` });
       }
     }
     if (!fileContent) {
-      return response.status(500).send({ error: `File ${filename} is empty` });
+      return response.status(500).send({ error: `File ${formattedFilename} is empty` });
     }
     return JSON.parse(fileContent);
   });
@@ -70464,8 +70465,9 @@ var settingRoutes = async (fastify2) => {
   }, async (request, response) => {
     const { filename } = request.params;
     const fileContent = request.body;
-    if (!Object.keys(EDITABLE_FILES).includes(filename)) {
-      response.status(403).send({ error: `Invalid query: ${filename} is not editable` });
+    const formattedFilename = decodeFilename(filename);
+    if (!Object.keys(EDITABLE_FILES).includes(formattedFilename)) {
+      response.status(403).send({ error: `Invalid query: ${formattedFilename} is not editable` });
       return;
     }
     if (!fileContent) {
@@ -70476,9 +70478,12 @@ var settingRoutes = async (fastify2) => {
       response.status(400).send({ error: "Invalid body: must be a non-null JSON object or array" });
       return;
     }
-    await s3.writeFile(filename, JSON.stringify(fileContent));
+    await s3.writeFile(formattedFilename, JSON.stringify(fileContent));
     response.status(204).send();
   });
+};
+var decodeFilename = (fileName) => {
+  return fileName.replace(/:/g, "/");
 };
 
 // routes/admin/teams.ts
@@ -70894,22 +70899,22 @@ async function buildFastifyApp() {
   });
   return app;
 }
-var cachedProxy = null;
+var proxyPromise = buildFastifyApp().then(async (app) => {
+  logger_default.info("Initializing Lambda function", {
+    lambda: {
+      functionName: process.env.AWS_LAMBDA_FUNCTION_NAME,
+      functionVersion: process.env.AWS_LAMBDA_FUNCTION_VERSION,
+      stage: ENV2
+    }
+  });
+  const proxy = (0, import_aws_lambda.awsLambdaFastify)(app);
+  await app.ready();
+  return proxy;
+});
 var handler = async (event, context) => {
   try {
-    if (!cachedProxy) {
-      logger_default.info("Initializing Lambda function", {
-        lambda: {
-          functionName: process.env.AWS_LAMBDA_FUNCTION_NAME,
-          functionVersion: process.env.AWS_LAMBDA_FUNCTION_VERSION,
-          stage: ENV2,
-          requestId: context.awsRequestId
-        }
-      });
-      const app = await buildFastifyApp();
-      cachedProxy = (0, import_aws_lambda.awsLambdaFastify)(app);
-    }
-    return await cachedProxy(event, context);
+    const proxy = await proxyPromise;
+    return await proxy(event, context);
   } catch (error95) {
     logger_default.error("Lambda handler error", {
       error: error95,

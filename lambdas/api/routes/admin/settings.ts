@@ -23,22 +23,24 @@ export const settingRoutes: FastifyPluginAsync = async (fastify) => {
   }, async (request, response) => {
     const { filename } = request.params
 
-    if (!Object.keys(EDITABLE_FILES).includes(filename)) {
-      response.status(403).send({ error: `Invalid query: ${filename} is not editable` })
+    const formattedFilename = decodeFilename(filename)
+
+    if (!Object.keys(EDITABLE_FILES).includes(formattedFilename)) {
+      response.status(403).send({ error: `Invalid query: ${formattedFilename} is not editable` })
       return
     }
 
     let fileContent
     try {
-      fileContent = await RRS3.fetchFile(filename)
+      fileContent = await RRS3.fetchFile(formattedFilename)
     } catch (error) {
       if (error instanceof S3ServiceException && error.name === 'NoSuchKey') {
-        response.status(404).send({ error: `File ${filename} could not be found in S3 bucket` })
+        response.status(404).send({ error: `File ${formattedFilename} could not be found in S3 bucket` })
       }
     }
 
     if (!fileContent) {
-      return response.status(500).send({ error: `File ${filename} is empty` })
+      return response.status(500).send({ error: `File ${formattedFilename} is empty` })
     }
 
     return JSON.parse(fileContent as any)
@@ -60,9 +62,10 @@ export const settingRoutes: FastifyPluginAsync = async (fastify) => {
   }, async (request, response) => {
     const { filename } = request.params
     const fileContent = request.body
+    const formattedFilename = decodeFilename(filename)
 
-    if (!Object.keys(EDITABLE_FILES).includes(filename)) {
-      response.status(403).send({ error: `Invalid query: ${filename} is not editable` })
+    if (!Object.keys(EDITABLE_FILES).includes(formattedFilename)) {
+      response.status(403).send({ error: `Invalid query: ${formattedFilename} is not editable` })
       return
     }
 
@@ -80,8 +83,13 @@ export const settingRoutes: FastifyPluginAsync = async (fastify) => {
       return
     }
 
-    await RRS3.writeFile(filename, JSON.stringify(fileContent))
+    await RRS3.writeFile(formattedFilename, JSON.stringify(fileContent))
 
     response.status(204).send()
   })
+}
+
+const decodeFilename = (fileName: string) => {
+  // Replace `:` with `/` to get the original file path (e.g. `settings:appConfig.json` -> `settings/appConfig.json`)
+  return fileName.replace(/:/g, '/')
 }

@@ -90,6 +90,11 @@ const adminApiFetch = async (endpoint: string, options: FetchOptions = {}) => {
   }
 }
 
+const encodeS3Filename = (fileName: string) => {
+  // Replace `/` with `:` to make the file name URL-safe (e.g. `settings/appConfig.json` -> `settings:appConfig.json`)
+  return fileName.replace(/\//g, ':')
+}
+
 export const adminApi = {
   get: {
     athletes: async (): Promise<Athlete[]> => adminApiFetch('/admin/athletes'),
@@ -127,7 +132,7 @@ export const adminApi = {
         }
       }
 
-      return adminApiFetch(`/admin/settings/config-files/${encodeURIComponent(filename)}`, { apiUrl })
+      return adminApiFetch(`/admin/settings/config-files/${encodeS3Filename(filename)}`, { apiUrl })
     }
   },
   create: {
@@ -225,7 +230,7 @@ export const adminApi = {
     settingConfigFile: async (
       filename: string,
       fileContent: any
-    ): Promise<void> => adminApiFetch(`/admin/settings/config-files/${encodeURIComponent(filename)}`, {
+    ): Promise<void> => adminApiFetch(`/admin/settings/config-files/${encodeS3Filename(filename)}`, {
       method: 'PUT',
       body: fileContent,
     })
