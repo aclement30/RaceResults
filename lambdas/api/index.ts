@@ -175,25 +175,23 @@ export async function buildFastifyApp() {
   return app
 }
 
-let cachedProxy: ((event: any, context: any) => Promise<any>) | null = null
+const proxyPromise = buildFastifyApp().then(async app => {
+  logger.info('Initializing Lambda function', {
+    lambda: {
+      functionName: process.env.AWS_LAMBDA_FUNCTION_NAME,
+      functionVersion: process.env.AWS_LAMBDA_FUNCTION_VERSION,
+      stage: ENV,
+    }
+  })
+  const proxy = awsLambdaFastify(app)
+  await app.ready()
+  return proxy
+})
 
 export const handler: APIGatewayProxyHandlerV2 = async (event, context) => {
   try {
-    if (!cachedProxy) {
-      logger.info('Initializing Lambda function', {
-        lambda: {
-          functionName: process.env.AWS_LAMBDA_FUNCTION_NAME,
-          functionVersion: process.env.AWS_LAMBDA_FUNCTION_VERSION,
-          stage: ENV,
-          requestId: context.awsRequestId
-        }
-      })
-
-      const app = await buildFastifyApp()
-      cachedProxy = awsLambdaFastify(app)
-    }
-
-    return await cachedProxy(event, context)
+    const proxy = await proxyPromise
+    return await proxy(event, context)
   } catch (error) {
     logger.error('Lambda handler error', {
       error,
