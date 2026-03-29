@@ -1,0 +1,54 @@
+/* Line numbers for react-simple-code-editor */
+.editor-with-line-numbers {
+  position: relative;
+  font-family: 'Fira Code', 'Fira Mono', monospace;
+}
+
+.editor-with-line-numbers textarea,
+.editor-with-line-numbers pre {
+  padding-left: calc(4em + 10px) !important; /* Added 10px more space */
+  line-height: 1.5 !important;
+  font-size: 12px !important;
+  font-family: 'Fira Code', 'Fira Mono', monospace !important;
+}
+
+.editor-with-line-numbers .line-numbers-bg {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 40px;
+  height: 100%;
+  background: #f8f8f8;
+  border-right: 1px solid #e0e0e0;
+  z-index: 1;
+  pointer-events: none;
+}
+
+.editor-with-line-numbers .line-numbers {
+  position: absolute;
+  top: 0px;
+  left: 0;
+  width: 40px;
+  text-align: right;
+  color: #999;
+  font-size: 12px !important;
+  line-height: 1.5 !important;
+  pointer-events: none;
+  z-index: 2;
+  font-family: 'Fira Code', 'Fira Mono', monospace !important;
+}
+
+.editor-with-line-numbers .line-numbers div {
+  height: calc(1.5em); /* Exact match with editor line height */
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  padding-right: 10px;
+}
+
+.editor-with-line-numbers .line-numbers .error-line {
+  color: #e03131 !important;
+  font-weight: bold !important;
+  background-color: #ffe0e0;
+  border-radius: 3px;
+}

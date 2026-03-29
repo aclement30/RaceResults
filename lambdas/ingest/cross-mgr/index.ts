@@ -1,10 +1,14 @@
+import type { IngestEvent } from 'shared/types.ts'
 import logger from '../../shared/logger.ts'
-import { PROVIDER_NAME } from './config.ts'
-
-import importData from './import/index.ts'
 import cleanData from './clean/index.ts'
+import { PROVIDER_NAME } from './config.ts'
+import importData from './import/index.ts'
 
-export const handler = async (options?: { year?: number, lastModifiedSince?: Date }) => {
+export const handler = async (options?: {
+  year?: number,
+  lastModifiedSince?: Date,
+  eventHash?: string
+}): Promise<IngestEvent> => {
   logger.info(`Parser: ${PROVIDER_NAME}`)
   logger.info(`Options: ${JSON.stringify(options)}`)
 
@@ -15,12 +19,9 @@ export const handler = async (options?: { year?: number, lastModifiedSince?: Dat
   const cleanedHashes = await cleanData({ year, sourceHashes: importedHashes })
 
   return {
-    statusCode: 200,
-    body: JSON.stringify({
-      year,
-      import: importedHashes,
-      clean: cleanedHashes,
-      provider: PROVIDER_NAME
-    }),
+    year,
+    eventHashes: cleanedHashes.events,
+    seriesHashes: cleanedHashes.series,
+    provider: PROVIDER_NAME
   }
 }

@@ -2,8 +2,8 @@ import { useCallback, useContext, useEffect, useRef } from 'react'
 import { FETCH_ERROR_TYPE, FetchError, fetchEvents, fetchSeries, validateYear } from './aws-s3'
 import { notifications } from '@mantine/notifications'
 import { AppContext } from '../AppContext'
-import type { RaceEvent, SerieSummary } from '../types/results'
 import { UIContext } from '../UIContext'
+import type { RaceEvent, Serie } from '../../shared/types'
 
 export const useEventsAndSeries = (year: number) => {
   const { setLoading } = useContext(UIContext)
@@ -45,7 +45,7 @@ export const useEventsAndSeries = (year: number) => {
             setEvents((response.value as { events: RaceEvent[] }).events, year)
             eventsRef.current.lastModified.set(year, response.value.lastModified)
           } else if (index === 1) {
-            setSeries((response.value as { series: SerieSummary[] }).series, year)
+            setSeries((response.value as { series: Serie[] }).series, year)
             seriesRef.current.lastModified.set(year, response.value.lastModified)
           }
         } else {

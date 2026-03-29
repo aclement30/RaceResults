@@ -1,44 +1,72 @@
 import {
-  getBaseAthletes,
+  getAthleteManualEdits,
   getAthletesCategories,
   getAthletesLookup,
   getAthletesOverrides,
   getAthletesRacesResults,
   getAthletesUpgradeDates,
   getAthletesUpgradePoints,
+  getBaseAthletes,
   updateAthleteCategories,
-  updateBaseAthletes,
+  updateAthleteManualEdit,
   updateAthletesLookup,
   updateAthletesRacesResults,
   updateAthletesUpgradePoints,
-  getAthleteManualEdits,
-  updateAthleteManualEdits
+  updateBaseAthletes
 } from './data/athletes.ts'
 import { getRawBCMembershipDates, getRawBCMembershipsForDate, updateRawBCMemberships } from './data/bc-memberships.ts'
-import { getEventResults, getEvents, updateEvents, updateEventResults } from './data/events.ts'
+import { deleteEvent, getEventResults, getEvents, updateEventResults, updateEvents } from './data/events.ts'
 import {
-  getEventDays, getLastCheckDate, getRawAthletesRaceResults, getRawAthletesTeams,
-  getRawAthletesUpgradePoints, getRawEventAthletes,
+  getEventDays,
+  getLastCheckDate,
+  getRawAthletesRaceResults,
+  getRawAthletesTeams,
+  getRawAthletesUpgradePoints,
+  getRawEventAthletes,
   getRawIngestionData,
   updateLastCheckDate,
   updateRawAthletesRaceResults,
-  updateRawAthletesTeams, updateRawAthletesUpgradePoints,
-  updateRawEventAthletes, updateRawIngestionData
+  updateRawAthletesTeams,
+  updateRawAthletesUpgradePoints,
+  updateRawEventAthletes,
+  updateRawIngestionData
 } from './data/ingestion.ts'
-import { updateSeries, updateSerieResults } from './data/series.ts'
-import { getTeams } from './data/teams.ts'
+import { getOrganizers } from './data/organizers.ts'
+import { getRules } from './data/rules.ts'
+import { getSeries, updateSerieResults, updateSeries } from './data/series.ts'
+import { deleteTeam, getTeamRosters, getTeams, restoreTeam, updateTeam, updateTeamRosters } from './data/teams.ts'
 import {
   getAthleteProfile,
   getViewAthletes,
   updateAthleteProfile,
   updateViewAthletes,
-  updateViewRecentlyUpgradedAthletes
+  updateViewRecentlyUpgradedAthletes,
 } from './data/views.ts'
+
+export const DataErrorCode = {
+  FILE_NOT_FOUND: 'FILE_NOT_FOUND',
+  INVALID_DATA: 'INVALID_DATA',
+  UNKNOWN_ERROR: 'UNKNOWN_ERROR',
+  ENTITY_NOT_FOUND: 'ENTITY_NOT_FOUND'
+} as const
+
+export type DataErrorCode = typeof DataErrorCode[keyof typeof DataErrorCode]
+
+export class DataError extends Error {
+  code: DataErrorCode
+
+  constructor(message: string, code: DataError['code']) {
+    super(message)
+    this.name = 'DataError'
+    this.code = code
+    Object.setPrototypeOf(this, DataError.prototype)
+  }
+}
 
 export default {
   get: {
     baseAthletes: getBaseAthletes,
-    viewAthletes: getViewAthletes,
+    athletes: getViewAthletes,
     athleteManualEdits: getAthleteManualEdits,
     athletesCategories: getAthletesCategories,
     athletesLookup: getAthletesLookup,
@@ -51,6 +79,7 @@ export default {
     eventDays: getEventDays,
     eventResults: getEventResults,
     lastCheckDate: getLastCheckDate,
+    organizers: getOrganizers,
     rawBCMemberships: getRawBCMembershipsForDate,
     rawBCMembershipDates: getRawBCMembershipDates,
     rawEventAthletes: getRawEventAthletes,
@@ -58,12 +87,15 @@ export default {
     rawAthletesTeams: getRawAthletesTeams,
     rawAthletesUpgradePoints: getRawAthletesUpgradePoints,
     rawIngestionData: getRawIngestionData,
+    rules: getRules,
+    series: getSeries,
     teams: getTeams,
+    teamRosters: getTeamRosters,
   },
   update: {
     baseAthletes: updateBaseAthletes,
-    viewAthletes: updateViewAthletes,
-    athleteManualEdits: updateAthleteManualEdits,
+    athletes: updateViewAthletes,
+    athleteManualEdit: updateAthleteManualEdit,
     athletesCategories: updateAthleteCategories,
     athletesLookup: updateAthletesLookup,
     athletesRacesResults: updateAthletesRacesResults,
@@ -72,8 +104,6 @@ export default {
     events: updateEvents,
     eventResults: updateEventResults,
     lastCheckDate: updateLastCheckDate,
-    series: updateSeries,
-    serieResults: updateSerieResults,
     rawBCMemberships: updateRawBCMemberships,
     rawEventAthletes: updateRawEventAthletes,
     rawAthletesRaceResults: updateRawAthletesRaceResults,
@@ -81,5 +111,16 @@ export default {
     rawAthletesUpgradePoints: updateRawAthletesUpgradePoints,
     rawIngestionData: updateRawIngestionData,
     viewRecentlyUpgradedAthletes: updateViewRecentlyUpgradedAthletes,
-  }
+    series: updateSeries,
+    serieResults: updateSerieResults,
+    team: updateTeam,
+    teamRosters: updateTeamRosters,
+  },
+  restore: {
+    team: restoreTeam,
+  },
+  delete: {
+    event: deleteEvent,
+    team: deleteTeam,
+  },
 }

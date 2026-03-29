@@ -1,4 +1,3 @@
-import type { EventAthlete, AthleteRaceResult } from '../../types/results'
 import { Button, Group, SegmentedControl, Switch, Table } from '@mantine/core'
 import { useContext, useMemo, useState } from 'react'
 import { columns } from '../Shared/columns'
@@ -9,11 +8,11 @@ import { showErrorMessage } from '../../utils/showErrorMessage'
 import { IconFileDownload } from '@tabler/icons-react'
 import { AppContext } from '../../AppContext'
 import { useNavigator } from '../../utils/useNavigator'
+import type { ParticipantResult } from '../../../shared/types/events'
 
 type LapsTableProps = {
   lapCount: number
-  results: AthleteRaceResult[]
-  athletes: Record<string, EventAthlete>
+  results: ParticipantResult[]
 }
 
 const valueGradientColors = [
@@ -33,7 +32,6 @@ const valueGradientColors = [
 export const LapsTable: React.FC<LapsTableProps> = ({
   lapCount,
   results,
-  athletes,
 }) => {
   const { findAthlete } = useContext(AppContext)
   const [dataType, setDataType] = useState<'TIME' | 'SPEED' | 'GAP'>('TIME')
@@ -85,13 +83,12 @@ export const LapsTable: React.FC<LapsTableProps> = ({
   }
 
   const rows = useMemo(() => results.map((result) => {
-    const eventAthlete = athletes[result.athleteId]
-    const athleteProfile = findAthlete(eventAthlete)
+    const athleteProfile = findAthlete(result)
 
     return (
       <Table.Tr key={result.bibNumber} style={{ height: 42 }}>
         <Table.Td>{columns.position(result)}</Table.Td>
-        <Table.Td> {columns.name(athleteProfile || eventAthlete, {
+        <Table.Td> {columns.name(athleteProfile || result, {
           onClick: athleteProfile ? navigateToAthlete : undefined,
           short: true
         })}</Table.Td>
@@ -140,7 +137,7 @@ export const LapsTable: React.FC<LapsTableProps> = ({
         ))}
       </Table.Tr>
     )
-  }), [results, athletes, dataType, showColors])
+  }), [results, dataType, showColors])
 
   const stickyColumnHeaders = <Table.Tr>
     <Table.Th>P<span className="mantine-visible-from-sm">osition</span></Table.Th>
@@ -170,11 +167,10 @@ export const LapsTable: React.FC<LapsTableProps> = ({
     })
 
     const exportedRows = results.map((result) => {
-      const athlete = athletes[result.athleteId]
       const row: Array<string | number | undefined | null> = [
         columns.position(result, { text: true }) as string,
-        columns.name(athlete, { text: true }) as string,
-        athlete.team,
+        columns.name(result, { text: true }) as string,
+        result.team,
         result.bibNumber,
       ]
       if (dataType === 'TIME') {

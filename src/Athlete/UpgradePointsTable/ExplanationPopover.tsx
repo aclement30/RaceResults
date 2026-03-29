@@ -1,3 +1,4 @@
+import React from 'react'
 import { useDisclosure } from '@mantine/hooks'
 import { ActionIcon, Popover, Text } from '@mantine/core'
 import { IconHelp } from '@tabler/icons-react'

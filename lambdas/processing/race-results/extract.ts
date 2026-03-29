@@ -1,12 +1,12 @@
-import type { RawAthleteRaceResult } from '../types.ts'
-import defaultLogger from '../../shared/logger.ts'
-import { SCRIPT_NAME } from '../config.ts'
 import data from '../../shared/data.ts'
+import defaultLogger from '../../shared/logger.ts'
 import type { EventSummary } from '../../shared/types.ts'
+import { SCRIPT_NAME } from '../config.ts'
+import type { RawAthleteRaceResult } from '../types.ts'
 
 const logger = defaultLogger.child({ parser: SCRIPT_NAME })
 
-export const extractRaceResults = async (options: { year: number, eventHash?: string }): Promise<{
+export const extractRaceResults = async (options: { year: number, eventHashes?: string[] }): Promise<{
   year: number,
   eventHashes: string[],
 }> => {
@@ -19,8 +19,8 @@ export const extractRaceResults = async (options: { year: number, eventHash?: st
   return { year: options.year, eventHashes }
 }
 
-const extractAllEventResults = async (options: { year: number, eventHash?: string }) => {
-  const events: EventSummary[] = await data.get.events({ ...options }, { summary: true })
+const extractAllEventResults = async (options: { year: number, eventHashes?: string[] }) => {
+  const events: EventSummary[] = await data.get.events({ ...options }, { summary: true, includeDrafts: false })
 
   const promises = await Promise.allSettled(events.map(async (event) => extractEventResults(event)))
 
@@ -40,7 +40,6 @@ const extractAllEventResults = async (options: { year: number, eventHash?: strin
         hash: events[i].hash,
         eventName: events[i].name,
         date: events[i].date,
-        year: events[i].year,
         error: result.reason
       })
     }
@@ -52,7 +51,7 @@ const extractAllEventResults = async (options: { year: number, eventHash?: strin
 }
 
 const extractEventResults = async (event: EventSummary): Promise<RawAthleteRaceResult[]> => {
-  const eventResults = await data.get.eventResults(event.hash, event.year)
+  const eventResults = await data.get.eventResults(event.hash, +event.date.slice(0, 4))
 
   logger.info(`Extracting event results for event ${event.hash} (${event.name} - ${event.date})...`)
 
@@ -60,26 +59,23 @@ const extractEventResults = async (event: EventSummary): Promise<RawAthleteRaceR
 
   const athleteRaceResults: RawAthleteRaceResult[] = []
 
-  Object.keys(eventResults.results).forEach((category) => {
-    const { results: categoryResults, upgradePoints = [] } = eventResults.results[category]
+  const parentCategories = eventResults.categories.reduce((acc, category) => {
+    if (category.parentCategory) acc.add(category.alias)
+    return acc
+  }, new Set<string>())
 
-    // Skip umbrella categories
-    if (eventResults.results[category].combinedCategories) return
+  eventResults.categories.forEach((category) => {
+    const { results: categoryResults, upgradePoints = [] } = category
 
-    Object.values(categoryResults).forEach((athleteResult) => {
-      const athlete = eventResults.athletes[athleteResult.athleteId.toString()]
-      const athleteUpgradePoint = upgradePoints.find(up => up.athleteId === athleteResult.athleteId.toString())
+    // Skip parent categories
+    if (parentCategories.has(category.alias)) return
 
-      if (!athlete) {
-        logger.warn(`Athlete not found for id ${athleteResult.athleteId} in category ${category}, skipping race extraction`, {
-          eventHash: event.hash,
-        })
-        return
-      }
+    Object.values(categoryResults).forEach((participantResult) => {
+      const athleteUpgradePoint = upgradePoints?.find(up => up.participantId === participantResult.participantId.toString())
 
-      if (!athlete.uciId && (!athlete.firstName || !athlete.lastName)) {
-        if (athlete.firstName?.length || athlete.lastName?.length) {
-          logger.warn(`Athlete ${athlete.firstName} ${athlete.lastName} has no UCI ID and partial name, skipping race extraction`, {
+      if (!participantResult.uciId && (!participantResult.firstName || !participantResult.lastName)) {
+        if (participantResult.firstName?.length || participantResult.lastName?.length) {
+          logger.warn(`Participant ${participantResult.firstName} ${participantResult.lastName} has no UCI ID and partial name, skipping race extraction`, {
             eventHash: event.hash,
           })
         }
@@ -87,22 +83,23 @@ const extractEventResults = async (event: EventSummary): Promise<RawAthleteRaceR
       }
 
       // Ignore DNS results as they don't represent an actual race
-      if (athleteResult.status === 'DNS') return
+      if (participantResult.status === 'DNS') return
 
       athleteRaceResults.push({
-        athleteUciId: athlete.uciId,
-        firstName: athlete.firstName,
-        lastName: athlete.lastName,
-        teamName: athlete.team,
+        athleteUciId: participantResult.uciId,
+        firstName: participantResult.firstName,
+        lastName: participantResult.lastName,
+        teamName: participantResult.team,
         date: event.date,
         eventHash: event.hash,
         eventType: event.sanctionedEventType,
         discipline: event.discipline,
-        category,
-        position: athleteResult.position,
-        status: athleteResult.status,
+        categoryAlias: category.alias,
+        categoryLabel: category.label,
+        position: participantResult.position,
+        status: participantResult.status,
         upgradePoints: athleteUpgradePoint?.points || 0,
-        fieldSize: eventResults.results[category].fieldSize || 0,
+        fieldSize: category.fieldSize || 0,
       })
     })
   })

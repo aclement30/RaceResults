@@ -1,32 +1,20 @@
-import { mapValues } from 'lodash-es'
+import { formatCategoryAlias, transformCategoryLabel as defaultTransformCategory } from 'shared/categories'
+import { getRaceType, getSanctionedEventType } from 'shared/events'
+import defaultLogger from 'shared/logger.ts'
+import { TeamParser } from 'shared/team-parser'
 import type {
-  ManualImportBaseFile,
-  ManualImportRawData
-} from '../../../types.ts'
-import defaultLogger from '../../../../../shared/logger.ts'
+  CreateEventCategory,
+  CreateEventResults,
+  ParticipantResult,
+  TParticipantStatus,
+  UpdateEvent
+} from 'shared/types.ts'
+import { calculateBCUpgradePoints, calculateFieldSize, hasUpgradePoints, } from 'shared/upgrade-points'
+import { capitalize, } from 'shared/utils'
 import { PROVIDER_NAME } from '../../../config.ts'
-import { formatDurationToSeconds, transformOrganizer } from '../../../utils.ts'
-import {
-  calculateBCUpgradePoints,
-  calculateFieldSize,
-  getSanctionedEventType,
-  hasDoubleUpgradePoints,
-  hasUpgradePoints
-} from '../../../../../shared/upgrade-points.ts'
-import type {
-  AthleteRaceResult,
-  EventAthlete,
-  EventCategory,
-  EventResults,
-  RaceEvent
-} from '../../../../../../src/types/results.ts'
-import {
-  capitalize,
-  formatCategoryAlias, getBaseCategories, shapeCategoriesResults,
-  transformCategory as defaultTransformCategory,
-} from '../../../../../shared/utils.ts'
+import type { ManualImportBaseFile, ManualImportRawData } from '../../../types.ts'
+import { formatDurationToSeconds } from '../../../utils.ts'
 import { PARSER_NAME } from './config.ts'
-import { TeamParser } from '../../../../../shared/team-parser.ts'
 
 const logger = defaultLogger.child({ provider: PROVIDER_NAME, parser: PARSER_NAME })
 
@@ -54,52 +42,52 @@ type RaceResultsRawData = {
   RacerCount: number
 }
 
-export const parseRawEvent = (
+export const parseRawEvent = async (
   eventBundle: ManualImportRaceResultsEventFile,
   payloads: ManualImportRawData['payloads']
-): { event: RaceEvent, eventResults: EventResults } => {
+): Promise<{ event: UpdateEvent, eventResults: CreateEventResults }> => {
   logger.info(`Importing event results for: ${eventBundle.name}`)
 
-  const organizerObj = transformOrganizer(eventBundle.organizer)
-
-  const sanctionedEventType = getSanctionedEventType({
-    organizerAlias: organizerObj.organizerAlias,
-    serie: eventBundle.series,
-    name: eventBundle.name,
+  const sanctionedEventType = await getSanctionedEventType({
+    eventName: eventBundle.name,
+    organizerAlias: eventBundle.organizer,
     year: eventBundle.year,
+    serieAlias: eventBundle.series,
   })
 
-  const event: RaceEvent = {
+  const event: UpdateEvent = {
     hash: eventBundle.hash,
-    year: eventBundle.year,
     date: eventBundle.date,
-    type: 'event',
     discipline: 'ROAD',
     location: eventBundle.location,
-    ...organizerObj,
+    organizerAlias: eventBundle.organizer,
     name: eventBundle.name,
-    serie: eventBundle.series,
-    provider: eventBundle.provider || PROVIDER_NAME,
-    isTimeTrial: eventBundle.isTimeTrial || false,
+    serie: eventBundle.series || null,
     sanctionedEventType,
-    hasUpgradePoints: hasUpgradePoints(sanctionedEventType),
-    isDoubleUpgradePoints: hasDoubleUpgradePoints(sanctionedEventType),
-    categories: [],
-    lastUpdated: eventBundle.lastUpdated,
+    raceType: null,
+    sourceUrls: eventBundle.sourceUrls || [],
+    // Metadata
+    provider: eventBundle.provider || PROVIDER_NAME,
+    updatedAt: eventBundle.lastUpdated,
+    published: true,
   }
+
+  event.raceType = await getRaceType({ ...event, isTimeTrial: eventBundle.isTimeTrial || false })
 
   logger.info(`Parsing athlete results for: ${eventBundle.name}`)
 
-  let {
-    athletes: allEventAthletes,
-    eventCategoriesWithResults: allEventCategories
-  } = parseAthleteResults(payloads[eventBundle.filename])
+  let allEventCategories = await parseParticipantResults(payloads[eventBundle.filename])
 
-  if (event.hasUpgradePoints) {
+  if (hasUpgradePoints(sanctionedEventType)) {
+    const parentCategories = allEventCategories.reduce((acc, category) => {
+      if (category.parentCategory) acc.add(category.alias)
+      return acc
+    }, new Set<string>())
+
     // Calculate upgrade points for each category
-    allEventCategories = mapValues(allEventCategories, (category: EventCategory, categoryAlias: string) => {
-      // Dont calculate upgrade points for umbrella categories
-      if (category.combinedCategories) return category
+    allEventCategories = allEventCategories.map((category) => {
+      // Dont calculate upgrade points for parent categories
+      if (parentCategories.has(category.alias)) return category
 
       const fieldSize = category.starters || calculateFieldSize([category])
 
@@ -114,55 +102,44 @@ export const parseRawEvent = (
         ...category,
         fieldSize,
         upgradePoints,
-      } as EventCategory
+      }
     })
   }
 
-  event.categories = getBaseCategories(allEventCategories, { organizerAlias: event.organizerAlias, serie: event.serie })
+  // Add last updated timestamp to each category
+  allEventCategories = allEventCategories.map(category => ({
+    ...category,
+    updatedAt: eventBundle.lastUpdated,
+  }))
 
   return {
     event,
     eventResults: {
       hash: event.hash,
-      athletes: allEventAthletes,
-      results: shapeCategoriesResults(allEventCategories),
-      sourceUrls: eventBundle.sourceUrls || [],
-      lastUpdated: eventBundle.lastUpdated,
+      categories: allEventCategories,
     }
   }
 }
 
-const parseAthleteResults = (jsonData: string): {
-  athletes: Record<string, EventAthlete>,
-  eventCategoriesWithResults: EventResults['results']
-} => {
+const parseParticipantResults = async (jsonData: string): Promise<CreateEventCategory[]> => {
   const rawResults = JSON.parse(jsonData) as RaceResultsRawData[]
 
   // Transform records to series results
-  const athletes: Record<string, EventAthlete> = {}
-  const categoriesResults: Record<string, AthleteRaceResult[]> = {}
+  const categoriesResults: Record<string, ParticipantResult[]> = {}
   const categoryLabels: Record<string, string> = {}
   const categoryStarters: Record<string, number> = {}
 
-  rawResults.forEach((record) => {
-    const categoryLabel = transformCategory(record.RaceCategoryName)
-    const categoryAlias = formatCategoryAlias(categoryLabel)
+  for (const record of rawResults) {
+    const categoryLabel = await transformCategoryLabel(record.RaceCategoryName)
+    const categoryAlias = formatCategoryAlias(record.RaceCategoryName)
     categoryLabels[categoryAlias] = categoryLabel
 
     if (!record.RacerID) {
       logger.warn(`Skipping record with missing RacerID: ${JSON.stringify(record)}`)
-      return
+      continue
     }
 
     const team = TeamParser.parseTeamName(record.TeamName)
-
-    athletes[record.RacerID] = {
-      firstName: capitalize(record.FirstName),
-      lastName: capitalize(record.LastName),
-      license: record.License?.length && record.License?.toUpperCase() || undefined,
-      team: team?.name,
-      // eventCategories: [categoryAlias],
-    }
 
     if (record.RacerCount) categoryStarters[categoryAlias] = +record.RacerCount
 
@@ -185,7 +162,7 @@ const parseAthleteResults = (jsonData: string): {
     if (!categoriesResults[categoryAlias]) categoriesResults[categoryAlias] = []
 
     let finishTime = 0
-    let finishGap = null // will be calculated later
+    let finishGap // will be calculated later
     if (record.RaceTime) {
       if (record.RaceTime.match(/^[A-z]+$/)) {
         // DNF
@@ -197,15 +174,22 @@ const parseAthleteResults = (jsonData: string): {
     }
 
     categoriesResults[categoryAlias].push({
-      athleteId: record.RacerID.toString(),
+      participantId: record.RacerID.toString(),
+      // Demographic data
+      firstName: capitalize(record.FirstName),
+      lastName: capitalize(record.LastName),
+      license: record.License?.length && record.License?.toUpperCase() || undefined,
+      team: team?.name,
+      // Finish position
       position,
-      status: status as any,
+      status: status as TParticipantStatus,
+      // Timing data
       finishTime,
       finishGap, // will be calculated later
     })
-  })
+  }
 
-  const allEventCategories = mapValues(categoriesResults, (results, alias) => {
+  return Object.entries(categoriesResults).map(([alias, results]) => {
     const categoryLabel = categoryLabels[alias]
     const categoryGender: 'M' | 'F' | 'X' = categoryLabel.toLowerCase().includes('(m)') ? 'M' : categoryLabel.toLowerCase().includes('(w)') ? 'F' : 'X'
     const starters = categoryStarters[alias]
@@ -214,8 +198,8 @@ const parseAthleteResults = (jsonData: string): {
     const finisherGaps = calculateFinishGaps(results)
 
     results.forEach(result => {
-      if (result.status === 'FINISHER' && result.finishTime > 0 && !result.finishGap) {
-        result.finishGap = finisherGaps[result.athleteId] || null
+      if (result.status === 'FINISHER' && result.finishTime && result.finishTime > 0 && !result.finishGap) {
+        result.finishGap = finisherGaps[result.participantId]
       }
     })
 
@@ -226,44 +210,45 @@ const parseAthleteResults = (jsonData: string): {
       results,
       starters,
       finishers,
+      primes: [], // No prime data available in this source
+      upgradePoints: null, // Upgrade points will be calculated later, if applicable
     }
   })
-
-  return {
-    athletes,
-    eventCategoriesWithResults: allEventCategories,
-  }
 }
 
-export const calculateFinishGaps = (results: AthleteRaceResult[]): Record<string, number> => {
+const calculateFinishGaps = (results: ParticipantResult[]): Record<string, number> => {
   const finishers = results
-  .filter(r => r.status === 'FINISHER' && r.finishTime > 0)
+  .filter(r => r.status === 'FINISHER' && r.finishTime && r.finishTime > 0)
   .sort((
     a,
     b
-  ) => a.finishTime - b.finishTime)
+  ) => a.finishTime! - b.finishTime!)
 
   if (finishers.length === 0) return {}
 
-  const firstFinisherTime = finishers[0].finishTime
+  const firstFinisherTime = finishers[0].finishTime!
 
   const finisherGaps: Record<string, number> = {}
 
   finishers.forEach(result => {
-    if (result.status === 'FINISHER' && result.finishTime > 0) finisherGaps[result.athleteId] = result.finishTime - firstFinisherTime
+    if (result.status === 'FINISHER' && result.finishTime && result.finishTime > 0) finisherGaps[result.participantId] = result.finishTime - firstFinisherTime
   })
 
   return finisherGaps
 }
 
-export const transformCategory = (
+const transformCategoryLabel = (
   catName: string,
-): string => {
-  if (catName.startsWith('Men Senior')) return catName.replace('Men Senior', '').trim() + ' (M)'
-  if (catName.startsWith('Men Pro/Cat')) return catName.replace('Men Pro/Cat', 'Cat').trim() + ' (M)'
-  if (catName.startsWith('Men')) return catName.replace('Men', '').trim() + ' (M)'
-  if (catName.startsWith('Women Senior')) return catName.replace('Women Senior', '').trim() + ' (W)'
-  if (catName.startsWith('Women')) return catName.replace('Women', '').trim() + ' (W)'
+): Promise<string> => {
+  let newLabel
+
+  if (catName.startsWith('Men Senior')) newLabel = catName.replace('Men Senior', '').trim() + ' (M)'
+  if (catName.startsWith('Men Pro/Cat')) newLabel = catName.replace('Men Pro/Cat', 'Cat').trim() + ' (M)'
+  if (catName.startsWith('Men')) newLabel = catName.replace('Men', '').trim() + ' (M)'
+  if (catName.startsWith('Women Senior')) newLabel = catName.replace('Women Senior', '').trim() + ' (W)'
+  if (catName.startsWith('Women')) newLabel = catName.replace('Women', '').trim() + ' (W)'
+
+  if (newLabel) return Promise.resolve(newLabel)
 
   return defaultTransformCategory(catName)
 }

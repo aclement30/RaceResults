@@ -1,7 +1,6 @@
-import { useCallback, useContext, useEffect, useMemo, useState } from 'react'
+import React, { useCallback, useContext, useEffect, useMemo, useState } from 'react'
 import { AppContext } from '../AppContext'
 import { useParams, useSearchParams } from 'react-router'
-import type { AthleteSerieResult, SerieResults, SerieSummary, TeamSerieResult } from '../types/results'
 import { AppShell, Text, Divider, LoadingOverlay, Group, Blockquote } from '@mantine/core'
 import { useCategoryResults } from './utils'
 import { FETCH_ERROR_TYPE, FetchError, fetchSeriesResults } from '../utils/aws-s3'
@@ -16,12 +15,14 @@ import { ResourceNotFound } from '../Shared/ResourceNotFound'
 import { showErrorMessage } from '../utils/showErrorMessage'
 import { IconHelp } from '@tabler/icons-react'
 import { UIContext } from '../UIContext'
+// import { FeedbackWidget } from '../Shared/FeedbackWidget/FeedbackWidget'
 import debounce from 'lodash/debounce'
+import type { SerieResults, Serie as TSerie, ParticipantSerieResult, TeamSerieResult } from '../../shared/types'
 
 export const Serie: React.FC = () => {
   const { series } = useContext(AppContext)
   const { loading } = useContext(UIContext)
-  const [serieSummary, setSerieSummary] = useState<SerieSummary | null>(null)
+  const [serie, setSerie] = useState<TSerie | null>(null)
   const [seriesResults, setSeriesResults] = useState<SerieResults | null>(null)
   const [searchValue, setSearchValue] = useState('')
   const [loadingResults, setLoadingResults] = useState<boolean>(true)
@@ -32,7 +33,7 @@ export const Serie: React.FC = () => {
   const serieHash = hash!
 
   const [searchParams] = useSearchParams()
-  const selectedCategory = searchParams.get('category') || serieSummary?.categories[resultType!]?.[0].alias!
+  const selectedCategory = searchParams.get('category') || seriesResults?.[resultType!]?.categories?.[0].alias
   const selectedTeam = searchParams.get('team')
 
   const selectedSeries = useMemo(() => series.get(serieYear)?.find(({ hash }) => hash === params.hash!), [
@@ -68,7 +69,7 @@ export const Serie: React.FC = () => {
     if (series.get(serieYear)) {
       const serieSummary = series.get(serieYear)?.find(({ hash }) => hash === serieHash)
 
-      if (serieSummary) setSerieSummary(serieSummary)
+      if (serieSummary) setSerie(serieSummary)
 
       fetchData(serieYear, serieHash)
     }
@@ -91,17 +92,23 @@ export const Serie: React.FC = () => {
     debouncedSearchTracking()
   }
 
-  const selectedEventCategory = !!selectedCategory && seriesResults?.[resultType!]?.results[selectedCategory] || undefined
+  const selectedSerieCategory = useMemo(() => selectedCategory ? seriesResults?.[resultType!]?.categories.find(c => c.alias === selectedCategory) : undefined, [
+    selectedCategory,
+    seriesResults,
+    resultType
+  ])
 
   const {
     filteredResults,
-  } = useCategoryResults(selectedEventCategory?.results || [], searchValue)
+  } = useCategoryResults(selectedSerieCategory?.results || [], searchValue)
 
   return (
     <>
       <LoadingOverlay visible={loading} loaderProps={{ children: 'Loading series...' }}/>
 
-      {serieSummary && <Navbar serieSummary={serieSummary} selectedCategory={selectedCategory}/>}
+      {serie &&
+        <Navbar serie={serie} teamCategories={seriesResults?.team?.categories}
+                individualCategories={seriesResults?.individual?.categories} selectedCategory={selectedCategory}/>}
 
       <AppShell.Main>
         <LoadingOverlay visible={loadingResults} loaderProps={{ children: 'Loading results...' }}/>
@@ -111,34 +118,34 @@ export const Serie: React.FC = () => {
 
         {selectedSeries && (
           <>
-            {serieSummary && (
+            {serie && (
               <>
                 <Group justify="space-between" style={{ alignItems: 'center' }}>
-                  <h2 style={{ marginTop: 0, marginBottom: 0 }}>{serieSummary.year} {serieSummary.name}</h2>
+                  <h2 style={{ marginTop: 0, marginBottom: 0 }}>{serie.year} {serie.name}</h2>
                   <div className="mantine-visible-from-sm"><OrganizerBadge
-                    organizerAlias={serieSummary.organizerAlias}/>
+                    organizerAlias={serie.organizerAlias}/>
                   </div>
                 </Group>
 
                 <div>
                   <Text size="compact-md">
-                    {resultType === 'individual' ? 'Individual Series Results' : `${serieSummary.year} Series Team Results`}
-                    {selectedEventCategory && (
+                    {resultType === 'individual' ? 'Individual Series Results' : `${serie.year} Series Team Results`}
+                    {selectedSerieCategory && (
                       <span className="mantine-hidden-from-md">&nbsp;-&nbsp;
-                        {selectedEventCategory?.label}
+                        {selectedSerieCategory?.label}
                   </span>
                     )}
                   </Text>
                 </div>
 
                 <div className="mantine-hidden-from-sm" style={{ marginTop: '1rem' }}><OrganizerBadge
-                  organizerAlias={serieSummary.organizerAlias}/></div>
+                  organizerAlias={serie.organizerAlias}/></div>
               </>
             )}
 
             <Divider my="md"/>
 
-            {serieSummary && seriesResults && (
+            {serie && seriesResults && selectedCategory && (
               <>
                 <div style={{ paddingBottom: '1rem' }}>
                   <SearchField value={searchValue} onChange={handleSearchChange}/>
@@ -146,13 +153,13 @@ export const Serie: React.FC = () => {
 
                 {resultType === 'individual' ? (
                   <IndividualRankingsTable
-                    serie={serieSummary}
+                    serie={serie}
                     selectedCategory={selectedCategory}
-                    results={filteredResults as AthleteSerieResult[]}
+                    results={filteredResults as ParticipantSerieResult[]}
                   />
                 ) : (
                   <TeamRankingsTable
-                    serie={serieSummary}
+                    serie={serie}
                     selectedCategory={selectedCategory}
                     results={filteredResults as TeamSerieResult[]}
                   />
@@ -160,18 +167,24 @@ export const Serie: React.FC = () => {
 
                 <Divider/>
 
-                <Text c="dimmed" size="sm" style={{ padding: '1rem 0' }}>Last
-                  Updated: {new Date(seriesResults.lastUpdated).toLocaleDateString('en-CA', {
-                    year: 'numeric',
-                    month: 'long',
-                    day: 'numeric',
-                    hour: 'numeric',
-                    minute: '2-digit',
-                  })}</Text>
+                {!!selectedSerieCategory?.updatedAt && (
+                  <Group justify="space-between">
+                    <Text c="dimmed" size="sm" style={{ padding: '1rem 0' }}>Last
+                      Updated: {new Date(selectedSerieCategory.updatedAt).toLocaleDateString('en-CA', {
+                        year: 'numeric',
+                        month: 'long',
+                        day: 'numeric',
+                        hour: 'numeric',
+                        minute: '2-digit',
+                      })}</Text>
+
+                    {/*<FeedbackWidget/>*/}
+                  </Group>
+                )}
 
                 <Divider/>
 
-                {selectedEventCategory?.corrections?.length && (
+                {selectedSerieCategory?.corrections?.length && (
                   <>
                     <Blockquote color="yellow" mt="lg" p="md">
                       <Group justify="space-between" style={{ marginBottom: '0.5rem' }}>
@@ -181,7 +194,7 @@ export const Serie: React.FC = () => {
                           original source</Text>
                       </Group>
                       <div
-                        dangerouslySetInnerHTML={{ __html: selectedEventCategory?.corrections.replace(/\n/g, '<br />') }}
+                        dangerouslySetInnerHTML={{ __html: selectedSerieCategory?.corrections.replace(/\n/g, '<br />') }}
                         style={{ fontSize: 'smaller' }}/>
                     </Blockquote>
 

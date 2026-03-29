@@ -41,7 +41,7 @@ Canada. This project is made of 2 main components:
    Update the `.env.local` file in the root directory and replace with your AWS configuration (no secret keys):
    ```env
    VITE_AWS_REGION=us-west-2
-   VITE_AWS_POOL_ID=[cognito-identity-pool-id]
+   VITE_PUBLIC_AWS_IDENTITY_POOL_ID=[cognito-identity-pool-id]
    VITE_RR_S3_BUCKET=[bucket-name]
    ```
 

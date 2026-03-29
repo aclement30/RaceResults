@@ -1,7 +1,7 @@
 import { useMemo } from 'react'
-import type { AthleteSerieResult, TeamSerieResult } from '../types/results'
+import type { ParticipantSerieResult, TeamSerieResult } from '../../shared/types'
 
-export const useCategoryResults = (results: Array<AthleteSerieResult | TeamSerieResult>, searchValue?: string) => {
+export const useCategoryResults = (results: Array<ParticipantSerieResult | TeamSerieResult>, searchValue?: string) => {
   const sortedResults = useMemo(() => {
     const resultsWithPosition = results.filter((result) => result.position > 0)
 
@@ -21,14 +21,14 @@ export const useCategoryResults = (results: Array<AthleteSerieResult | TeamSerie
     return sortedResults.filter((seriesResult) => {
       if (isNaN(+searchValueLower)) {
         const { team } = seriesResult
-        const { firstName, lastName } = seriesResult as AthleteSerieResult
+        const { firstName, lastName } = seriesResult as ParticipantSerieResult
         const fullName = `${firstName} ${lastName}`.toLowerCase()
         const teamLower = team?.toLowerCase()
 
         return fullName.includes(searchValueLower) || teamLower?.includes(searchValueLower)
       } else {
         const bibNumber = +searchValueLower
-        return ( seriesResult as AthleteSerieResult ).bibNumber?.toString().startsWith(bibNumber.toString())
+        return (seriesResult as ParticipantSerieResult).bibNumber?.toString().startsWith(bibNumber.toString())
       }
     })
   }, [sortedResults, searchValue])

@@ -97,12 +97,12 @@ describe('createViewAthletes', () => {
       partialManualEdit    // For athlete2
       // No edit for athlete3
     ])
-    ;(mockData.update.viewAthletes as jest.Mock).mockResolvedValue(undefined)
+    ;(mockData.update.athletes as jest.Mock).mockResolvedValue(undefined)
 
     await createViewAthletes({ athleteIds })
 
     // Should process all athletes with appropriate manual edits applied
-    expect(mockData.update.viewAthletes).toHaveBeenCalledWith([
+    expect(mockData.update.athletes).toHaveBeenCalledWith([
       {
         ...baseMockAthlete1,
         firstName: 'Johnny', // Updated from manual edit
@@ -126,7 +126,7 @@ describe('createViewAthletes', () => {
     ])
 
     // Verify proper uciId handling (should remain original, not from manual edit)
-    const savedAthletes = (mockData.update.viewAthletes as jest.Mock).mock.calls[0][0]
+    const savedAthletes = (mockData.update.athletes as jest.Mock).mock.calls[0][0]
     expect(savedAthletes[0].uciId).toBe('12345678901') // Original uciId preserved
     expect(savedAthletes[1].uciId).toBe('12345678902') // Original uciId preserved
     expect(savedAthletes[2].uciId).toBe('12345678903') // Original uciId preserved
@@ -146,7 +146,7 @@ describe('createViewAthletes', () => {
 
     ;(mockData.get.baseAthletes as jest.Mock).mockResolvedValue([baseMockAthlete1])
     ;(mockData.get.athleteManualEdits as jest.Mock).mockResolvedValue([])
-    ;(mockData.update.viewAthletes as jest.Mock).mockRejectedValue(new Error('Update failed'))
+    ;(mockData.update.athletes as jest.Mock).mockRejectedValue(new Error('Update failed'))
 
     await expect(createViewAthletes({ athleteIds })).rejects.toThrow('Update failed')
   })

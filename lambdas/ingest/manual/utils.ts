@@ -1,10 +1,9 @@
 import type { S3Event } from 'aws-lambda'
-import { startCase } from 'lodash-es'
-import { capitalize, s3 as RRS3, validateYear } from '../../shared/utils.ts'
-import type { ManualImportCategory } from './types.ts'
+import { RR_S3_BUCKET } from 'shared/config.ts'
+import defaultLogger from 'shared/logger.ts'
+import { capitalize, s3 as RRS3, validateYear } from 'shared/utils.ts'
 import { PROVIDER_NAME, RAW_MANUAL_IMPORT_DATA_PATH } from './config.ts'
-import defaultLogger from '../../shared/logger.ts'
-import { RR_S3_BUCKET } from '../../shared/config.ts'
+import type { ManualImportCategory } from './types.ts'
 
 const logger = defaultLogger.child({ provider: PROVIDER_NAME })
 
@@ -57,29 +56,15 @@ export const validateRefFile = (data: any): boolean => {
   return true
 }
 
-export const transformOrganizer = (organizerAlias: string): { organizerAlias: string, organizerName: string } => {
-  if (organizerAlias === 'VictoriaCycling') {
-    return {
-      organizerAlias: 'VictoriaCycling',
-      organizerName: 'Victoria Cycling League',
-    }
-  }
-
-  return {
-    organizerAlias,
-    organizerName: startCase(organizerAlias),
-  }
-}
-
 export const formatDurationToSeconds = (duration: string): number => {
   if (duration.match(/^\d+:\d+:\d+$/)) {
     const [hours, minutes, seconds] = duration.split(':').map(Number)
     return (hours * 3600) + (minutes * 60) + seconds
-  } else if (duration.match(/^\+?\d+:\d+:\d+\.\d+$/)) {
+  } else if (duration.match(/^[+-]?\d+:\d+:\d+\.\d+$/)) {
     const [hours, minutes, seconds] = duration.split(':').map(Number)
     if (hours < 0) return -((Math.abs(hours) * 3600) + (minutes * 60) + seconds)
     return (hours * 3600) + (minutes * 60) + seconds
-  } else if (duration.match(/^\+?\d+:\d+$/)) {
+  } else if (duration.match(/^[+-]?\d+:\d+$/)) {
     const [minutes, seconds] = duration.split(':').map(Number)
     if (minutes < 0) return -((Math.abs(minutes) * 60) + Math.abs(seconds))
     return (minutes * 60) + seconds
@@ -89,7 +74,7 @@ export const formatDurationToSeconds = (duration: string): number => {
   } else if (duration.match(/^\d+['’]\d+"$/)) {
     const [minutes, seconds] = duration.split(/'|’/).map(s => s.trim().replace('"', ''))
     return (+minutes * 60) + (+seconds)
-  } else if (duration.match(/^\+?\d+:\d+\.\d+$/)) {
+  } else if (duration.match(/^[+-]?\d+:\d+\.\d+$/)) {
     const [minutes, seconds] = duration.split(':').map(Number)
     if (minutes < 0) return -((Math.abs(minutes) * 60) + Math.abs(seconds))
     return (minutes * 60) + seconds

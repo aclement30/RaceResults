@@ -1,23 +1,29 @@
+import { AthleteFinder } from 'shared/athlete-finder.ts'
+import { ENV } from 'shared/config.ts'
+import logger from 'shared/logger.ts'
+import { TeamParser } from 'shared/team-parser.ts'
+import { parseArgs } from 'util'
 import { cleanAthletes } from './athletes/clean.ts'
-import logger from '../shared/logger.ts'
-import { ENV } from '../shared/config.ts'
 import { createAthleteLookupTable } from './athletes/create-lookup-table.ts'
-import { TeamParser } from '../shared/team-parser.ts'
 import { extractAthletes } from './athletes/extract.ts'
-import { extractRaceResults } from './race-results/extract.ts'
 import { cleanRaceResults } from './race-results/clean.ts'
-import { extractUpgradePoints } from './upgrade-points/extract.ts'
-import { cleanUpgradePoints } from './upgrade-points/clean.ts'
-import { extractAthletesTeams } from './teams/extract.ts'
+import { extractRaceResults } from './race-results/extract.ts'
 import { cleanAthletesTeams } from './teams/clean.ts'
+import { extractAthletesTeams } from './teams/extract.ts'
 import { processAthletesUpgradeDates } from './upgrade-dates/process.ts'
-import { createViewAthletes } from './views/athletes.ts'
+import { cleanUpgradePoints } from './upgrade-points/clean.ts'
+import { extractUpgradePoints } from './upgrade-points/extract.ts'
 import { createViewAthleteProfiles } from './views/athlete-profiles.ts'
-import { AthleteFinder } from '../shared/athlete-finder.ts'
+import { createViewAthletes } from './views/athletes.ts'
 import { createViewRecentlyUpgradedAthletes } from './views/recently-upgraded-athletes.ts'
 
+const { values: args } = parseArgs({
+  args: process.argv.slice(2),
+  options: { year: { type: 'string' } },
+})
+
 const options = {
-    year: 2026,
+    year: args.year ? +args.year : new Date().getFullYear(),
   }
 
 ;(async () => {

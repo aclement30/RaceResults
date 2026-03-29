@@ -4,7 +4,7 @@ import { loadStartupData } from '../utils/loadStartupData'
 import { AppShell, LoadingOverlay } from '@mantine/core'
 import { Events } from '../Events/Events'
 import { Event } from '../Event/Event'
-import { AppContext } from '../AppContext'
+import { AppContext, AppContextProvider } from '../AppContext'
 import { Serie } from '../Serie/Serie'
 import { Header } from '../Header/Header'
 import { Loader } from '../Loader/Loader'
@@ -16,6 +16,14 @@ import { UIContext } from '../UIContext'
 import { UserFavoriteContextProvider } from '../UserFavoriteContext'
 
 export const Public = () => {
+  return (
+    <AppContextProvider>
+      <PublicRouter/>
+    </AppContextProvider>
+  )
+}
+
+export const PublicRouter = () => {
   const { isNavbarOpened } = useContext(UIContext)
   const {
     loadingStartupData,
@@ -35,7 +43,7 @@ export const Public = () => {
 
         setAthletes(new Map(Object.entries(athletes)))
         setAthleteLookupTable(new Map(Object.entries(lookupTable)))
-        setTeams(new Map(Object.entries(teams).map(([id, team]) => [+id, team])))
+        setTeams(new Map(teams.map((team) => [+team.id, team])))
         setYears(years)
 
         setLoadingStartupData(false)

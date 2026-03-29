@@ -1,6 +1,6 @@
-import defaultLogger from '../../shared/logger.ts'
+import data from 'shared/data.ts'
+import defaultLogger from 'shared/logger.ts'
 import { SCRIPT_NAME } from '../config.ts'
-import data from '../../shared/data.ts'
 
 const logger = defaultLogger.child({ parser: SCRIPT_NAME })
 

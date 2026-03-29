@@ -5,19 +5,22 @@ import {
 import { Navbar } from '../Athlete/Navbar/Navbar'
 import { AthletesTable } from './AthletesTable/AthletesTable'
 import { useEffect, useState } from 'react'
-import type { AthleteCompilations } from '../types/athletes'
 import { fetchRecentlyUpgradedAthletesView } from '../utils/aws-s3'
 import { showErrorMessage } from '../utils/showErrorMessage'
 import { useParams } from 'react-router'
 import { RecentlyUpgradedAthletesTable } from './RecentlyUpgradedAthletesTable/RecentlyUpgradedAthletesTable'
 import { PointsCollectorsTable } from './PointsCollectorsTable/PointsCollectorsTable'
 import { Loader } from '../Loader/Loader'
+import type { RecentlyUpgradedAthletes } from '../../shared/types'
 
 export const Athletes: React.FC = () => {
   const params = useParams()
   const { list: selectedList = 'all' } = params
 
-  const [athleteCompilations, setAthleteCompilations] = useState<AthleteCompilations | null>(null)
+  const [athleteCompilations, setAthleteCompilations] = useState<{
+    recentlyUpgradedAthletes: RecentlyUpgradedAthletes;
+    pointsCollectors: any[]
+  } | null>(null)
   const [loadingCompilations, setLoadingCompilations] = useState<boolean>(true)
 
   useEffect(() => {

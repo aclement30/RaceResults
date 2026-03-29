@@ -1,49 +1,49 @@
-import type { EventAthlete, PrimeResult } from '../../types/results'
+import type { ParticipantResult, PrimeResult } from '../../../shared/types/events'
 import { Table, Text } from '@mantine/core'
-import { useContext, useMemo } from 'react'
+import React, { useContext, useMemo } from 'react'
 import { columns } from '../Shared/columns'
 import { AppContext } from '../../AppContext'
 import { useNavigator } from '../../utils/useNavigator'
 
 type PrimesTableProps = {
+  participantResults: ParticipantResult[]
   primes: PrimeResult[]
-  athletes: Record<string, EventAthlete>,
 }
 
 export const PrimesTable: React.FC<PrimesTableProps> = ({
+  participantResults,
   primes,
-  athletes,
 }) => {
   const { findAthlete } = useContext(AppContext)
   const { navigateToAthlete } = useNavigator()
 
   const athleteColumns = useMemo(() => {
-    const resultAthletes = primes.map((prime) => athletes[prime.athleteId])
+    const resultAthletes = primes.map((prime) => participantResults.find(result => result.participantId === prime.participantId)!)
     const athleteColumns = ['name']
 
     if (resultAthletes?.some(result => !!result.team?.length)) athleteColumns.push('team')
     if (resultAthletes?.some(result => !!result.bibNumber)) athleteColumns.push('bibNumber')
 
     return athleteColumns
-  }, [primes, athletes])
+  }, [primes, participantResults])
 
   const rows = useMemo(() => primes.map((primeResult) => {
-    const eventAthlete = athletes[primeResult.athleteId]
-    const athleteProfile = findAthlete(eventAthlete)
+    const participant = participantResults.find(result => result.participantId === primeResult.participantId)!
+    const athleteProfile = findAthlete(participant)
 
     return (
       <Table.Tr key={primeResult.number}>
         <Table.Td>{primeResult.number}</Table.Td>
         <Table.Td>
-          {columns.name(athleteProfile || eventAthlete, { onClick: athleteProfile ? navigateToAthlete : undefined })}
-          {athleteColumns.includes('team') && (<Text size="sm" c="dimmed" hiddenFrom="sm">{eventAthlete.team}</Text>)}
+          {columns.name(athleteProfile || participant, { onClick: athleteProfile ? navigateToAthlete : undefined })}
+          {athleteColumns.includes('team') && (<Text size="sm" c="dimmed" hiddenFrom="sm">{participant.team}</Text>)}
         </Table.Td>
-        {athleteColumns.includes('team') && (<Table.Td visibleFrom="sm">{eventAthlete.team}</Table.Td>)}
-        {athleteColumns.includes('bibNumber') && (<Table.Td>{columns.bibNumber(eventAthlete)}</Table.Td>)}
+        {athleteColumns.includes('team') && (<Table.Td visibleFrom="sm">{participant.team}</Table.Td>)}
+        {athleteColumns.includes('bibNumber') && (<Table.Td>{columns.bibNumber(participant)}</Table.Td>)}
         <Table.Td>{primeResult.position}</Table.Td>
       </Table.Tr>
     )
-  }), [primes, athletes])
+  }), [primes, participantResults])
 
   return (
     <>

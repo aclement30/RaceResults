@@ -1,11 +1,10 @@
-import { cloneDeep, isEqual, keyBy, set } from 'lodash-es'
 import { diff } from 'deep-object-diff'
-// import { diff as consoleDiff } from 'jest-diff'
-import defaultLogger from '../../shared/logger.ts'
+import { cloneDeep, isEqual, keyBy } from 'lodash-es'
+import { DEBUG } from 'shared/config.ts'
+import data from 'shared/data.ts'
+import defaultLogger from 'shared/logger.ts'
+import type { Athlete, AthleteSkillCategory, BaseAthlete } from 'shared/types.ts'
 import { SCRIPT_NAME } from '../config.ts'
-import { DEBUG } from '../../shared/config.ts'
-import data from '../../shared/data.ts'
-import type { Athlete, AthleteSkillCategory } from '../../shared/types.ts'
 
 const logger = defaultLogger.child({ parser: SCRIPT_NAME })
 
@@ -27,7 +26,7 @@ export const cleanAthletes = async ({ year, eventHashes }: {
 
   logger.info(`${Object.keys(existingAthletes).length} existing athletes`)
 
-  const updatedAthletes: Record<string, Athlete> = keyBy(existingAthletes, 'uciId')
+  const mergedAthletes: Record<string, BaseAthlete> = keyBy(existingAthletes, 'uciId')
 
   // List of athletes UCI IDs that were updated or added during this process
   const updatedAthleteIds = new Set<string>()
@@ -54,8 +53,8 @@ export const cleanAthletes = async ({ year, eventHashes }: {
         rawAthlete.uciId = newUciId
       }
 
-      if (updatedAthletes[athleteUciId]) {
-        const existingAthlete = updatedAthletes[athleteUciId]
+      if (mergedAthletes[athleteUciId]) {
+        const existingAthlete = mergedAthletes[athleteUciId]
 
         if (isEqual(existingAthlete, rawAthlete)) {
           // logger.info(`Matching athlete found for UCI ID: ${athlete.uciId}, no changes.`)
@@ -73,11 +72,11 @@ export const cleanAthletes = async ({ year, eventHashes }: {
             // console.log(diff(existingAthlete, partialMergedProfile))
           }
 
-          updatedAthletes[athleteUciId] = partialMergedProfile
+          mergedAthletes[athleteUciId] = partialMergedProfile
         }
       } else {
         // @ts-ignore - Ignore incompatible gender
-        updatedAthletes[athleteUciId] = rawAthlete
+        mergedAthletes[athleteUciId] = rawAthlete
       }
 
       updatedAthleteIds.add(athleteUciId)
@@ -86,8 +85,8 @@ export const cleanAthletes = async ({ year, eventHashes }: {
 
   const athletesCategoriesByUciId = keyBy(athletesCategories, 'athleteUciId')
 
-  for (const uciId of Object.keys(updatedAthletes)) {
-    const athlete = updatedAthletes[uciId]
+  for (const uciId of Object.keys(mergedAthletes)) {
+    const athlete = mergedAthletes[uciId]
     const athleteSkillCategory = athletesCategoriesByUciId[uciId]
 
     const {
@@ -103,12 +102,21 @@ export const cleanAthletes = async ({ year, eventHashes }: {
       if (!athlete.ageCategory) athlete.ageCategory = {}
       athlete.ageCategory.ROAD = currentAgeCategory
     }
+
+    // TEMPORARY
+    delete (athlete as any).teams
   }
 
-  logger.info(`Saving ${Object.keys(updatedAthletes).length} athletes`)
+  const updatedAthletes = Object.values(mergedAthletes).filter(athlete => updatedAthleteIds.has(athlete.uciId))
+
+  logger.info(`Saving ${updatedAthletes.length} athletes`)
 
   try {
-    await data.update.baseAthletes(Object.values(updatedAthletes))
+    const { validationErrors } = await data.update.baseAthletes(updatedAthletes)
+
+    if (validationErrors && Object.keys(validationErrors).length > 0) {
+      logger.error(`Validation errors for ${Object.keys(validationErrors).length} athletes:`, { validationErrors })
+    }
   } catch (error) {
     logger.error(`Failed to save athletes:` + (error as any).message, { error })
   }
@@ -117,11 +125,11 @@ export const cleanAthletes = async ({ year, eventHashes }: {
 }
 
 const reconcileAthleteProfiles = (
-  existingProfile: Athlete,
-  newProfile: Partial<Athlete>,
+  existingProfile: BaseAthlete,
+  newProfile: Partial<BaseAthlete>,
   year: number
-): Athlete => {
-  const mergedProfile: Athlete = cloneDeep(existingProfile)
+): BaseAthlete => {
+  const mergedProfile: BaseAthlete = cloneDeep(existingProfile)
 
   Object.keys(newProfile).forEach((key) => {
     if ([
@@ -133,7 +141,7 @@ const reconcileAthleteProfiles = (
     ].includes(key)) return // Skip licenses, teams and categories, handled separately
 
     // @ts-ignore
-    if (existingProfile[key] === null && !!newProfile[key]) mergedProfile[key] = newProfile[key]
+    if ((existingProfile[key] === null || existingProfile[key] === undefined) && !!newProfile[key]) mergedProfile[key] = newProfile[key]
     else { // @ts-ignore
       if (existingProfile[key] !== newProfile[key] && (newProfile[key] !== null && newProfile[key] !== undefined) && newProfile.lastUpdated >= existingProfile.lastUpdated) {
         // @ts-ignore

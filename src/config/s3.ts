@@ -5,6 +5,7 @@ export const PUBLIC_BUCKET_PATHS = {
   seriesResults: 'series_results/',
   athletes: 'athletes/',
   athletesProfiles: 'views/athletes_profiles/',
+  teamRosters: 'team_rosters/',
 }
 
 export const PUBLIC_BUCKET_FILES = {
@@ -13,6 +14,7 @@ export const PUBLIC_BUCKET_FILES = {
     lookup: 'athletes_lookup.json',
     teams: 'teams.json',
   },
+  organizers: 'organizers.json',
   views: {
     recentlyUpgradedAthletes: 'views/recently_upgraded_athletes.json',
   }

@@ -10,8 +10,7 @@ jest.mock('../../../shared/logger', () => createLoggerMock())
 
 import { createViewAthleteProfiles } from '../../views/athlete-profiles'
 import data from '../../../shared/data'
-import type { RaceEvent, AthleteProfile, AthleteRaceResult, BaseAthleteUpgradePoint } from '../../../shared/types'
-import { AthleteUpgradePoint } from '../../../../src/types/athletes'
+import type { RaceEvent, AthleteProfile, BaseAthleteUpgradePoint } from '../../../shared/types'
 
 const mockData = data as jest.Mocked<typeof data>
 

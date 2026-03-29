@@ -1,5 +1,11 @@
 {
   "compilerOptions": {
+    "baseUrl": "..",
+    "paths": {
+      "shared/*": [
+        "shared/*"
+      ]
+    },
     "target": "es2020",
     "strict": true,
     "preserveConstEnums": true,

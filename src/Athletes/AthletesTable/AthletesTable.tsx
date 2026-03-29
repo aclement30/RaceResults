@@ -9,7 +9,7 @@ import { EmptyState } from '../../Shared/EmptyState'
 import { AppContext } from '../../AppContext'
 import { renderSkillLevelWithAgeCategory } from '../../Athlete/utils'
 import { useNavigator } from '../../utils/useNavigator'
-import type { Athlete } from '../../types/athletes'
+import type { Athlete } from '../../../shared/types/athletes'
 import { SearchField } from '../../Shared/SearchField'
 
 const currentYear = new Date().getFullYear()
