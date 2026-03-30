@@ -7,6 +7,7 @@ import { SCRIPT_NAME } from '../config.ts'
 
 const logger = defaultLogger.child({ parser: SCRIPT_NAME })
 
+
 export const createViewAthleteProfiles = async ({ athleteIds, year, eventHashes }: {
   athleteIds: string[],
   year: number,
@@ -80,6 +81,8 @@ const processAthletesUpgradePoints = async (
   events: Record<string, RaceEvent>,
   { year, eventHashes }: { year: number, eventHashes: string[] }
 ) => {
+  const oneYearAgo = new Date(new Date().setFullYear(new Date().getFullYear() - 1)).toLocaleDateString('sv', { timeZone: 'America/Vancouver' }).slice(0, 10)
+
   const allAthletesUpgradePoints = await data.get.athletesUpgradePoints({ eventHashes, year })
   const allAthletesUpgradePointsByAthlete = groupBy(allAthletesUpgradePoints, 'athleteUciId')
 
@@ -92,7 +95,8 @@ const processAthletesUpgradePoints = async (
 
     const athleteUpgradePoints = allAthletesUpgradePointsByAthlete[athleteUciId] || []
 
-    const shapedUpgradePoints = athleteUpgradePoints.map(point => {
+    const shapedUpgradePoints = athleteUpgradePoints
+    .map(point => {
       const event = events[point.eventHash]
       if (!event) {
         logger.error(`Event not found for event: ${point.eventHash}`)
@@ -110,6 +114,8 @@ const processAthletesUpgradePoints = async (
       ...(profile.upgradePoints || []).filter(point => !eventHashes.includes(point.eventHash)),
       ...shapedUpgradePoints,
     ]
+    // Remove upgrade points older than 12 months
+    .filter(point => point.date >= oneYearAgo)
 
     // Save athlete profile
     if (DEBUG) logger.info(`Saving athlete profile (upgrade points) for ${athleteUciId}`)
