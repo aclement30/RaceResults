@@ -33,7 +33,7 @@ import {
 } from './data/ingestion.ts'
 import { getOrganizers } from './data/organizers.ts'
 import { getRules } from './data/rules.ts'
-import { getSeries, updateSerieResults, updateSeries } from './data/series.ts'
+import { deleteSerie, getSeries, updateSerieResults, updateSeries } from './data/series.ts'
 import { deleteTeam, getTeamRosters, getTeams, restoreTeam, updateTeam, updateTeamRosters } from './data/teams.ts'
 import {
   getAthleteProfile,
@@ -121,6 +121,7 @@ export default {
   },
   delete: {
     event: deleteEvent,
+    serie: deleteSerie,
     team: deleteTeam,
   },
 }

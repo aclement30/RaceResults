@@ -1,20 +1,20 @@
-import { nanoid } from 'nanoid'
 import { isEqual, omit } from 'lodash-es'
+import { nanoid } from 'nanoid'
+import { SerieResultsSchema, SerieSchema } from '../../../shared/schemas/series.ts'
 import { PUBLIC_BUCKET_PATHS } from '../../../src/config/s3.ts'
+import { SERIES_RESULTS_SNAPSHOTS_PATH } from '../config.ts'
 import type {
+  CreateSerieIndividualCategory,
   CreateSerieResults,
+  CreateSerieTeamCategory,
   Serie,
   SerieIndividualCategory,
   SerieResults,
   SerieResultsSnapshot,
   SerieTeamCategory,
   UpdateSerie,
-  CreateSerieIndividualCategory,
-  CreateSerieTeamCategory,
 } from '../types.ts'
 import { s3 as RRS3 } from '../utils.ts'
-import { SerieResultsSchema, SerieSchema } from '../../../shared/schemas/series.ts'
-import { SERIES_RESULTS_SNAPSHOTS_PATH } from '../config.ts'
 
 export const getSeries = async (filters: {
   year: number,
@@ -225,12 +225,12 @@ export const updateSerieResults = async (
   const hasChanges = individualCategories.withMetadata.length > 0 || teamCategories.withMetadata.length > 0
   if (!skipSnapshot && updateSource === 'manual' && hasChanges) {
     const previousIndividual = individualCategories.withMetadata
-      .map(c => existingSerieResults?.individual?.categories.find(e => e.alias === c.alias))
-      .filter(c => c !== undefined)
+    .map(c => existingSerieResults?.individual?.categories.find(e => e.alias === c.alias))
+    .filter(c => c !== undefined)
 
     const previousTeam = teamCategories.withMetadata
-      .map(c => existingSerieResults?.team?.categories.find(e => e.alias === c.alias))
-      .filter(c => c !== undefined)
+    .map(c => existingSerieResults?.team?.categories.find(e => e.alias === c.alias))
+    .filter(c => c !== undefined)
 
     if (previousIndividual.length > 0 || previousTeam.length > 0) {
       await createSerieResultsSnapshots(serieHash, year, {
@@ -265,6 +265,26 @@ const createSerieResultsSnapshots = async (
   }
 
   await RRS3.writeFile(filename, JSON.stringify(snapshot))
+}
+
+export const deleteSerie = async (hash: string, year: number): Promise<void> => {
+  const publishedFilename = `${PUBLIC_BUCKET_PATHS.series}${year}.json`
+  // const draftFilename = `${DRAFT_SERIES_PATH}${year}.json`
+  const resultsFilename = `${PUBLIC_BUCKET_PATHS.seriesResults}${year}/${hash}.json`
+
+  const [publishedContent] = await Promise.all([
+    RRS3.fetchFile(publishedFilename, true),
+    // RRS3.fetchFile(draftFilename, true),
+  ])
+
+  const publishedSeries = publishedContent ? (JSON.parse(publishedContent) as Serie[]).filter(s => s.hash !== hash) : []
+  // const draftSeries = draftContent ? (JSON.parse(draftContent) as Serie[]).filter(s => s.hash !== hash) : []
+
+  await Promise.all([
+    RRS3.writeFile(publishedFilename, JSON.stringify(publishedSeries)),
+    // RRS3.writeFile(draftFilename, JSON.stringify(draftSeries)),
+    RRS3.deleteFile(resultsFilename),
+  ])
 }
 
 export const loadSeriesForYear = async (
