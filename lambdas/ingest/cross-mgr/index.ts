@@ -7,7 +7,8 @@ import importData from './import/index.ts'
 export const handler = async (options?: {
   year?: number,
   lastModifiedSince?: Date,
-  eventHash?: string
+  eventHash?: string,
+  forceOverwrite?: boolean,
 }): Promise<IngestEvent> => {
   logger.info(`Parser: ${PROVIDER_NAME}`)
   logger.info(`Options: ${JSON.stringify(options)}`)
@@ -16,7 +17,7 @@ export const handler = async (options?: {
   const { year, hashes: importedHashes } = await importData(options)
 
   // Clean imported data
-  const cleanedHashes = await cleanData({ year, sourceHashes: importedHashes })
+  const cleanedHashes = await cleanData({ year, sourceHashes: importedHashes, forceOverwrite: options?.forceOverwrite })
 
   return {
     year,

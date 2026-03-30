@@ -18,9 +18,12 @@ import {
 
 const logger = defaultLogger.child({ provider: PROVIDER_NAME })
 
-export default async (importRefFiles: string[], options?: { eventHash?: string }): Promise<{
+export default async (importRefFiles: string[], options?: {
+  eventHash?: string,
+  forceOverwrite?: boolean,
+}): Promise<{
   hashes: { events: string[]; series: string[] },
-  year: number
+  year: number,
 }> => {
   await TeamParser.init()
   await RuleEngine.init()
@@ -47,10 +50,10 @@ export default async (importRefFiles: string[], options?: { eventHash?: string }
 
     const { type } = bundle
     if (type === 'event') {
-      const event = await cleanEvent(bundle, payloads, bundle.year)
+      const event = await cleanEvent(bundle, payloads, bundle.year, options?.forceOverwrite)
       return { event }
     } else if (type === 'serie') {
-      const serie = await cleanSerie(bundle, payloads, bundle.year)
+      const serie = await cleanSerie(bundle, payloads, bundle.year, options?.forceOverwrite)
       return { serie }
     } else {
       throw new Error(`Unsupported reference file type: ${(bundle as ManualImportBaseFile).type}`)
@@ -137,6 +140,7 @@ const cleanEvent = async (
   bundle: ManualImportRaceResultsEventFile | ManualImportEventFile,
   payloads: Record<string, string>,
   year: number,
+  forceOverwrite = false,
 ): Promise<UpdateEvent> => {
   let event
   let eventResults
@@ -153,6 +157,9 @@ const cleanEvent = async (
     ;({ event, eventResults } = await parseRawEvent(bundle as ManualImportEventFile, payloads))
   }
 
+  // If forceOverwrite is true, delete existing event and results to ensure clean state before update
+  if (forceOverwrite) await data.delete.event(event.hash, year)
+
   await data.update.eventResults(eventResults, {
     year,
     updateSource: 'ingest',
@@ -166,11 +173,15 @@ const cleanSerie = async (
   bundle: ManualImportSerieFile,
   payloads: Record<string, string>,
   year: number,
+  forceOverwrite = false,
 ): Promise<UpdateSerie> => {
   const {
     serie,
     serieResults
   } = await parseRawSerie(bundle, payloads)
+
+  // If forceOverwrite is true, delete existing serie and results to ensure clean state before update
+  if (forceOverwrite) await data.delete.serie(serie.hash, year)
 
   await data.update.serieResults(serieResults, {
     year,

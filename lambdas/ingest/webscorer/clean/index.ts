@@ -9,9 +9,10 @@ import { parseRawEvent } from './event-parser.ts'
 
 const logger = defaultLogger.child({ provider: PROVIDER_NAME })
 
-export default async ({ year, sourceHashes }: {
+export default async ({ year, sourceHashes, forceOverwrite = false }: {
   year: number,
   sourceHashes: string[],
+  forceOverwrite?: boolean,
 }) => {
   await TeamParser.init()
   await RuleEngine.init()
@@ -33,7 +34,7 @@ export default async ({ year, sourceHashes }: {
 
     const { type } = bundleWithPayload
     if (type === 'event') {
-      const event = await cleanEvent(bundleWithPayload, year)
+      const event = await cleanEvent(bundleWithPayload, year, forceOverwrite)
       return { event }
     } else {
       logger.error(`Unsupported bundle type: ${type} for ${year}/${hash}`, {
@@ -106,6 +107,7 @@ export default async ({ year, sourceHashes }: {
 const cleanEvent = async (
   bundleWithPayload: WebscorerEventRawData,
   year: number,
+  forceOverwrite = false
 ) => {
   const { payload, ...bundle } = bundleWithPayload
 
@@ -113,6 +115,9 @@ const cleanEvent = async (
     event,
     eventResults
   } = await parseRawEvent(bundle, payload)
+
+  // If forceOverwrite is true, delete existing event and results to ensure clean state before update
+  if (forceOverwrite) await data.delete.event(event.hash, year)
 
   await data.update.eventResults(eventResults, {
     year,

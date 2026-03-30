@@ -19,6 +19,7 @@ const options = {
       'webscorer': true,
       'manual-import': true,
     },
+    forceOverwrite: false,
   }
 
 ;(async () => {
