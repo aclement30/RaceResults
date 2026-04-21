@@ -1,17 +1,15 @@
 import { isEqual, omit } from 'lodash-es'
 import { nanoid } from 'nanoid'
-import { SerieResultsSchema, SerieSchema } from '../../../shared/schemas/series.ts'
+import { SerieSchema, SerieStandingsSchema } from '../../../shared/schemas/series.ts'
 import { PUBLIC_BUCKET_PATHS } from '../../../src/config/s3.ts'
-import { SERIES_RESULTS_SNAPSHOTS_PATH } from '../config.ts'
+import { DRAFT_SERIES_STANDINGS_PATH, SERIES_STANDINGS_SNAPSHOTS_PATH } from '../config.ts'
 import type {
-  CreateSerieIndividualCategory,
-  CreateSerieResults,
-  CreateSerieTeamCategory,
+  BaseCategory,
   Serie,
-  SerieIndividualCategory,
-  SerieResults,
+  SerieIndividualEvent,
   SerieResultsSnapshot,
-  SerieTeamCategory,
+  SerieStandings,
+  SerieTeamEvent,
   UpdateSerie,
 } from '../types.ts'
 import { s3 as RRS3 } from '../utils.ts'
@@ -20,6 +18,7 @@ export const getSeries = async (filters: {
   year: number,
   serieHash?: string,
   serieHashes?: string[]
+  organizerAlias?: string
 }, options: { summary?: boolean } = {}): Promise<Serie[]> => {
   if (!options?.summary && typeof options.summary === 'undefined') options.summary = true
 
@@ -28,6 +27,10 @@ export const getSeries = async (filters: {
   const serieHashes = filters.serieHashes || (filters.serieHash ? [filters.serieHash] : [])
 
   let filteredSeries = serieHashes.length ? series.filter(file => serieHashes.includes(file.hash)) : series
+
+  if (filters.organizerAlias) {
+    filteredSeries = filteredSeries.filter(serie => serie.organizerAlias === filters.organizerAlias)
+  }
 
   return filteredSeries
 }
@@ -92,174 +95,280 @@ export const updateSeries = async (
   return { series: seriesWithMetadata }
 }
 
-export const getSerieResults = async (serieHash: string, year: number) => {
-  const filename = PUBLIC_BUCKET_PATHS.seriesResults + `${year}/${serieHash}.json`
+export const getSerieStandings = async (serieHash: string, year: number, { includeDrafts = true } = {}) => {
+  const publishedFilename = PUBLIC_BUCKET_PATHS.seriesStandings + `${year}/${serieHash}.json`
+  const draftFilename = DRAFT_SERIES_STANDINGS_PATH + `${year}/${serieHash}.json`
 
-  const fileContent = await RRS3.fetchFile(filename, true)
+  const [publishedContent, draftContent] = await Promise.all([
+    RRS3.fetchFile(publishedFilename, true),
+    includeDrafts ? RRS3.fetchFile(draftFilename, true) : null,
+  ])
 
-  if (!fileContent) return undefined
+  if (!publishedContent && !draftContent) return undefined
 
-  return JSON.parse(fileContent) as SerieResults
+  const published = publishedContent ? JSON.parse(publishedContent) as SerieStandings : undefined
+  const draft = draftContent ? JSON.parse(draftContent) as SerieStandings : undefined
+
+  if (!draft) return published
+  if (!published) return draft
+
+  return {
+    ...published,
+    categories: [
+      ...(published.categories ?? []),
+      ...(draft.categories ?? []).filter(dc => !(published.categories ?? []).some(pc => pc.alias === dc.alias)),
+    ],
+    individual: published.individual || draft.individual ? {
+      ...(published.individual ?? draft.individual!),
+      events: [
+        ...(published.individual?.events ?? []),
+        ...(draft.individual?.events ?? []),
+      ],
+    } : undefined,
+    team: published.team || draft.team ? {
+      ...(published.team ?? draft.team!),
+      events: [
+        ...(published.team?.events ?? []),
+        ...(draft.team?.events ?? []),
+      ],
+    } : undefined,
+  } as SerieStandings
 }
 
-export const updateSerieResults = async (
-  serieResults: CreateSerieResults,
+export const updateSerieStandings = async (
+  serieStandings: SerieStandings,
   { year, updateSource, userId, skipSnapshot }: {
     year: number,
     updateSource: 'ingest' | 'manual',
     userId: string,
     skipSnapshot?: boolean
   }
-): Promise<SerieResults> => {
-  const serieHash = serieResults.hash
-  const existingSerieResults = await getSerieResults(serieHash, year)
+): Promise<{ serieStandings: SerieStandings, standingsUpdatedAt: string | null, hasPublishedEvents: boolean }> => {
+  const serieHash = serieStandings.hash
+  const existingSerieResults = await getSerieStandings(serieHash, year)
 
-  const filename = PUBLIC_BUCKET_PATHS.seriesResults + `${year}/${serieHash}.json`
+  const publishedFilename = PUBLIC_BUCKET_PATHS.seriesStandings + `${year}/${serieHash}.json`
+  const draftFilename = DRAFT_SERIES_STANDINGS_PATH + `${year}/${serieHash}.json`
   const now = new Date().toISOString()
 
-  // Processes one category group (individual or team) through change detection,
-  // userLocked filtering, and ordering — mirroring the event results pattern.
-  function processCategories<
-    TCreate extends {
-      alias: string;
-      userLocked?: boolean;
-      createdAt?: string;
-      createdBy?: string | null;
-      updatedAt?: string | null;
-    },
-    TStored extends TCreate & {
-      userLocked?: boolean;
-      createdAt: string;
-      createdBy: string;
-      updatedAt: string | null;
-      updatedBy: string | null;
-    },
-  >(
-    incoming: TCreate[] | undefined,
-    existing: TStored[] | undefined,
-  ): { withMetadata: TStored[], ordered: TStored[] } {
-    const incomingCats = incoming ?? []
-    const existingCats = existing ?? []
+  // ── Categories ────────────────────────────────────────────────
+  // Categories are lightweight metadata (no events inside).
+  // Events are a flat array keyed by (date, categoryAlias).
 
-    // Step 1: Determine which categories have changed
-    const changed = incomingCats.filter(c => {
-      const ex = existingCats.find(e => e.alias === c.alias)
-      if (!ex) return true
-      const incomingData = omit(c, ['createdAt', 'updatedAt'])
-      const existingData = omit(ex, ['createdAt', 'createdBy', 'updatedAt', 'updatedBy', 'userLocked'])
-      return !isEqual(incomingData, existingData)
+  const processCategories = () => {
+    const incomingCategories = serieStandings.categories ?? []
+    const existingCategories = existingSerieResults?.categories ?? []
+
+    // Categories are lightweight label/alias metadata — no audit fields.
+    const toSerieCategory = (category: BaseCategory): BaseCategory => ({
+      alias: category.alias,
+      label: category.label,
+      gender: category.gender,
+      ...(category.parentCategory ? { parentCategory: category.parentCategory } : {}),
     })
 
-    // Step 2: Skip userLocked categories if updateSource is not 'manual'
-    const toWrite = changed.filter(c =>
-      updateSource === 'manual' || !existingCats.find(e => e.alias === c.alias)?.userLocked
-    )
+    const incomingSerieCategories = incomingCategories.map(toSerieCategory)
 
-    // Step 3: Merge with existing, preserving or setting userLocked
-    const withMetadata: TStored[] = toWrite.map(category => {
-      const existing = existingCats.find(e => e.alias === category.alias)
-      return {
-        ...(existing ?? {}),
-        ...category,
-        userLocked: category.userLocked !== undefined ? category.userLocked : (existing?.userLocked || updateSource === 'manual'),
-        createdAt: category.createdAt || existing?.createdAt || now,
-        createdBy: existing ? existing.createdBy : userId,
-        updatedAt: existing ? (category.updatedAt || now) : null,
-        updatedBy: existing ? userId : null,
-      } as TStored
-    })
-
-    // Step 4: Order categories
-    // Manual: payload order is authoritative
-    // Ingest with existing: preserve existing order, update in-place, append new at end
-    const resolve = (alias: string): TStored => {
-      return (
-        withMetadata.find(u => u.alias === alias) ??
-        existingCats.find(e => e.alias === alias) ??
-        incomingCats.find(c => c.alias === alias) as unknown as TStored
-      )
-    }
-
-    let ordered: TStored[]
+    let orderedCategories: BaseCategory[]
     if (updateSource === 'manual' || !existingSerieResults) {
-      ordered = incomingCats.map(c => resolve(c.alias))
+      orderedCategories = incomingSerieCategories
     } else {
-      ordered = [
-        ...existingCats.map(c => resolve(c.alias)),
-        ...withMetadata.filter(c => !existingCats.some(e => e.alias === c.alias)),
+      const catMap = new Map(incomingSerieCategories.map(c => [c.alias, c]))
+      orderedCategories = [
+        ...existingCategories.map(c => catMap.get(c.alias) ?? toSerieCategory(c)),
+        ...incomingSerieCategories.filter(c => !existingCategories.some(e => e.alias === c.alias)),
       ]
     }
 
-    return { withMetadata, ordered }
+    return orderedCategories
   }
 
-  const individualCategories = processCategories<CreateSerieIndividualCategory, SerieIndividualCategory>(
-    serieResults.individual?.categories,
-    existingSerieResults?.individual?.categories,
-  )
+  const processEvents = <T extends SerieIndividualEvent | SerieTeamEvent>(
+    incomingEvents: T[],
+    existingEvents: T[] = []
+  ) => {
+    const previousEvents: T[] = []
 
-  const teamCategories = processCategories<CreateSerieTeamCategory, SerieTeamCategory>(
-    serieResults.team?.categories,
-    existingSerieResults?.team?.categories,
-  )
+    // Build a mutable map of date → SerieIndividualEvent from existing events
+    const eventsByDate = new Map<string | null, T>(
+      existingEvents.map(e => [e.date, e])
+    )
 
-  const updatedSerieResults: SerieResults = {
-    hash: serieResults.hash,
-    individual: serieResults.individual !== undefined
-      ? { sourceUrls: serieResults.individual.sourceUrls, categories: individualCategories.ordered }
+    // Track which dates were touched by the incoming payload
+    const touchedDates = new Set<string | null>()
+
+    for (const incomingEvent of incomingEvents) {
+      const { date, categories: incomingCategories, published } = incomingEvent as T
+      touchedDates.add(date)
+
+      const existingSerieEvent = eventsByDate.get(date)
+      let snapshotCaptured = false
+
+      const updatedEventCategories: T['categories'] = {
+        ...(existingSerieEvent?.categories ?? {}),
+      }
+
+      for (const [categoryAlias, standing] of Object.entries(incomingCategories)) {
+        const existingCategoryStanding = existingSerieEvent?.categories[categoryAlias]
+
+        // Skip userLocked categories for non-manual updates
+        if (existingCategoryStanding?.userLocked && updateSource !== 'manual') continue
+
+        // Check if the category standing actually changed
+        const incomingStandingData = omit(standing, ['createdAt', 'updatedAt'])
+        const existingStandingData = existingCategoryStanding
+          ? omit(existingCategoryStanding, ['createdAt', 'createdBy', 'updatedAt', 'updatedBy', 'userLocked'])
+          : null
+
+        if (existingStandingData && isEqual(incomingStandingData, existingStandingData)) continue
+
+        // Capture previous event state for snapshot once per event date
+        if (!snapshotCaptured && existingSerieEvent) {
+          previousEvents.push(existingSerieEvent)
+          snapshotCaptured = true
+        }
+
+        updatedEventCategories[categoryAlias] = {
+          ...(existingCategoryStanding ?? {}),
+          ...standing,
+          userLocked: standing.userLocked ?? (existingCategoryStanding?.userLocked || updateSource === 'manual'),
+          createdAt: standing.createdAt || existingCategoryStanding?.createdAt || now,
+          createdBy: existingCategoryStanding?.createdBy ?? userId,
+          updatedAt: existingCategoryStanding ? (standing.updatedAt || now) : null,
+          updatedBy: existingCategoryStanding ? userId : null,
+        }
+      }
+
+      eventsByDate.set(date, {
+        ...(existingSerieEvent ?? {}),
+        ...incomingEvent,
+        published: published ?? existingSerieEvent?.published ?? true,
+        categories: updatedEventCategories,
+      } as T)
+    }
+
+    // Order: manual or new → payload date order first, then remaining; ingest → preserve existing order
+    let orderedEvents: T[]
+    if (updateSource === 'manual' || !existingSerieResults) {
+      const touchedInOrder = incomingEvents
+      .map((e: T) => e.date)
+      .filter((date, index, arr) => arr.indexOf(date) === index)
+      .map((date: string | null) => eventsByDate.get(date))
+      .filter((e): e is T => !!e)
+
+      const untouched = existingEvents.filter(e => !touchedDates.has(e.date))
+      orderedEvents = [...touchedInOrder, ...untouched]
+    } else {
+      // Preserve existing order; append newly introduced dates at the end
+      orderedEvents = [
+        ...existingEvents
+        .map(e => eventsByDate.get(e.date))
+        .filter((e): e is T => !!e),
+        ...[...touchedDates]
+        .filter(date => !existingEvents.some(e => e.date === date))
+        .map(date => eventsByDate.get(date))
+        .filter((e): e is T => !!e),
+      ]
+    }
+
+    return { orderedEvents, previousEvents }
+  }
+
+  const processedCategories = processCategories()
+  const individualStandings = serieStandings.individual !== undefined ? processEvents(serieStandings.individual?.events, existingSerieResults?.individual?.events) : null
+  const teamStandings = serieStandings.team !== undefined ? processEvents(serieStandings.team?.events, existingSerieResults?.team?.events) : null
+
+  const updatedSerieResults: SerieStandings = {
+    hash: serieStandings.hash,
+    categories: processedCategories,
+    individual: individualStandings
+      ? { sourceUrls: serieStandings.individual!.sourceUrls, events: individualStandings.orderedEvents }
       : existingSerieResults?.individual,
-    team: serieResults.team !== undefined
-      ? { sourceUrls: serieResults.team.sourceUrls, categories: teamCategories.ordered }
+    team: teamStandings
+      ? { sourceUrls: serieStandings.team!.sourceUrls, events: teamStandings.orderedEvents }
       : existingSerieResults?.team,
   }
 
   try {
-    SerieResultsSchema.parse(updatedSerieResults)
+    SerieStandingsSchema.parse(updatedSerieResults)
   } catch (error) {
     throw new Error(`Validation failed for serie results with hash ${serieHash}: ${error}`)
   }
 
-  await RRS3.writeFile(filename, JSON.stringify(updatedSerieResults))
+  const publishedIndividualEvents = updatedSerieResults.individual?.events.filter(e => e.published) ?? []
+  const publishedTeamEvents = updatedSerieResults.team?.events.filter(e => e.published) ?? []
 
-  // Step 5: Create snapshots of the previous state of changed categories on manual saves
-  const hasChanges = individualCategories.withMetadata.length > 0 || teamCategories.withMetadata.length > 0
-  if (!skipSnapshot && updateSource === 'manual' && hasChanges) {
-    const previousIndividual = individualCategories.withMetadata
-    .map(c => existingSerieResults?.individual?.categories.find(e => e.alias === c.alias))
-    .filter(c => c !== undefined)
+  const draftIndividualEvents = updatedSerieResults.individual?.events.filter(e => !e.published) ?? []
+  const draftTeamEvents = updatedSerieResults.team?.events.filter(e => !e.published) ?? []
 
-    const previousTeam = teamCategories.withMetadata
-    .map(c => existingSerieResults?.team?.categories.find(e => e.alias === c.alias))
-    .filter(c => c !== undefined)
+  const publishedResult: SerieStandings = {
+    ...updatedSerieResults,
+    ...(updatedSerieResults.individual ? {
+      individual: { ...updatedSerieResults.individual, events: publishedIndividualEvents },
+    } : {}),
+    ...(updatedSerieResults.team ? {
+      team: { ...updatedSerieResults.team, events: publishedTeamEvents },
+    } : {}),
+  }
 
-    if (previousIndividual.length > 0 || previousTeam.length > 0) {
+  const draftResult: SerieStandings = {
+    ...updatedSerieResults,
+    ...(updatedSerieResults.individual ? {
+      individual: { ...updatedSerieResults.individual, events: draftIndividualEvents },
+    } : {}),
+    ...(updatedSerieResults.team ? {
+      team: { ...updatedSerieResults.team, events: draftTeamEvents },
+    } : {}),
+  }
+
+  // Compute serie-level standings summary
+  const allEvents = [
+    ...(updatedSerieResults.individual?.events ?? []),
+    ...(updatedSerieResults.team?.events ?? []),
+  ]
+  const allCategoryUpdatedAts = allEvents.flatMap(event =>
+    Object.values(event.categories).map(cat => cat.updatedAt).filter((date): date is string => !!date)
+  )
+  const standingsUpdatedAt = allCategoryUpdatedAts.length > 0
+    ? new Date(Math.max(...allCategoryUpdatedAts.map(date => new Date(date).getTime()))).toISOString()
+    : null
+  const hasPublishedEvents = allEvents.some(e => e.published)
+
+  await Promise.all([
+    RRS3.writeFile(publishedFilename, JSON.stringify(publishedResult)),
+    RRS3.writeFile(draftFilename, JSON.stringify(draftResult)),
+    updateSerieStandingsSummary(serieHash, year, { standingsUpdatedAt, hasPublishedEvents }),
+  ])
+
+  // Snapshots: capture previous state of changed events/categories on manual saves
+  if (!skipSnapshot && updateSource === 'manual') {
+    const previousIndividualEvents = individualStandings?.previousEvents ?? []
+    const previousTeamEvents = teamStandings?.previousEvents ?? []
+
+    if (previousIndividualEvents.length > 0 || previousTeamEvents.length > 0) {
       await createSerieResultsSnapshots(serieHash, year, {
-        individual: previousIndividual,
-        team: previousTeam,
+        previousIndividualEvents,
+        previousTeamEvents,
       }, userId, now)
     }
   }
 
-  return updatedSerieResults
+  return { serieStandings: updatedSerieResults, standingsUpdatedAt, hasPublishedEvents }
 }
 
 const createSerieResultsSnapshots = async (
   serieHash: string,
   year: number,
-  categories: { individual?: SerieIndividualCategory[], team?: SerieTeamCategory[] },
+  previous: { previousIndividualEvents: SerieIndividualEvent[], previousTeamEvents: SerieTeamEvent[] },
   userId: string,
   now: string,
 ): Promise<void> => {
-  const filename = `${SERIES_RESULTS_SNAPSHOTS_PATH}${year}/${serieHash}/${now}.json`
-
-  const excludedFields = ['createdAt', 'createdBy', 'updatedAt', 'updatedBy', 'userLocked']
+  const filename = `${SERIES_STANDINGS_SNAPSHOTS_PATH}${year}/${serieHash}/${now}.json`
 
   const snapshot: SerieResultsSnapshot = {
     hash: serieHash,
-    // @ts-ignore
-    individualCategories: (categories.individual ?? []).map(cat => omit(cat, excludedFields)),
-    // @ts-ignore
-    teamCategories: (categories.team ?? []).map(cat => omit(cat, excludedFields)),
+    previousIndividualEvents: previous.previousIndividualEvents,
+    previousTeamEvents: previous.previousTeamEvents,
     createdAt: now,
     createdBy: userId,
   }
@@ -267,24 +376,72 @@ const createSerieResultsSnapshots = async (
   await RRS3.writeFile(filename, JSON.stringify(snapshot))
 }
 
-export const deleteSerie = async (hash: string, year: number): Promise<void> => {
-  const publishedFilename = `${PUBLIC_BUCKET_PATHS.series}${year}.json`
-  // const draftFilename = `${DRAFT_SERIES_PATH}${year}.json`
-  const resultsFilename = `${PUBLIC_BUCKET_PATHS.seriesResults}${year}/${hash}.json`
+export const deleteSerieStandingEvent = async (serieHash: string, year: number, date: string): Promise<void> => {
+  const publishedFilename = PUBLIC_BUCKET_PATHS.seriesStandings + `${year}/${serieHash}.json`
+  const draftFilename = DRAFT_SERIES_STANDINGS_PATH + `${year}/${serieHash}.json`
 
-  const [publishedContent] = await Promise.all([
+  const [publishedContent, draftContent] = await Promise.all([
     RRS3.fetchFile(publishedFilename, true),
-    // RRS3.fetchFile(draftFilename, true),
+    RRS3.fetchFile(draftFilename, true),
   ])
 
+  const updates: Promise<void>[] = []
+
+  if (publishedContent) {
+    const published = JSON.parse(publishedContent) as SerieStandings
+    const updated: SerieStandings = {
+      ...published,
+      ...(published.individual ? {
+        individual: { ...published.individual, events: published.individual.events.filter(e => e.date !== date) },
+      } : {}),
+      ...(published.team ? {
+        team: { ...published.team, events: published.team.events.filter(e => e.date !== date) },
+      } : {}),
+    }
+    updates.push(RRS3.writeFile(publishedFilename, JSON.stringify(updated)))
+  }
+
+  if (draftContent) {
+    const draft = JSON.parse(draftContent) as SerieStandings
+    const updated: SerieStandings = {
+      ...draft,
+      ...(draft.individual ? {
+        individual: { ...draft.individual, events: draft.individual.events.filter(e => e.date !== date) },
+      } : {}),
+      ...(draft.team ? {
+        team: { ...draft.team, events: draft.team.events.filter(e => e.date !== date) },
+      } : {}),
+    }
+    updates.push(RRS3.writeFile(draftFilename, JSON.stringify(updated)))
+  }
+
+  await Promise.all(updates)
+}
+
+export const deleteSerie = async (hash: string, year: number): Promise<void> => {
+  const publishedFilename = `${PUBLIC_BUCKET_PATHS.series}${year}.json`
+  const resultsFilename = `${PUBLIC_BUCKET_PATHS.seriesStandings}${year}/${hash}.json`
+  const draftStandingsFilename = `${DRAFT_SERIES_STANDINGS_PATH}${year}/${hash}.json`
+
+  const publishedContent = await RRS3.fetchFile(publishedFilename, true)
   const publishedSeries = publishedContent ? (JSON.parse(publishedContent) as Serie[]).filter(s => s.hash !== hash) : []
-  // const draftSeries = draftContent ? (JSON.parse(draftContent) as Serie[]).filter(s => s.hash !== hash) : []
 
   await Promise.all([
     RRS3.writeFile(publishedFilename, JSON.stringify(publishedSeries)),
-    // RRS3.writeFile(draftFilename, JSON.stringify(draftSeries)),
     RRS3.deleteFile(resultsFilename),
+    RRS3.deleteFile(draftStandingsFilename),
   ])
+}
+
+const updateSerieStandingsSummary = async (
+  serieHash: string,
+  year: number,
+  patch: { standingsUpdatedAt: string | null, hasPublishedEvents: boolean },
+): Promise<void> => {
+  const seriesFilename = `${PUBLIC_BUCKET_PATHS.series}${year}.json`
+  const series = await loadSeriesForYear(year)
+  const updated = series.map(s => s.hash === serieHash ? { ...s, ...patch } : s)
+  await RRS3.writeFile(seriesFilename, JSON.stringify(updated))
 }
 
 export const loadSeriesForYear = async (

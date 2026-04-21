@@ -53,7 +53,7 @@ export default async ({ year, sourceHashes, forceOverwrite = false }: {
 
       return { events }
     } else if (type === 'serie') {
-      const serie = await cleanSerie(bundleWithPayloads, year)
+      const serie = await cleanSerie(bundleWithPayloads, year, forceOverwrite)
       return { serie }
     } else {
       logger.error(`Unsupported bundle type: ${type} for ${year}/${hash}`, {
@@ -184,17 +184,17 @@ const cleanSerie = async (
 
   const {
     serie,
-    serieResults
+    serieStandings
   } = await parseRawSerie(bundle, payloads as CrossMgrSerieRawData['payloads'])
 
   // If forceOverwrite is true, delete existing serie and results to ensure clean state before update
   if (forceOverwrite) await data.delete.serie(serie.hash, year)
 
-  await data.update.serieResults(serieResults, {
+  const { standingsUpdatedAt, hasPublishedEvents } = await data.update.serieStandings(serieStandings, {
     year,
     updateSource: 'ingest',
     userId: 'system-ingest-lambda'
   })
 
-  return serie
+  return { ...serie, standingsUpdatedAt, hasPublishedEvents }
 }

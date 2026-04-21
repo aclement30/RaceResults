@@ -1,12 +1,12 @@
 import { parse } from 'csv-parse/sync'
-import { sortBy } from 'lodash-es'
 import { formatCategoryAlias, transformCategoryLabel } from 'shared/categories'
 import defaultLogger from 'shared/logger.ts'
 import { TeamParser } from 'shared/team-parser'
 import type {
-  CreateSerieIndividualCategory,
-  CreateSerieResults,
-  ParticipantSerieResult,
+  BaseCategory,
+  ParticipantSerieEventResult,
+  SerieIndividualEvent,
+  SerieStandings,
   UpdateSerie,
 } from 'shared/types.ts'
 import { PROVIDER_NAME } from '../../../config.ts'
@@ -17,7 +17,7 @@ const logger = defaultLogger.child({ provider: PROVIDER_NAME })
 export const parseRawSerie = async (
   serieBundle: ManualImportSerieFile,
   payloads: ManualImportRawData['payloads'],
-): Promise<{ serie: UpdateSerie, serieResults: CreateSerieResults }> => {
+): Promise<{ serie: UpdateSerie, serieStandings: SerieStandings }> => {
   logger.info(`Importing serie results for: ${serieBundle.name}`)
 
   const serie: UpdateSerie = {
@@ -30,57 +30,67 @@ export const parseRawSerie = async (
     // Metadata
     provider: PROVIDER_NAME,
     updatedAt: serieBundle.lastUpdated,
-    published: true,
   }
 
-  const individualResultCategories: CreateSerieIndividualCategory[] = []
+  const individualCategories: BaseCategory[] = []
+  const allEvents: SerieIndividualEvent[] = []
 
   for (const importCategory of serieBundle.categories.individual ?? []) {
     const matchingFile = payloads[importCategory.filename]
 
     if (!matchingFile) throw new Error(`No matching file found for: ${importCategory.filename} (${importCategory.outputLabel})`)
 
-    const categoryIndividualResults = parseSerieIndividualResults(matchingFile, {
+    const categoryGender = importCategory.outputLabel.includes('Men') ? 'M' : importCategory.outputLabel.includes('Women') ? 'F' : 'X'
+    const categoryLabel = await transformCategoryLabel(importCategory.outputLabel)
+    const categoryAlias = formatCategoryAlias(importCategory.outputLabel)
+
+    individualCategories.push({
+      alias: categoryAlias,
+      label: categoryLabel,
+      gender: categoryGender,
+    })
+
+    const categoryEvents = parseSerieIndividualResults(matchingFile, {
       fields: serieBundle.fields,
       importCategory,
       year: serieBundle.year,
+      categoryAlias,
     })
-    const categoryGender = importCategory.outputLabel.includes('Men') ? 'M' : importCategory.outputLabel.includes('Women') ? 'F' : 'X'
-    const categoryLabel = await transformCategoryLabel(importCategory.outputLabel)
-    const alias = formatCategoryAlias(categoryLabel)
 
-    individualResultCategories.push({
-      alias,
-      label: categoryLabel,
-      gender: categoryGender,
-      results: categoryIndividualResults,
-      corrections: importCategory.corrections,
-      updatedAt: serieBundle.lastUpdated,
-    })
+    if (importCategory.corrections) {
+      // Add corrections as a note to last event in the category
+      const lastEvent = categoryEvents[categoryEvents.length - 1]
+      if (lastEvent) {
+        lastEvent.categories[categoryAlias].corrections = importCategory.corrections
+      }
+    }
+
+    allEvents.push(...categoryEvents)
   }
 
   return {
     serie,
-    serieResults: {
+    serieStandings: {
       hash: serie.hash,
+      categories: individualCategories,
       individual: {
-        categories: individualResultCategories,
+        events: allEvents,
         sourceUrls: serieBundle.sourceUrls || [],
       },
-      // team: teamResults,
     }
   }
 }
 
 const parseSerieIndividualResults = (
   csvData: string,
-  { fields, importCategory, year }:
+  { fields, importCategory, year, categoryAlias }:
   {
     fields: Record<string, string>,
     importCategory: ManualImportCategory,
     year: number,
+    categoryAlias: string,
   }
-): ParticipantSerieResult[] => {
+): SerieIndividualEvent[] => {
   logger.info(`Parsing serie individual results for ${importCategory.outputLabel}`)
 
   const inputRecords = parse(csvData, {
@@ -88,50 +98,71 @@ const parseSerieIndividualResults = (
     skip_empty_lines: true
   }) as Record<string, string>[]
 
-  // Transform records to series results
-  const serieResults: Omit<ParticipantSerieResult, 'position'>[] = inputRecords.map((record) => {
-    const shapedRecord: Record<string, any> = Object.keys(record).reduce((acc, inputField) => {
+  // Collect per-athlete data with racePoints keyed by date
+  type ParticipantStanding = Partial<Omit<ParticipantSerieEventResult, 'points'>> & {
+    racePoints: Record<string, number>
+  }
+
+  const combinedStandings: ParticipantStanding[] = inputRecords.map((record) => {
+    const racePoints: Record<string, number> = {}
+    const shapedRecord: Record<string, any> = {}
+
+    for (const inputField of Object.keys(record)) {
       const outputField = fields[inputField]
       const value = record[inputField]
 
       if (outputField) {
-        acc[outputField] = value
-      } else if (inputField.match(/^\d{4}\-(0[1-9]|1[012])\-(0[1-9]|[12][0-9]|3[01])$/)) {
-        if (!acc['racePoints']) acc['racePoints'] = {}
-        acc['racePoints'][inputField] = +value
+        shapedRecord[outputField] = value
+      } else if (inputField.match(/^\d{4}-(0[1-9]|1[012])-(0[1-9]|[12][0-9]|3[01])$/)) {
+        racePoints[inputField] = +value
       }
-
-      return acc
-    }, {} as Record<string, any>)
+    }
 
     const formattedUCIId = shapedRecord.uciId?.replace(/\s/g, '').trim()
     let team = TeamParser.parseTeamName(shapedRecord.team)
-    // If athlete has an override for the current year team, use that instead
     const teamOverride = TeamParser.getManualTeamForAthlete(formattedUCIId, year)
-    if (teamOverride) {
-      team = teamOverride
-    }
+    if (teamOverride) team = teamOverride
 
     return {
       participantId: shapedRecord.bibNumber?.toString(),
       bibNumber: shapedRecord.bibNumber ? +shapedRecord.bibNumber : undefined,
       firstName: shapedRecord.firstName,
       lastName: shapedRecord.lastName,
-      license: shapedRecord.license,
       uciId: formattedUCIId,
       team: team?.name,
-      totalPoints: +shapedRecord.totalPoints,
-      racePoints: shapedRecord.racePoints,
+      racePoints,
     }
   })
 
-  // Sort results in reverse order by total points (most point = first)
-  const sortedSerieResults = sortBy(serieResults, 'totalPoints')
-  .reverse()
-  .map((result, index) => ({
-    ...result,
-    position: index + 1,
-  }))
+  const standingsByDates: Record<string, SerieIndividualEvent> = {}
 
-  return sortedSerieResults
+  for (const combinedStanding of combinedStandings) {
+    for (const [eventDate, points] of Object.entries(combinedStanding.racePoints)) {
+      if (!standingsByDates[eventDate]) {
+        standingsByDates[eventDate] = {
+          date: eventDate,
+          categories: {},
+          published: true,
+        }
+      }
+
+      if (!standingsByDates[eventDate].categories[categoryAlias]) {
+        standingsByDates[eventDate].categories[categoryAlias] = {
+          standings: [],
+        }
+      }
+
+      standingsByDates[eventDate].categories[categoryAlias].standings.push({
+        participantId: combinedStanding.participantId!,
+        bibNumber: combinedStanding.bibNumber,
+        firstName: combinedStanding.firstName!,
+        lastName: combinedStanding.lastName!,
+        uciId: combinedStanding.uciId,
+        team: combinedStanding.team,
+        points,
+      })
+    }
+  }
+
+  return Object.values(standingsByDates)
 }

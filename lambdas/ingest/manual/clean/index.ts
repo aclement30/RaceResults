@@ -177,19 +177,19 @@ const cleanSerie = async (
 ): Promise<UpdateSerie> => {
   const {
     serie,
-    serieResults
+    serieStandings
   } = await parseRawSerie(bundle, payloads)
 
   // If forceOverwrite is true, delete existing serie and results to ensure clean state before update
   if (forceOverwrite) await data.delete.serie(serie.hash, year)
 
-  await data.update.serieResults(serieResults, {
+  const { standingsUpdatedAt, hasPublishedEvents } = await data.update.serieStandings(serieStandings, {
     year,
     updateSource: 'ingest',
     userId: 'system-ingest-lambda'
   })
 
-  return serie
+  return { ...serie, standingsUpdatedAt, hasPublishedEvents }
 }
 
 // Fetch reference file and linked payloads files
