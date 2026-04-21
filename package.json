@@ -37,6 +37,8 @@
     "react-simple-code-editor": "^0.14.1",
     "react-window": "^2.2.7",
     "short-hash": "^1.0.0",
+    "vite-plugin-node-polyfills": "^0.26.0",
+    "xlsx": "^0.18.5",
     "zod": "^4.3.6"
   },
   "devDependencies": {

@@ -1,16 +1,10 @@
 import { ActionIcon, Group, NumberInput, Select, Stack, Table, Text, TextInput, Tooltip } from '@mantine/core'
-import {
-  IconAlertCircle,
-  IconArrowBackUp,
-  IconChevronDown,
-  IconChevronUp,
-  IconTrash,
-  IconUserCheck
-} from '@tabler/icons-react'
+import { IconArrowBackUp, IconChevronDown, IconChevronUp, IconTrash, IconUserCheck } from '@tabler/icons-react'
 import React, { useContext, useEffect, useState } from 'react'
 import type { TParticipantStatus } from '../../../../../../shared/schemas/events'
 import { AdminContext } from '../../../../Shared/AdminContext'
 import { AthleteAutocomplete } from '../../../../Shared/AthleteAutocomplete/AthleteAutocomplete'
+import { InputErrorIcon } from '../../../../Shared/InputErrorIcon/InputErrorIcon'
 import { TeamAutocomplete } from '../../../../Shared/TeamAutocomplete/TeamAutocomplete'
 import { useFormChanges } from '../../../../utils/useFormChanges'
 import { ResultsFormContext } from '../ResultsFormContext'
@@ -38,15 +32,6 @@ const STATUS_OPTIONS = [
   { value: 'TC', label: 'TC' },
 ]
 
-const ErrorTooltip: React.FC<{ error: React.ReactNode }> = ({ error }) => {
-  if (!error) return null
-  return (
-    <Tooltip label={error} withArrow>
-      <IconAlertCircle size={14} color="var(--mantine-color-red-6)" style={{ cursor: 'default' }}/>
-    </Tooltip>
-  )
-}
-
 export const ResultRow = React.memo<ResultRowProps>(({
   participantId,
   index,
@@ -71,7 +56,11 @@ export const ResultRow = React.memo<ResultRowProps>(({
   const [teamName, setTeamName] = useState(() => initialResult?.team || '')
   const [status, setStatus] = useState<string | null>(() => initialResult?.status ?? 'FINISHER')
   const [isAthleteMatched, setIsAthleteMatched] = useState(
-    () => !!initialResult?.uciId && !!findAthlete({ uciId: initialResult.uciId })
+    () => !!findAthlete({
+      uciId: initialResult.uciId,
+      firstName: initialResult.firstName,
+      lastName: initialResult.lastName
+    })
   )
 
   // Reset locally controlled values when participantId changes
@@ -81,7 +70,11 @@ export const ResultRow = React.memo<ResultRowProps>(({
     setUciId(participant?.uciId || '')
     setTeamName(participant?.team || '')
     setStatus(participant?.status ?? 'FINISHER')
-    setIsAthleteMatched(!!participant?.uciId && !!findAthlete({ uciId: participant.uciId }))
+    setIsAthleteMatched(!!findAthlete({
+      uciId: initialResult.uciId,
+      firstName: initialResult.firstName,
+      lastName: initialResult.lastName
+    }))
   }, [participantId])
 
   const handleAthleteChange = ({ name, uciId }: { name?: string; uciId?: string }) => {
@@ -112,11 +105,8 @@ export const ResultRow = React.memo<ResultRowProps>(({
       if (!teamName?.length && matchingAthlete.teams[CURRENT_YEAR]) {
         form.setFieldValue(`results.${index}.team`, matchingAthlete.teams[CURRENT_YEAR].name)
         setTeamName(matchingAthlete.teams[CURRENT_YEAR].name!)
-        onValueChange()
       }
-
-      onValueChange()
-    } else if (name) {
+    } else if (name !== undefined) {
       const parts = name.trim().split(/\s+/) || []
       form.setFieldValue(`results.${index}.firstName`, parts[0] || '')
       form.setFieldValue(`results.${index}.lastName`, parts.slice(1).join(' ') || undefined)
@@ -201,7 +191,7 @@ export const ResultRow = React.memo<ResultRowProps>(({
             {...form.getInputProps(`results.${index}.bibNumber`)}
             error={undefined}
             rightSection={form.errors[`results.${index}.bibNumber`]
-              ? <ErrorTooltip error={form.errors[`results.${index}.bibNumber`]}/>
+              ? <InputErrorIcon error={form.errors[`results.${index}.bibNumber`]}/>
               : undefined}
             onBlur={() => {
               form.validateField(`results.${index}.bibNumber`)
@@ -220,7 +210,7 @@ export const ResultRow = React.memo<ResultRowProps>(({
           onBlur={() => form.validateField(`results.${index}.firstName`)}
           styles={getFieldStyles(['firstName', 'lastName'], !!form.errors[`results.${index}.firstName`])}
           rightSection={form.errors[`results.${index}.firstName`]
-            ? <ErrorTooltip error={form.errors[`results.${index}.firstName`]}/>
+            ? <InputErrorIcon error={form.errors[`results.${index}.firstName`]}/>
             : isAthleteMatched
               ? <IconUserCheck size={14} color="var(--mantine-color-green-6)"/>
               : undefined}
@@ -234,9 +224,7 @@ export const ResultRow = React.memo<ResultRowProps>(({
             maxLength={11}
             styles={getFieldStyles('uciId', !!form.errors[`results.${index}.uciId`])}
             value={uciId}
-            rightSection={form.errors[`results.${index}.uciId`]
-              ? <ErrorTooltip error={form.errors[`results.${index}.uciId`]}/>
-              : undefined}
+            rightSection={<InputErrorIcon error={form.errors[`results.${index}.uciId`]}/>}
             onChange={e => {
               setUciId(e.target.value)
               form.setFieldValue(`results.${index}.uciId`, e.target.value)
@@ -369,9 +357,7 @@ export const ResultRow = React.memo<ResultRowProps>(({
             styles={getFieldStyles('avgSpeed', !!form.errors[`results.${index}.avgSpeed`])}
             {...form.getInputProps(`results.${index}.avgSpeed`)}
             error={undefined}
-            rightSection={form.errors[`results.${index}.avgSpeed`]
-              ? <ErrorTooltip error={form.errors[`results.${index}.avgSpeed`]}/>
-              : undefined}
+            rightSection={<InputErrorIcon error={form.errors[`results.${index}.avgSpeed`]}/>}
             onChange={val => form.setFieldValue(
               `results.${index}.avgSpeed`,
               typeof val === 'number' && val > 0 ? val : undefined
@@ -392,9 +378,7 @@ export const ResultRow = React.memo<ResultRowProps>(({
             allowDeselect={false}
             data={STATUS_OPTIONS}
             styles={getFieldStyles('status', !!form.errors[`results.${index}.status`])}
-            rightSection={form.errors[`results.${index}.status`]
-              ? <ErrorTooltip error={form.errors[`results.${index}.status`]}/>
-              : undefined}
+            rightSection={<InputErrorIcon error={form.errors[`results.${index}.status`]}/>}
             onChange={handleStatusChange}
           />
         </Table.Td>

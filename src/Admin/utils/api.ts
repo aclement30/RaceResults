@@ -1,6 +1,6 @@
 import { User } from 'oidc-client-ts'
 import queryString from 'query-string'
-import type { IngestEvent } from '../../../lambdas/shared/types'
+import type { BaseSerieEvent, CreateSerie, IngestEvent } from '../../../lambdas/shared/types'
 import type {
   AdminUser,
   Athlete,
@@ -12,9 +12,12 @@ import type {
   Organizer,
   RaceEvent,
   Serie,
+  SerieIndividualEventCategory,
+  SerieStandings,
   Team,
   TeamRoster,
   UpdateEvent,
+  UpdateSerie,
 } from '../../../shared/types'
 
 import { COGNITO_AUTH_CONFIG, ENV } from './config'
@@ -100,14 +103,18 @@ export const adminApi = {
     athletes: async (): Promise<Athlete[]> => adminApiFetch('/admin/athletes'),
     athlete: async (athleteUciId: string): Promise<Athlete> => adminApiFetch(`/admin/athletes/${athleteUciId}`),
     athleteLookupTable: async (): Promise<Record<string, string>> => adminApiFetch('/admin/athletes/lookup-table'),
+    athletesOverrides: async (): Promise<{
+      alternateNames?: Record<string, string>
+    }> => adminApiFetch('/admin/athletes/overrides'),
     adminUsers: async (): Promise<AdminUser[]> => adminApiFetch('/admin/users'),
     organizers: async (): Promise<Organizer[]> => adminApiFetch('/admin/organizers'),
     teams: async (): Promise<Team[]> => adminApiFetch('/admin/teams'),
     teamRosters: async (): Promise<TeamRoster[]> => adminApiFetch('/admin/teams/rosters'),
-    events: async ({ year, eventHash }: {
+    events: async ({ year, eventHash, serieAlias }: {
       year?: number;
       eventHash?: string
-    }): Promise<RaceEvent[]> => adminApiFetch('/admin/events', { query: { year, eventHash } }),
+      serieAlias?: string
+    }): Promise<RaceEvent[]> => adminApiFetch('/admin/events', { query: { year, eventHash, serieAlias } }),
     event: async (
       year: number,
       eventHash: string
@@ -116,10 +123,17 @@ export const adminApi = {
       year: number,
       eventHash: string
     ): Promise<EventResults> => adminApiFetch(`/admin/events/${year}/${eventHash}/results`),
-    series: async ({ year, serieHash }: {
+    series: async ({ year }: {
       year?: number;
-      serieHash?: string
-    }): Promise<Serie[]> => adminApiFetch(`/admin/series?year=${year}&serieHash=${serieHash || ''}`),
+    }): Promise<Serie[]> => adminApiFetch(`/admin/series?year=${year}`),
+    serie: async (
+      year: number,
+      serieHash: string
+    ): Promise<Serie> => adminApiFetch(`/admin/series/${year}/${serieHash}`),
+    serieStandings: async (year: number, serieHash: string): Promise<SerieStandings> =>
+      adminApiFetch(`/admin/series/${year}/${serieHash}/standings`),
+    serieEvents: async (year: number, serieHash: string, type: 'individual' | 'team'): Promise<BaseSerieEvent[]> =>
+      adminApiFetch(`/admin/series/${year}/${serieHash}/${type}/events`),
     // lambdaProcessingLatestRuns: async (): Promise<{}> => adminApiFetch('/admin/lambdas/processing/latest-runs'),
     settingConfigFile: async (filename: string, env?: 'stage' | 'production'): Promise<any> => {
       let apiUrl: string = VITE_API_URL
@@ -157,12 +171,39 @@ export const adminApi = {
         body: team,
       })
     },
+    serie: async (serie: CreateSerie): Promise<Serie> => {
+      return adminApiFetch(`/admin/series`, {
+        method: 'POST',
+        body: serie,
+      })
+    },
+    serieStandingEvent: async (
+      year: number,
+      serieHash: string,
+      date: string,
+    ): Promise<BaseSerieEvent> => {
+      return adminApiFetch(`/admin/series/${year}/${serieHash}/standings/individual`, {
+        method: 'POST',
+        body: { date },
+      })
+    },
   },
   update: {
     athlete: async (athlete: Partial<Athlete> & { uciId: string }): Promise<void> => {
       await adminApiFetch(`/admin/athletes/${athlete.uciId}`, {
         method: 'PUT',
         body: athlete,
+      })
+    },
+    serie: async (year: number, serieHash: string, serie: UpdateSerie): Promise<Serie> => {
+      return adminApiFetch(`/admin/series/${year}/${serieHash}`, {
+        method: 'PUT',
+        body: serie,
+      })
+    },
+    serieLock: async (year: number, serieHash: string, locked: boolean): Promise<void> => {
+      await adminApiFetch(`/admin/series/${year}/${serieHash}/${locked ? 'lock' : 'unlock'}`, {
+        method: 'PATCH',
       })
     },
     event: async (eventHash: string, event: UpdateEvent & { date: string }): Promise<RaceEvent> => {
@@ -209,6 +250,51 @@ export const adminApi = {
         body: { aliases },
       })
     },
+    serieStandingCategories: async (
+      year: number,
+      serieHash: string,
+      categories: BaseCategory[]
+    ): Promise<BaseCategory[]> => {
+      return adminApiFetch(`/admin/series/${year}/${serieHash}/standings/categories`, {
+        method: 'PUT',
+        body: categories,
+      })
+    },
+    serieStandingEventPublished: async (
+      published: boolean,
+      { year, serieHash, date }: { year: number, serieHash: string, date: string }
+    ): Promise<void> => {
+      await adminApiFetch(`/admin/series/${year}/${serieHash}/standings/individual/${date}/${published ? 'publish' : 'unpublish'}`, {
+        method: 'PATCH',
+      })
+    },
+    serieStandingEventCategory: async (
+      category: SerieIndividualEventCategory,
+      {
+        year,
+        serieHash,
+        date,
+        categoryAlias
+      }: {
+        year: number,
+        serieHash: string,
+        date: string,
+        categoryAlias: string
+      }
+    ): Promise<SerieIndividualEventCategory> => {
+      return adminApiFetch(`/admin/series/${year}/${serieHash}/standings/individual/${date}/category/${categoryAlias}`, {
+        method: 'PATCH',
+        body: category,
+      })
+    },
+    serieStandingEventCategoryLock: async (
+      locked: boolean,
+      { year, serieHash, date, categoryAlias }: { year: number, serieHash: string, date: string, categoryAlias: string }
+    ): Promise<void> => {
+      await adminApiFetch(`/admin/series/${year}/${serieHash}/standings/individual/${date}/category/${categoryAlias}/${locked ? 'lock' : 'unlock'}`, {
+        method: 'PATCH',
+      })
+    },
     team: async (team: Partial<Team> & { id: number }): Promise<void> => {
       await adminApiFetch(`/admin/teams/${team.id}`, {
         method: 'PUT',
@@ -233,7 +319,7 @@ export const adminApi = {
     ): Promise<void> => adminApiFetch(`/admin/settings/config-files/${encodeS3Filename(filename)}`, {
       method: 'PUT',
       body: fileContent,
-    })
+    }),
   },
   delete: {
     event: async (year: number, eventHash: string): Promise<void> => {
@@ -246,6 +332,9 @@ export const adminApi = {
       return adminApiFetch(`/admin/events/${year}/${eventHash}/results/category/${categoryAlias}`, {
         method: 'DELETE',
       })
+    },
+    serieStandingEvent: async (year: number, serieHash: string, date: string): Promise<void> => {
+      await adminApiFetch(`/admin/series/${year}/${serieHash}/standings/individual/${date}`, { method: 'DELETE' })
     },
     team: async (teamId: number): Promise<void> => {
       await adminApiFetch(`/admin/teams/${teamId}`, { method: 'DELETE' })
