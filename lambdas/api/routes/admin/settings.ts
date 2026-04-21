@@ -1,3 +1,4 @@
+import { ResponseErrorSchema } from '../../types.ts'
 import { S3ServiceException } from '@aws-sdk/client-s3'
 import type { FastifyPluginAsync } from 'fastify'
 import type { ZodTypeProvider } from 'fastify-type-provider-zod'
@@ -14,10 +15,10 @@ export const settingRoutes: FastifyPluginAsync = async (fastify) => {
       }),
       response: {
         200: z.union([z.array(z.unknown()), z.record(z.string(), z.unknown())]),
-        400: z.object({ error: z.string() }),
-        403: z.object({ error: z.string() }),
-        404: z.object({ error: z.string() }),
-        500: z.object({ error: z.string() }),
+        400: ResponseErrorSchema,
+        403: ResponseErrorSchema,
+        404: ResponseErrorSchema,
+        500: ResponseErrorSchema,
       },
     },
   }, async (request, response) => {
@@ -55,8 +56,8 @@ export const settingRoutes: FastifyPluginAsync = async (fastify) => {
       body: z.union([z.array(z.unknown()), z.record(z.string(), z.unknown())]),
       response: {
         204: z.undefined(),
-        400: z.object({ error: z.string() }),
-        403: z.object({ error: z.string() }),
+        400: ResponseErrorSchema,
+        403: ResponseErrorSchema,
       },
     },
   }, async (request, response) => {

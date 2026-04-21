@@ -1,4 +1,7 @@
 import type { FastifyReply, FastifyRequest } from 'fastify'
+import { z } from 'zod'
+
+export const ResponseErrorSchema = z.object({ error: z.string() })
 
 declare module 'fastify' {
   interface FastifyRequest {

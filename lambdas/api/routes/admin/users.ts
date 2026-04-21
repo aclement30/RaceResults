@@ -18,7 +18,7 @@ export const userRoutes: FastifyPluginAsync = async (fastify) => {
     schema: {
       response: {
         200: z.array(AdminUserSchema),
-        403: z.object({ error: z.string() }),
+        403: ResponseErrorSchema,
       },
     },
   }, async (_request, _response) => {

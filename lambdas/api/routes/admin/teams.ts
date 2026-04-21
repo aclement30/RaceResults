@@ -1,3 +1,4 @@
+import { ResponseErrorSchema } from '../../types.ts'
 import type { FastifyPluginAsync } from 'fastify'
 import type { ZodTypeProvider } from 'fastify-type-provider-zod'
 import { keyBy, omit } from 'lodash-es'
@@ -25,8 +26,8 @@ export const teamRoutes: FastifyPluginAsync = async (fastify) => {
       body: CreateTeamSchema,
       response: {
         201: TeamSchema,
-        400: z.object({ error: z.string() }),
-        500: z.object({ error: z.string() }),
+        400: ResponseErrorSchema,
+        500: ResponseErrorSchema,
       },
     },
   }, async (request, response) => {
@@ -70,8 +71,8 @@ export const teamRoutes: FastifyPluginAsync = async (fastify) => {
       body: TeamSchema,
       response: {
         204: z.undefined(),
-        400: z.object({ error: z.string() }),
-        404: z.object({ error: z.string() }),
+        400: ResponseErrorSchema,
+        404: ResponseErrorSchema,
       },
     },
   }, async (request, response) => {
@@ -111,8 +112,8 @@ export const teamRoutes: FastifyPluginAsync = async (fastify) => {
       }),
       response: {
         204: z.undefined(),
-        400: z.object({ error: z.string() }),
-        404: z.object({ error: z.string() }),
+        400: ResponseErrorSchema,
+        404: ResponseErrorSchema,
       },
     },
   }, async (request, response) => {
@@ -140,8 +141,8 @@ export const teamRoutes: FastifyPluginAsync = async (fastify) => {
       }),
       response: {
         204: z.undefined(),
-        400: z.object({ error: z.string() }),
-        404: z.object({ error: z.string() }),
+        400: ResponseErrorSchema,
+        404: ResponseErrorSchema,
       },
     },
   }, async (request, response) => {
@@ -169,7 +170,7 @@ export const teamRoutes: FastifyPluginAsync = async (fastify) => {
       }),
       response: {
         200: z.array(TeamRosterSchema),
-        404: z.object({ error: z.string() }),
+        404: ResponseErrorSchema,
       },
     },
   }, async (request, response) => {
@@ -196,8 +197,8 @@ export const teamRoutes: FastifyPluginAsync = async (fastify) => {
       body: TeamRosterSchema,
       response: {
         204: z.undefined(),
-        400: z.object({ error: z.string() }),
-        404: z.object({ error: z.string() }),
+        400: ResponseErrorSchema,
+        404: ResponseErrorSchema,
       },
     },
   }, async (request, response) => {

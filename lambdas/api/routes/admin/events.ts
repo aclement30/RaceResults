@@ -1,3 +1,4 @@
+import { ResponseErrorSchema } from '../../types.ts'
 import type { FastifyPluginAsync } from 'fastify'
 import type { ZodTypeProvider } from 'fastify-type-provider-zod'
 import { omit } from 'lodash-es'
@@ -34,7 +35,7 @@ export const eventRoutes: FastifyPluginAsync = async (fastify) => {
       }),
       response: {
         200: z.array(RaceEventSchema),
-        403: z.object({ error: z.string() }),
+        403: ResponseErrorSchema,
       },
     },
   }, async (request, response) => {
@@ -63,8 +64,8 @@ export const eventRoutes: FastifyPluginAsync = async (fastify) => {
       }),
       response: {
         200: RaceEventSchema,
-        403: z.object({ error: z.string() }),
-        404: z.object({ error: z.string() }),
+        403: ResponseErrorSchema,
+        404: ResponseErrorSchema,
       },
     },
   }, async (request, response) => {
@@ -98,8 +99,8 @@ export const eventRoutes: FastifyPluginAsync = async (fastify) => {
       }),
       response: {
         200: EventResultsSchema,
-        403: z.object({ error: z.string() }),
-        404: z.object({ error: z.string() }),
+        403: ResponseErrorSchema,
+        404: ResponseErrorSchema,
       },
     },
   }, async (request, response) => {
@@ -146,9 +147,9 @@ export const eventRoutes: FastifyPluginAsync = async (fastify) => {
       body: BaseCategorySchema,
       response: {
         201: EventCategorySchema,
-        400: z.object({ error: z.string() }),
-        403: z.object({ error: z.string() }),
-        404: z.object({ error: z.string() }),
+        400: ResponseErrorSchema,
+        403: ResponseErrorSchema,
+        404: ResponseErrorSchema,
       },
     },
   }, async (request, response) => {
@@ -226,9 +227,9 @@ export const eventRoutes: FastifyPluginAsync = async (fastify) => {
       body: CreateEventCategorySchema,
       response: {
         200: EventCategorySchema,
-        400: z.object({ error: z.string() }),
-        403: z.object({ error: z.string() }),
-        404: z.object({ error: z.string() }),
+        400: ResponseErrorSchema,
+        403: ResponseErrorSchema,
+        404: ResponseErrorSchema,
       },
     },
   }, async (request, response) => {
@@ -303,9 +304,9 @@ export const eventRoutes: FastifyPluginAsync = async (fastify) => {
       body: z.object({ aliases: z.array(z.string()) }),
       response: {
         204: z.undefined(),
-        400: z.object({ error: z.string() }),
-        403: z.object({ error: z.string() }),
-        404: z.object({ error: z.string() }),
+        400: ResponseErrorSchema,
+        403: ResponseErrorSchema,
+        404: ResponseErrorSchema,
       },
     },
   }, async (request, response) => {
@@ -362,8 +363,8 @@ export const eventRoutes: FastifyPluginAsync = async (fastify) => {
       }),
       response: {
         204: z.undefined(),
-        403: z.object({ error: z.string() }),
-        404: z.object({ error: z.string() }),
+        403: ResponseErrorSchema,
+        404: ResponseErrorSchema,
       },
     },
   }, async (request, response) => {
@@ -431,8 +432,8 @@ export const eventRoutes: FastifyPluginAsync = async (fastify) => {
       }),
       response: {
         204: z.undefined(),
-        403: z.object({ error: z.string() }),
-        404: z.object({ error: z.string() }),
+        403: ResponseErrorSchema,
+        404: ResponseErrorSchema,
       },
     },
   }, async (request, response) => {
@@ -495,11 +496,11 @@ export const eventRoutes: FastifyPluginAsync = async (fastify) => {
       body: CreateEventSchema,
       response: {
         201: RaceEventSchema,
-        400: z.object({ error: z.string() }),
-        403: z.object({ error: z.string() }),
-        404: z.object({ error: z.string() }),
-        409: z.object({ error: z.string() }),
-        500: z.object({ error: z.string() }),
+        400: ResponseErrorSchema,
+        403: ResponseErrorSchema,
+        404: ResponseErrorSchema,
+        409: ResponseErrorSchema,
+        500: ResponseErrorSchema,
       },
     },
   }, async (request, response) => {
@@ -561,8 +562,8 @@ export const eventRoutes: FastifyPluginAsync = async (fastify) => {
       }),
       response: {
         204: z.undefined(),
-        403: z.object({ error: z.string() }),
-        404: z.object({ error: z.string() }),
+        403: ResponseErrorSchema,
+        404: ResponseErrorSchema,
       },
     },
   }, async (request, response) => {
@@ -612,9 +613,9 @@ export const eventRoutes: FastifyPluginAsync = async (fastify) => {
       body: UpdateEventSchema,
       response: {
         200: RaceEventSchema,
-        403: z.object({ error: z.string() }),
-        404: z.object({ error: z.string() }),
-        409: z.object({ error: z.string() }),
+        403: ResponseErrorSchema,
+        404: ResponseErrorSchema,
+        409: ResponseErrorSchema,
       },
     },
   }, async (request, response) => {
@@ -669,9 +670,9 @@ export const eventRoutes: FastifyPluginAsync = async (fastify) => {
       }),
       response: {
         204: z.undefined(),
-        400: z.object({ error: z.string() }),
-        403: z.object({ error: z.string() }),
-        404: z.object({ error: z.string() }),
+        400: ResponseErrorSchema,
+        403: ResponseErrorSchema,
+        404: ResponseErrorSchema,
       },
     },
   }, async (request, response) => {

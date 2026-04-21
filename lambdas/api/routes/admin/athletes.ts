@@ -6,6 +6,7 @@ import type { Athlete, TeamRoster } from 'shared/types.ts'
 import z from 'zod'
 import { AthleteSchema, UpdateAthleteSchema } from '../../../../shared/schemas/athletes.ts'
 import { createViewAthletes } from '../../../processing/views/athletes.ts'
+import { ResponseErrorSchema } from '../../types.ts'
 
 const CURRENT_YEAR = new Date().getFullYear()
 
@@ -27,7 +28,7 @@ export const athleteRoutes: FastifyPluginAsync = async (fastify) => {
       }),
       response: {
         200: AthleteSchema,
-        404: z.object({ error: z.string() }),
+        404: ResponseErrorSchema,
       },
     }
   }, async (request, response) => {
@@ -52,6 +53,16 @@ export const athleteRoutes: FastifyPluginAsync = async (fastify) => {
     }
   }, async () => data.get.athletesLookup())
 
+  fastify.withTypeProvider<ZodTypeProvider>().get('/athletes/overrides', {
+    preHandler: [fastify.requireRaceDirector],
+    schema: {
+      response: {
+        // TODO: Define a proper schema for athlete overrides instead of using z.any()
+        200: z.record(z.string(), z.any()),
+      },
+    }
+  }, async () => data.get.athletesOverrides())
+
   fastify.withTypeProvider<ZodTypeProvider>().put('/athletes/:athleteUciId', {
     preHandler: [fastify.requireSuperAdmin],
     schema: {
@@ -61,7 +72,7 @@ export const athleteRoutes: FastifyPluginAsync = async (fastify) => {
       body: UpdateAthleteSchema,
       response: {
         200: AthleteSchema,
-        404: z.object({ error: z.string() }),
+        404: ResponseErrorSchema,
       },
     }
   }, async (request, response) => {
