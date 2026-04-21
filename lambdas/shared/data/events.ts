@@ -22,6 +22,7 @@ export const getEvents = async (filters: {
   eventHashes?: string[]
   location?: { country: string, province: string }
   organizerAlias?: string
+  serieAlias?: string
 }, options: { summary?: boolean, includeDrafts?: boolean } = {}): Promise<RaceEvent[] | EventSummary[]> => {
   if (!options?.summary && typeof options.summary === 'undefined') options.summary = true
 
@@ -40,6 +41,10 @@ export const getEvents = async (filters: {
 
   if (filters.organizerAlias) {
     filteredEventFiles = filteredEventFiles.filter(event => event.organizerAlias === filters.organizerAlias)
+  }
+
+  if (filters.serieAlias) {
+    filteredEventFiles = filteredEventFiles.filter(event => event.serie === filters.serieAlias)
   }
 
   return filteredEventFiles
@@ -212,8 +217,8 @@ export const updateEventResults = async (
   // Step 5: Create snapshots of the previous state of changed categories on manual saves
   if (!skipSnapshot && updateSource === 'manual' && categoriesWithMetadata.length > 0) {
     const previousCategories = categoriesWithMetadata
-      .map(c => existingEventResults?.categories.find(e => e.alias === c.alias))
-      .filter(c => c !== undefined)
+    .map(c => existingEventResults?.categories.find(e => e.alias === c.alias))
+    .filter(c => c !== undefined)
 
     if (previousCategories.length > 0) {
       await createEventResultsSnapshots(eventHash, year, previousCategories, userId, now)
@@ -298,6 +303,7 @@ export const loadEventsForYear = async (
     'year',
     'date',
     'provider',
+    'serie',
     'name',
     'location',
     'sanctionedEventType',

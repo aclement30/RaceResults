@@ -16,7 +16,7 @@ export type AthleteSkillCategory = {
 }
 
 export type EventSummary =
-  Pick<RaceEvent, 'hash' | 'date' | 'sanctionedEventType' | 'name' | 'discipline' | 'organizerAlias' | 'location'>
+  Pick<RaceEvent, 'hash' | 'date' | 'serie' | 'sanctionedEventType' | 'name' | 'discipline' | 'organizerAlias' | 'location'>
 
 export type AthleteUpgradeDate = {
   athleteUciId: string,
