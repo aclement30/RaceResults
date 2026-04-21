@@ -6,6 +6,7 @@ export const ResponseErrorSchema = z.object({ error: z.string() })
 declare module 'fastify' {
   interface FastifyRequest {
     user?: CognitoUser;
+    organizerAlias: string | null;
   }
 
   interface FastifyInstance {

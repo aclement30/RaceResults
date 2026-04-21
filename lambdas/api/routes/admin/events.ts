@@ -3,9 +3,9 @@ import type { FastifyPluginAsync } from 'fastify'
 import type { ZodTypeProvider } from 'fastify-type-provider-zod'
 import { omit } from 'lodash-es'
 import { nanoid } from 'nanoid'
+import { publishRaceEventChange } from 'shared/aws-sns.ts'
 
 import data from 'shared/data.ts'
-import { publishRaceEventChange } from 'shared/aws-sns.ts'
 import type {
   CreateEvent,
   CreateEventCategory,
@@ -24,14 +24,15 @@ import {
   RaceEventSchema,
   UpdateEventSchema
 } from '../../../../shared/schemas/events.ts'
-import { isSuperAdmin } from '../../utils/isSuperAdmin.ts'
+import { requireOrganizerAccess } from '../../utils/requireOrganizerAccess.ts'
 
 export const eventRoutes: FastifyPluginAsync = async (fastify) => {
   fastify.withTypeProvider<ZodTypeProvider>().get('/events', {
-    preHandler: [fastify.requireRaceDirector],
+    preHandler: [fastify.requireRaceDirector, requireOrganizerAccess],
     schema: {
       querystring: z.object({
         year: z.string(),
+        serieAlias: z.string().optional(),
       }),
       response: {
         200: z.array(RaceEventSchema),
@@ -39,16 +40,11 @@ export const eventRoutes: FastifyPluginAsync = async (fastify) => {
       },
     },
   }, async (request, response) => {
-    const { year } = request.query
+    const { year, serieAlias } = request.query
 
-    const organizerAlias = request.user?.['custom:organizer_alias']
-    if (!organizerAlias && !isSuperAdmin(request)) {
-      response.status(403).send({ error: 'Access denied. Organizer alias required for non-superadmin users.' })
-    }
+    const filters: { year: number, organizerAlias?: string, serieAlias?: string } = { year: +year, serieAlias }
 
-    const filters: { year: number, organizerAlias?: string } = { year: +year }
-
-    if (!isSuperAdmin(request) && organizerAlias) filters.organizerAlias = organizerAlias
+    if (request.organizerAlias) filters.organizerAlias = request.organizerAlias
 
     const events = await data.get.events(filters, { summary: false }) as RaceEvent[]
 
@@ -56,7 +52,7 @@ export const eventRoutes: FastifyPluginAsync = async (fastify) => {
   })
 
   fastify.withTypeProvider<ZodTypeProvider>().get('/events/:year/:eventHash', {
-    preHandler: [fastify.requireRaceDirector],
+    preHandler: [fastify.requireRaceDirector, requireOrganizerAccess],
     schema: {
       params: z.object({
         year: z.string(),
@@ -71,14 +67,9 @@ export const eventRoutes: FastifyPluginAsync = async (fastify) => {
   }, async (request, response) => {
     const { year, eventHash } = request.params
 
-    const organizerAlias = request.user?.['custom:organizer_alias']
-    if (!organizerAlias && !isSuperAdmin(request)) {
-      response.status(403).send({ error: 'Access denied. Organizer alias required for non-superadmin users.' })
-    }
-
     const filters: { year: number, eventHash: string, organizerAlias?: string } = { year: +year, eventHash }
 
-    if (!isSuperAdmin(request) && organizerAlias) filters.organizerAlias = organizerAlias
+    if (request.organizerAlias) filters.organizerAlias = request.organizerAlias
 
     const [event] = await data.get.events(filters, { summary: false }) as RaceEvent[]
 
@@ -91,7 +82,7 @@ export const eventRoutes: FastifyPluginAsync = async (fastify) => {
   })
 
   fastify.withTypeProvider<ZodTypeProvider>().get('/events/:year/:eventHash/results', {
-    preHandler: [fastify.requireRaceDirector],
+    preHandler: [fastify.requireRaceDirector, requireOrganizerAccess],
     schema: {
       params: z.object({
         year: z.string(),
@@ -106,14 +97,9 @@ export const eventRoutes: FastifyPluginAsync = async (fastify) => {
   }, async (request, response) => {
     const { year, eventHash } = request.params
 
-    const organizerAlias = request.user?.['custom:organizer_alias']
-    if (!organizerAlias && !isSuperAdmin(request)) {
-      response.status(403).send({ error: 'Access denied. Organizer alias required for non-superadmin users.' })
-    }
-
     const filters: { year: number, eventHash: string, organizerAlias?: string } = { year: +year, eventHash }
 
-    if (!isSuperAdmin(request) && organizerAlias) filters.organizerAlias = organizerAlias
+    if (request.organizerAlias) filters.organizerAlias = request.organizerAlias
 
     const [event, eventResults] = await Promise.all([
       // We need to fetch the event again to check if it exists and the user has access to it
@@ -125,6 +111,7 @@ export const eventRoutes: FastifyPluginAsync = async (fastify) => {
       response.status(404).send({ error: 'Event not found' })
       return
     }
+
     if (!eventResults) {
       // If results are not found, we return an empty results object.
       // This can happen when an event is first created and results have not been uploaded yet.
@@ -138,7 +125,7 @@ export const eventRoutes: FastifyPluginAsync = async (fastify) => {
   })
 
   fastify.withTypeProvider<ZodTypeProvider>().post('/events/:year/:eventHash/results/category', {
-    preHandler: [fastify.requireRaceDirector],
+    preHandler: [fastify.requireRaceDirector, requireOrganizerAccess],
     schema: {
       params: z.object({
         year: z.string(),
@@ -156,14 +143,9 @@ export const eventRoutes: FastifyPluginAsync = async (fastify) => {
     const { year, eventHash } = request.params
     const categoryData = omit(request.body, ['createdAt', 'updatedAt'])
 
-    const organizerAlias = request.user?.['custom:organizer_alias']
-    if (!organizerAlias && !isSuperAdmin(request)) {
-      response.status(403).send({ error: 'Access denied. Organizer alias required for non-superadmin users.' })
-    }
-
     const filters: { year: number, eventHash: string, organizerAlias?: string } = { year: +year, eventHash }
 
-    if (!isSuperAdmin(request) && organizerAlias) filters.organizerAlias = organizerAlias
+    if (request.organizerAlias) filters.organizerAlias = request.organizerAlias
 
     const [
       [existingEvent],
@@ -217,7 +199,7 @@ export const eventRoutes: FastifyPluginAsync = async (fastify) => {
   })
 
   fastify.withTypeProvider<ZodTypeProvider>().patch('/events/:year/:eventHash/results/category/:categoryAlias', {
-    preHandler: [fastify.requireRaceDirector],
+    preHandler: [fastify.requireRaceDirector, requireOrganizerAccess],
     schema: {
       params: z.object({
         year: z.string(),
@@ -236,14 +218,9 @@ export const eventRoutes: FastifyPluginAsync = async (fastify) => {
     const { year, eventHash } = request.params
     const categoryData = omit(request.body, ['createdAt', 'updatedAt'])
 
-    const organizerAlias = request.user?.['custom:organizer_alias']
-    if (!organizerAlias && !isSuperAdmin(request)) {
-      response.status(403).send({ error: 'Access denied. Organizer alias required for non-superadmin users.' })
-    }
-
     const filters: { year: number, eventHash: string, organizerAlias?: string } = { year: +year, eventHash }
 
-    if (!isSuperAdmin(request) && organizerAlias) filters.organizerAlias = organizerAlias
+    if (request.organizerAlias) filters.organizerAlias = request.organizerAlias
 
     const [
       [existingEvent],
@@ -295,7 +272,7 @@ export const eventRoutes: FastifyPluginAsync = async (fastify) => {
   })
 
   fastify.withTypeProvider<ZodTypeProvider>().patch('/events/:year/:eventHash/results/categories/order', {
-    preHandler: [fastify.requireRaceDirector],
+    preHandler: [fastify.requireRaceDirector, requireOrganizerAccess],
     schema: {
       params: z.object({
         year: z.string(),
@@ -313,14 +290,8 @@ export const eventRoutes: FastifyPluginAsync = async (fastify) => {
     const { year, eventHash } = request.params
     const { aliases } = request.body
 
-    const organizerAlias = request.user?.['custom:organizer_alias']
-    if (!organizerAlias && !isSuperAdmin(request)) {
-      response.status(403).send({ error: 'Access denied. Organizer alias required for non-superadmin users.' })
-      return
-    }
-
     const filters: { year: number, eventHash: string, organizerAlias?: string } = { year: +year, eventHash }
-    if (!isSuperAdmin(request) && organizerAlias) filters.organizerAlias = organizerAlias
+    if (request.organizerAlias) filters.organizerAlias = request.organizerAlias
 
     const [[existingEvent], existingEventResult] = await Promise.all([
       data.get.events(filters, { summary: false }),
@@ -353,7 +324,7 @@ export const eventRoutes: FastifyPluginAsync = async (fastify) => {
   })
 
   fastify.withTypeProvider<ZodTypeProvider>().patch('/events/:year/:eventHash/results/category/:categoryAlias/:locked', {
-    preHandler: [fastify.requireRaceDirector],
+    preHandler: [fastify.requireRaceDirector, requireOrganizerAccess],
     schema: {
       params: z.object({
         year: z.string(),
@@ -371,14 +342,9 @@ export const eventRoutes: FastifyPluginAsync = async (fastify) => {
     const { year, eventHash, categoryAlias, locked: lockedString } = request.params
     const userLocked = lockedString === 'lock'
 
-    const organizerAlias = request.user?.['custom:organizer_alias']
-    if (!organizerAlias && !isSuperAdmin(request)) {
-      response.status(403).send({ error: 'Access denied. Organizer alias required for non-superadmin users.' })
-    }
-
     const filters: { year: number, eventHash: string, organizerAlias?: string } = { year: +year, eventHash }
 
-    if (!isSuperAdmin(request) && organizerAlias) filters.organizerAlias = organizerAlias
+    if (request.organizerAlias) filters.organizerAlias = request.organizerAlias
 
     const [
       [existingEvent],
@@ -423,7 +389,7 @@ export const eventRoutes: FastifyPluginAsync = async (fastify) => {
   })
 
   fastify.withTypeProvider<ZodTypeProvider>().delete('/events/:year/:eventHash/results/category/:categoryAlias', {
-    preHandler: [fastify.requireRaceDirector],
+    preHandler: [fastify.requireRaceDirector, requireOrganizerAccess],
     schema: {
       params: z.object({
         year: z.string(),
@@ -439,14 +405,9 @@ export const eventRoutes: FastifyPluginAsync = async (fastify) => {
   }, async (request, response) => {
     const { year, eventHash, categoryAlias } = request.params
 
-    const organizerAlias = request.user?.['custom:organizer_alias']
-    if (!organizerAlias && !isSuperAdmin(request)) {
-      response.status(403).send({ error: 'Access denied. Organizer alias required for non-superadmin users.' })
-    }
-
     const filters: { year: number, eventHash: string, organizerAlias?: string } = { year: +year, eventHash }
 
-    if (!isSuperAdmin(request) && organizerAlias) filters.organizerAlias = organizerAlias
+    if (request.organizerAlias) filters.organizerAlias = request.organizerAlias
 
     const [
       [existingEvent],
@@ -491,7 +452,7 @@ export const eventRoutes: FastifyPluginAsync = async (fastify) => {
   })
 
   fastify.withTypeProvider<ZodTypeProvider>().post('/events', {
-    preHandler: [fastify.requireRaceDirector],
+    preHandler: [fastify.requireRaceDirector, requireOrganizerAccess],
     schema: {
       body: CreateEventSchema,
       response: {
@@ -507,12 +468,7 @@ export const eventRoutes: FastifyPluginAsync = async (fastify) => {
     const eventData = request.body
     const eventYear = +eventData.date.slice(0, 4)
 
-    const organizerAlias = request.user?.['custom:organizer_alias']
-    if (!organizerAlias && !isSuperAdmin(request)) {
-      response.status(403).send({ error: 'Access denied. Organizer alias required for non-superadmin users.' })
-    }
-
-    if (!isSuperAdmin(request) && eventData.organizerAlias !== organizerAlias) {
+    if (request.organizerAlias && eventData.organizerAlias !== request.organizerAlias) {
       response.status(400).send({ error: 'Invalid organizer alias' })
     }
 
@@ -553,7 +509,7 @@ export const eventRoutes: FastifyPluginAsync = async (fastify) => {
   })
 
   fastify.withTypeProvider<ZodTypeProvider>().patch('/events/:year/:eventHash/:action', {
-    preHandler: [fastify.requireRaceDirector],
+    preHandler: [fastify.requireRaceDirector, requireOrganizerAccess],
     schema: {
       params: z.object({
         year: z.string(),
@@ -569,14 +525,8 @@ export const eventRoutes: FastifyPluginAsync = async (fastify) => {
   }, async (request, response) => {
     const { year, eventHash, action } = request.params
 
-    const organizerAlias = request.user?.['custom:organizer_alias']
-    if (!organizerAlias && !isSuperAdmin(request)) {
-      response.status(403).send({ error: 'Access denied. Organizer alias required for non-superadmin users.' })
-      return
-    }
-
     const filters: { year: number, eventHash: string, organizerAlias?: string } = { year: +year, eventHash }
-    if (!isSuperAdmin(request) && organizerAlias) filters.organizerAlias = organizerAlias
+    if (request.organizerAlias) filters.organizerAlias = request.organizerAlias
 
     const [existingEvent] = await data.get.events(filters, { summary: false })
 
@@ -604,7 +554,7 @@ export const eventRoutes: FastifyPluginAsync = async (fastify) => {
   })
 
   fastify.withTypeProvider<ZodTypeProvider>().put('/events/:year/:eventHash', {
-    preHandler: [fastify.requireRaceDirector],
+    preHandler: [fastify.requireRaceDirector, requireOrganizerAccess],
     schema: {
       params: z.object({
         year: z.string(),
@@ -622,14 +572,9 @@ export const eventRoutes: FastifyPluginAsync = async (fastify) => {
     const { year, eventHash } = request.params
     const eventData = request.body
 
-    const organizerAlias = request.user?.['custom:organizer_alias']
-    if (!organizerAlias && !isSuperAdmin(request)) {
-      response.status(403).send({ error: 'Access denied. Organizer alias required for non-superadmin users.' })
-    }
-
     const filters: { year: number, eventHash: string, organizerAlias?: string } = { year: +year, eventHash }
 
-    if (!isSuperAdmin(request) && organizerAlias) filters.organizerAlias = organizerAlias
+    if (request.organizerAlias) filters.organizerAlias = request.organizerAlias
 
     const [existingEvent] = await data.get.events(filters, { summary: false }) as RaceEvent[]
 
