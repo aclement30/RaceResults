@@ -1,12 +1,14 @@
-import { Text } from '@mantine/core'
+import { Stack, Text } from '@mantine/core'
 import { IconDatabaseOff } from '@tabler/icons-react'
+import React from 'react'
 
 type EmptyStateProps = {
   icon?: React.ReactNode
-  children?: React.ReactNode
+  text?: React.ReactNode
+  button?: React.ReactNode
 }
 
-export const EmptyState: React.FC<EmptyStateProps> = ({ icon, children }) => {
+export const EmptyState: React.FC<EmptyStateProps> = ({ icon, text, button }) => {
   return (<div style={{
     flexDirection: 'column',
     display: 'flex',
@@ -15,21 +17,29 @@ export const EmptyState: React.FC<EmptyStateProps> = ({ icon, children }) => {
     padding: '2rem',
     margin: '0 auto',
   }}>
-    <div style={{
-      display: 'flex',
-      flexDirection: 'column',
-      alignItems: 'center',
-      justifyContent: 'center',
-      backgroundColor: '#e9ecef',
-      borderRadius: '50%',
-      width: 50,
-      height: 50,
-      color: 'grey',
-      marginBottom: '0.5rem',
-    }}>
-      {icon || (<IconDatabaseOff/>)}
-    </div>
+    <Stack align="center" gap="sm">
+      <div style={{
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center',
+        justifyContent: 'center',
+        backgroundColor: '#e9ecef',
+        borderRadius: '50%',
+        width: 50,
+        height: 50,
+        color: 'grey',
+        marginBottom: '0.5rem',
+      }}>
+        {icon || (<IconDatabaseOff/>)}
+      </div>
 
-    <Text c="dimmed" size="sm">{children || 'No records'}</Text>
+      {typeof text === 'string' ? (
+        <Text c="dimmed" size="sm">{text || 'No records'}</Text>
+      ) : (
+        text
+      )}
+
+      {button}
+    </Stack>
   </div>)
 }

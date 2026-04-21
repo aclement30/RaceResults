@@ -1,15 +1,11 @@
-import {
-  Alert,
-  Anchor,
-  Table, Text,
-} from '@mantine/core'
-import { useContext, useMemo } from 'react'
+import { Alert, Anchor, Table, Text, } from '@mantine/core'
 import * as React from 'react'
-import { EmptyState } from '../../Shared/EmptyState'
+import { useContext, useMemo } from 'react'
+import type { Athlete, RecentlyUpgradedAthletes } from '../../../shared/types'
 import { AppContext } from '../../AppContext'
 import { renderSkillLevelWithAgeCategory } from '../../Athlete/utils'
+import { EmptyState } from '../../Shared/EmptyState'
 import { useNavigator } from '../../utils/useNavigator'
-import type { Athlete, RecentlyUpgradedAthletes } from '../../../shared/types'
 
 const currentYear = new Date().getFullYear()
 
@@ -90,7 +86,7 @@ export const RecentlyUpgradedAthletesTable: React.FC<RecentlyUpgradedAthletesTab
             <Table.Tbody>{rows}</Table.Tbody>
           </Table>
         ) : (
-          <EmptyState>No recently upgraded athletes</EmptyState>
+          <EmptyState text="No recently upgraded athletes"/>
         )}
       </div>
 

@@ -1,18 +1,22 @@
-import * as React from 'react'
 import {
   Autocomplete,
   type AutocompleteProps,
-  type ComboboxItem, Group, Highlight, type OptionsFilter,
+  type ComboboxItem,
+  Group,
+  Highlight,
+  type OptionsFilter,
   Stack,
-  type Styles, Text,
+  type Styles,
+  Text,
   useMatches
 } from '@mantine/core'
+import { useFocusTrap } from '@mantine/hooks'
 import { IconSearch, IconStarFilled, IconUserOff } from '@tabler/icons-react'
+import * as React from 'react'
 import { useCallback, useContext, useMemo, useState } from 'react'
 import { AppContext } from '../AppContext'
-import { EmptyState } from './EmptyState'
-import { useFocusTrap } from '@mantine/hooks'
 import { UserFavoriteContext } from '../UserFavoriteContext'
+import { EmptyState } from './EmptyState'
 
 type AthleteSearchFieldProps = {
   onSelect(athleteUciId: string): void
@@ -176,7 +180,7 @@ export const AthleteSearchField: React.FC<AthleteSearchFieldProps> = ({
         display: autocompleteProps.emptyState && searchValue?.length ? 'flex' : 'none',
         alignItems: 'center'
       }}>
-        <EmptyState icon={<IconUserOff/>}>No athlete found</EmptyState>
+        <EmptyState icon={<IconUserOff/>} text="No athlete found"/>
       </div>
     </div>
   )

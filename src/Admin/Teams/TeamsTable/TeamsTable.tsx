@@ -1,14 +1,14 @@
-import { ActionIcon, Anchor, Group, Table, Pagination, Text } from '@mantine/core'
-import { useMemo, useState } from 'react'
-import * as React from 'react'
+import { ActionIcon, Anchor, Group, Pagination, Table, Text } from '@mantine/core'
 import { modals } from '@mantine/modals'
-import { IconPencil, IconExternalLink, IconSquareX, IconRestore } from '@tabler/icons-react'
+import { IconExternalLink, IconPencil, IconRestore, IconSquareX } from '@tabler/icons-react'
+import * as React from 'react'
+import { useMemo, useState } from 'react'
 import { useNavigate } from 'react-router'
+import type { Team, TeamRoster } from '../../../../shared/types'
 import { EmptyState } from '../../../Shared/EmptyState'
 import { SearchField } from '../../../Shared/SearchField'
-import type { Team, TeamRoster } from '../../../../shared/types'
-import { adminApi } from '../../utils/api'
 import { showErrorMessage } from '../../../utils/showErrorMessage'
+import { adminApi } from '../../utils/api'
 
 type TeamsTableProps = {
   teams: Team[]
@@ -166,7 +166,7 @@ export const TeamsTable: React.FC<TeamsTableProps> = ({ teams, teamRosters, onCh
             />
           </>
         ) : (
-          <EmptyState>No teams matching the selected filters</EmptyState>
+          <EmptyState text="No teams matching the selected filters"/>
         )}
       </div>
     </>
