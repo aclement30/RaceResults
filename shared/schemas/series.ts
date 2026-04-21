@@ -10,12 +10,13 @@ export const SerieSchema = z.object({
   types: z.array(z.enum(['individual', 'team'])),
   source: z.enum(['ingest', 'manual']),
   provider: z.string().optional(),
-  published: z.boolean(),
   userLocked: z.boolean().optional(),
   createdAt: z.string(),
   createdBy: z.string(),
   updatedBy: z.string().nullable(),
   updatedAt: z.string().nullable(),
+  standingsUpdatedAt: z.string().nullable().optional(),
+  hasPublishedEvents: z.boolean().optional(),
 })
 
 export const UpdateSerieSchema = SerieSchema
@@ -35,111 +36,73 @@ export const CreateSerieSchema = UpdateSerieSchema
   hash: true,
 })
 
-export const ParticipantSerieResultSchema = z.object({
+// Serie Standings
+
+const BaseSerieEventCategorySchema = z.object({
+  corrections: z.string().optional(),
+  userLocked: z.boolean().optional(),
+  createdAt: z.string().optional(),
+  createdBy: z.string().optional(),
+  updatedAt: z.string().nullable().optional(),
+  updatedBy: z.string().nullable().optional(),
+})
+
+export const ParticipantSerieEventResultSchema = z.object({
   participantId: z.string(),
-  position: z.number(),
-  bibNumber: z.number().optional(),
+  uciId: z.string().optional(),
   firstName: z.string(),
   lastName: z.string(),
-  uciId: z.string().optional(),
+  bibNumber: z.number().optional(),
   team: z.string().optional(),
-  totalPoints: z.number(),
-  racePoints: z.record(z.string(), z.number()),
+  points: z.number(),
 })
 
-export const TeamSerieResultSchema = z.object({
-  position: z.number(),
+export const TeamSerieEventResultSchema = z.object({
   team: z.string(),
-  totalPoints: z.number(),
-  racePoints: z.record(z.string(), z.number()).optional(),
+  points: z.number(),
 })
 
-export const SerieIndividualCategorySchema = BaseCategorySchema.extend({
-  results: z.array(ParticipantSerieResultSchema),
-  corrections: z.string().optional(),
-  createdAt: z.string(),
-  createdBy: z.string(),
-  updatedAt: z.string().nullable(),
-  updatedBy: z.string().nullable(),
+export const SerieIndividualEventCategorySchema = BaseSerieEventCategorySchema.extend({
+  standings: z.array(ParticipantSerieEventResultSchema),
 })
 
-export const CreateSerieIndividualCategorySchema = SerieIndividualCategorySchema
-.omit({
-  // Omit metadata fields
-  createdBy: true,
-  updatedBy: true,
-})
-.partial({
-  createdAt: true,
-  updatedAt: true,
-  userLocked: true,
+export const SerieTeamEventCategorySchema = BaseSerieEventCategorySchema.extend({
+  standings: z.array(TeamSerieEventResultSchema),
 })
 
-export const SerieTeamCategorySchema = BaseCategorySchema.extend({
-  results: z.array(TeamSerieResultSchema),
-  corrections: z.string().optional(),
-  createdAt: z.string(),
-  createdBy: z.string(),
-  updatedAt: z.string().nullable(),
-  updatedBy: z.string().nullable(),
+export const BaseSerieEventSchema = z.object({
+  date: z.string().nullable(),
+  published: z.boolean(),
 })
 
-export const CreateSerieTeamCategorySchema = SerieTeamCategorySchema
-.omit({
-  // Omit metadata fields
-  createdBy: true,
-  updatedBy: true,
-})
-.partial({
-  createdAt: true,
-  updatedAt: true,
-  userLocked: true,
+export const SerieIndividualEventSchema = BaseSerieEventSchema.extend({
+  categories: z.record(z.string(), SerieIndividualEventCategorySchema),
 })
 
-// Serie Results
-export const SerieResultsSchema = z.object({
+export const SerieTeamEventSchema = BaseSerieEventSchema.extend({
+  combinedPoints: z.boolean().optional(), // Indicates if this event is a total/overall category for the team standings
+  categories: z.record(z.string(), SerieTeamEventCategorySchema),
+})
+
+export const SerieStandingsSchema = z.object({
   hash: z.string(),
+  categories: z.array(BaseCategorySchema),
   individual: z.object({
-    categories: z.array(SerieIndividualCategorySchema),
+    events: z.array(SerieIndividualEventSchema),
     sourceUrls: z.array(z.string()),
   }).optional(),
   team: z.object({
-    categories: z.array(SerieTeamCategorySchema),
+    events: z.array(SerieTeamEventSchema),
     sourceUrls: z.array(z.string()),
   }).optional(),
 })
 
-export const CreateSerieResultsSchema = SerieResultsSchema.extend({
-  individual: z.object({
-    categories: z.array(CreateSerieIndividualCategorySchema),
-    sourceUrls: z.array(z.string()),
-  }).optional(),
-  team: z.object({
-    categories: z.array(CreateSerieTeamCategorySchema),
-    sourceUrls: z.array(z.string()),
-  }).optional(),
-})
+// ── Snapshot ─────────────────────────────────────────────────────────────────
 
 export const SerieResultsSnapshotSchema = z.object({
   hash: z.string(),
-  // Only categories which have changed from the current version
-  individualCategories: z.array(SerieIndividualCategorySchema.omit({
-    // Omit metadata fields
-    createdAt: true,
-    createdBy: true,
-    updatedAt: true,
-    updatedBy: true,
-    userLocked: true,
-  })).optional(),
-  // Only categories which have changed from the current version
-  teamCategories: z.array(SerieTeamCategorySchema.omit({
-    // Omit metadata fields
-    createdAt: true,
-    createdBy: true,
-    updatedAt: true,
-    updatedBy: true,
-    userLocked: true,
-  })).optional(),
+  previousIndividualEvents: z.array(SerieIndividualEventSchema).optional(),
+  previousTeamEvents: z.array(SerieTeamEventSchema).optional(),
   createdAt: z.string(),
   createdBy: z.string(),
 })
