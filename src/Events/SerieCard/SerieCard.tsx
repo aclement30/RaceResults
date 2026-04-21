@@ -1,9 +1,9 @@
+import { Button, Card, Group } from '@mantine/core'
+import { IconUsersGroup, IconUserStar } from '@tabler/icons-react'
 import React from 'react'
 import { useNavigate } from 'react-router'
-import { Button, Card, Group } from '@mantine/core'
-import { OrganizerBadge } from '../../Shared/OrganizerBadge'
-import { IconUsersGroup, IconUserStar } from '@tabler/icons-react'
 import type { Serie } from '../../../shared/types'
+import { OrganizerBadge } from '../../Shared/OrganizerBadge'
 
 type SerieCardProps = {
   serie: Serie
@@ -50,7 +50,7 @@ export const SerieCard: React.FC<SerieCardProps> = ({ serie }) => {
         </Card.Section>
       )}
 
-      {serie.types.includes('team') && (
+      {serie.types.includes('individual') && (
         <Card.Section withBorder inheritPadding style={{ paddingTop: 5, paddingBottom: 5 }}>
           <Button variant="transparent" leftSection={<IconUserStar/>}
                   fullWidth justify="left"

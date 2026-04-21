@@ -2,7 +2,7 @@ export const PUBLIC_BUCKET_PATHS = {
   events: 'events/',
   eventsResults: 'events_results/',
   series: 'series/',
-  seriesResults: 'series_results/',
+  seriesStandings: 'series_standings/',
   athletes: 'athletes/',
   athletesProfiles: 'views/athletes_profiles/',
   teamRosters: 'team_rosters/',

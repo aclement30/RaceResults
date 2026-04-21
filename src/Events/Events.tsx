@@ -1,14 +1,14 @@
 import { AppShell, LoadingOverlay, Stack, Text } from '@mantine/core'
 import sortBy from 'lodash/sortBy'
-import { useSearchParams } from 'react-router'
 import { useContext, useEffect, useMemo, useState } from 'react'
+import { useSearchParams } from 'react-router'
 import { AppContext } from '../AppContext'
-import { Navbar } from './Navbar/Navbar'
-import { EventCard } from './EventCard/EventCard'
-import { SerieCard } from './SerieCard/SerieCard'
-import { useEventsAndSeries } from '../utils/useEventsAndSeries'
 import { Loader } from '../Loader/Loader'
 import { UIContext } from '../UIContext'
+import { useEventsAndSeries } from '../utils/useEventsAndSeries'
+import { EventCard } from './EventCard/EventCard'
+import { Navbar } from './Navbar/Navbar'
+import { SerieCard } from './SerieCard/SerieCard'
 
 const today = new Date().toLocaleDateString('sv', { timeZone: 'America/Vancouver' }).slice(0, 10)
 const last48hours = new Date(Date.now() - 48 * 60 * 60 * 1000).toISOString()
@@ -53,10 +53,10 @@ export const Events: React.FC = () => {
   const matchingSerie = filters.serie && series.get(filters.year)?.find((serieSummary) => serieSummary.alias === filters.serie)
 
   const recentlyUpdatedSeries = useMemo(() => {
-    return series.get(filters.year)?.filter((serie) => (serie.updatedAt || serie.createdAt) >= last48hours).sort((
+    return series.get(filters.year)?.filter((serie) => serie.standingsUpdatedAt && serie.standingsUpdatedAt >= last48hours).sort((
       a,
       b
-    ) => (a.updatedAt || a.createdAt) < (b.updatedAt || b.createdAt) ? 1 : -1) || []
+    ) => (a.standingsUpdatedAt! || a.standingsUpdatedAt!) < (b.standingsUpdatedAt! || b.standingsUpdatedAt!) ? 1 : -1) || []
   }, [filters.year, series])
 
   return (
