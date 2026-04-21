@@ -1,6 +1,5 @@
 import { createContext, type ReactNode, useCallback, useMemo, useState } from 'react'
-import type { Athlete, Organizer, Team } from '../../../shared/types'
-import type { AdminUser } from '../../../shared/types/adminUsers'
+import type { AdminUser, Athlete, Organizer, Team } from '../../../shared/types'
 
 const CURRENT_YEAR = new Date().getFullYear()
 
@@ -32,6 +31,8 @@ export const AdminContext = createContext({
   },
   setAthleteLookupTable: (_: Map<string, string>) => {
   },
+  setAthleteOverrides: (_: Record<string, any>) => {
+  },
   teams: new Map<number, Team>(),
   teamOptions: {
     id: [] as TeamOption[],
@@ -53,6 +54,7 @@ export const AdminContextProvider: React.FC<{ children: ReactNode }> = ({ childr
   const [athletes, setAthletes] = useState<Map<string, Athlete>>(new Map<string, Athlete>())
   const [teams, setTeams] = useState<Map<number, Team>>(new Map<number, Team>())
   const [athleteLookupTable, setAthleteLookupTable] = useState<Map<string, string>>(new Map<string, string>())
+  const [athleteOverrides, setAthleteOverrides] = useState<Record<string, any>>({})
   const [loadingStartupData, setLoadingStartupData] = useState<boolean>(true)
   const [adminUsers, setAdminUsers] = useState<AdminUser[]>([])
 
@@ -79,7 +81,10 @@ export const AdminContextProvider: React.FC<{ children: ReactNode }> = ({ childr
   }): Athlete | null => {
     if ('uciId' in params && params.uciId) return athletes.get(params.uciId) || null
 
-    const uciId = athleteLookupTable.get(`${params.firstName?.toLowerCase()}|${params.lastName?.toLowerCase()}`)
+    const nameKey = `${params.firstName?.toLowerCase()}|${params.lastName?.toLowerCase()}`
+
+    const uciId: string | undefined = athleteLookupTable.get(nameKey) || athleteOverrides?.alternateNames?.[nameKey]
+
     if (uciId) return athletes.get(uciId) || null
 
     return null
@@ -137,6 +142,7 @@ export const AdminContextProvider: React.FC<{ children: ReactNode }> = ({ childr
     findAthlete,
     setAthletes,
     setAthleteLookupTable,
+    setAthleteOverrides,
     teams,
     teamOptions: {
       id: teamOptionByIds,

@@ -1,23 +1,23 @@
 import {
-  S3Client,
+  GetObjectCommand,
   ListObjectsCommand,
   type ListObjectsCommandOutput,
-  GetObjectCommand,
+  S3Client,
   S3ServiceException
 } from '@aws-sdk/client-s3'
 import { fromCognitoIdentityPool } from '@aws-sdk/credential-providers'
+import keyBy from 'lodash/keyBy'
 import type {
   Athlete,
   AthleteProfile,
-  RaceEvent,
   EventResults,
-  Team,
+  RaceEvent,
+  RecentlyUpgradedAthletes,
   Serie,
-  SerieResults,
-  RecentlyUpgradedAthletes
+  SerieStandings,
+  Team
 } from '../../shared/types'
 import { PUBLIC_BUCKET_FILES, PUBLIC_BUCKET_PATHS } from '../config/s3'
-import keyBy from 'lodash/keyBy'
 
 const { VITE_AWS_REGION, VITE_PUBLIC_AWS_IDENTITY_POOL_ID, VITE_RR_S3_BUCKET } = import.meta.env || {}
 
@@ -171,14 +171,17 @@ export async function fetchSeries(year: number, ifModifiedSince?: Date | null) {
 
   const series: Serie[] = JSON.parse(response.content)
 
-  return { series, lastModified: response.lastModified }
+  // Filter out series without published events
+  const filteredSeries = series.filter(serie => serie.hasPublishedEvents)
+
+  return { series: filteredSeries, lastModified: response.lastModified }
 }
 
-export async function fetchSeriesResults(year: number, hash: string, ifModifiedSince?: Date | null) {
+export async function fetchSerieStandings(year: number, hash: string, ifModifiedSince?: Date | null) {
   let response
 
   try {
-    response = await fetchFile(`${PUBLIC_BUCKET_PATHS.seriesResults}${year}/${hash}.json`, { ifModifiedSince })
+    response = await fetchFile(`${PUBLIC_BUCKET_PATHS.seriesStandings}${year}/${hash}.json`, { ifModifiedSince })
   } catch (error) {
     if (error instanceof FetchError && error.type === FETCH_ERROR_TYPE.NotFound) {
       throw new FetchError('The requested series could not be found!', error.type)
@@ -187,9 +190,9 @@ export async function fetchSeriesResults(year: number, hash: string, ifModifiedS
     throw error
   }
 
-  const serieResults: SerieResults = response && response.content && JSON.parse(response.content)
+  const serieStandings: SerieStandings = response && response.content && JSON.parse(response.content)
 
-  return { serieResults, lastModified: response.lastModified }
+  return { serieStandings, lastModified: response.lastModified }
 }
 
 export async function fetchTeamsList(): Promise<Team[]> {

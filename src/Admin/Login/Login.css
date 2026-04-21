@@ -8,6 +8,7 @@
   radial-gradient(circle at 40% 40%, #2251a3 0%, transparent 50%),
   #2251a3;
   padding: 2rem;
+  text-align: center;
 }
 
 .login-card {

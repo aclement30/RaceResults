@@ -10,13 +10,24 @@ import { AdminDashboard } from './Dashboard/Dashboard'
 import { AdminDataProcessing } from './DataProcessing/DataProcessing'
 import { AdminEvents } from './Events/Events'
 import { AdminHeader } from './Header/Header'
+import { AdminAuthError } from './Login/AuthError'
 import { AdminLogin } from './Login/Login'
+import { AdminSerieEdit } from './Series/Edit/Edit'
+import {
+  SerieEventIndividualStandings as AdminSerieEventIndividualStandings
+} from './Series/Edit/EventIndividualStandings/EventIndividualStandings'
+import {
+  SerieIndividualStandings as AdminSerieIndividualStandings
+} from './Series/Edit/IndividualStandings/IndividualStandings'
+import { AdminSerieInfoForm } from './Series/Edit/SerieInfoForm/SerieInfoForm'
+import { AdminSerieListOutlet } from './Series/List/List'
 import { AdminSeries } from './Series/Series'
 import { AdminConfigurationFileEditor } from './Settings/AdminConfigurationFileEditor'
 import { AdminContext, AdminContextProvider } from './Shared/AdminContext'
 import { AdminTeams } from './Teams/Teams'
 import { COGNITO_AUTH_CONFIG } from './utils/config'
 import { loadAdminStartupData } from './utils/loadAdminStartupData'
+import { useProfile } from './utils/useProfile'
 
 export const Admin = () => {
   return (
@@ -34,6 +45,7 @@ export const Admin = () => {
 const AdminRouter = () => {
   const { isNavbarOpened } = useContext(UIContext)
   const auth = useAuth()
+  const { isOrganizer, isAdmin } = useProfile()
 
   const {
     loadingStartupData,
@@ -41,20 +53,25 @@ const AdminRouter = () => {
     setOrganizers,
     setYears,
     setAdminUsers,
+    setAthleteOverrides,
   } = useContext(AdminContext)
 
   useEffect(() => {
-    if (!auth.isAuthenticated) return
+    if (!auth.isAuthenticated && (!isOrganizer && !isAdmin)) {
+      setLoadingStartupData(false)
+      return
+    }
 
     const fetchData = async () => {
       try {
         setLoadingStartupData(true)
 
-        const { organizers, years, adminUsers } = await loadAdminStartupData()
+        const { organizers, years, adminUsers, athletesOverrides } = await loadAdminStartupData()
 
         setOrganizers(organizers)
         setYears(years)
         setAdminUsers(adminUsers)
+        setAthleteOverrides(athletesOverrides)
 
         setLoadingStartupData(false)
       } catch (error) {
@@ -65,8 +82,12 @@ const AdminRouter = () => {
     fetchData()
   }, [auth.isAuthenticated])
 
-  if (!auth.isAuthenticated) {
+  if (!auth.isAuthenticated && !auth.error) {
     return <AdminLogin/>
+  } else if (auth.error || (auth.isAuthenticated && !isOrganizer && !isAdmin)) {
+    return (
+      <AdminAuthError/>
+    )
   }
 
   return (
@@ -88,12 +109,6 @@ const AdminRouter = () => {
         }}
       />
 
-      {auth.error && (
-        <div style={{ color: 'red' }}>
-          Authentication error: {auth.error.message}
-        </div>
-      )}
-
       {!auth.isLoading && auth.isAuthenticated && (
         <Routes>
           <Route path="/" element={<AdminDashboard/>}/>
@@ -106,7 +121,20 @@ const AdminRouter = () => {
           <Route path="/events/:year/:eventHash/edit" element={<AdminEvents/>}/>
           <Route path="/events/:year/:eventHash/edit/:tab" element={<AdminEvents/>}/>
           <Route path="/events/new" element={<AdminEvents/>}/>
-          <Route path="/series" element={<AdminSeries/>}/>
+          <Route path="/series" element={<AdminSeries/>}>
+            <Route index element={<AdminSerieListOutlet/>}/>
+            <Route path="/series/new" element={<AdminSerieEdit/>}>
+              <Route index element={<AdminSerieInfoForm/>}/>
+            </Route>
+            <Route path="/series/:year/:serieHash" element={<AdminSerieEdit/>}>
+              <Route index element={<AdminSerieInfoForm/>}/>
+              <Route path="/series/:year/:serieHash/standings/individual"
+                     element={<AdminSerieIndividualStandings/>}/>
+              <Route path="/series/:year/:serieHash/standings/individual/:date"
+                     element={<AdminSerieEventIndividualStandings/>}/>
+              {/*<Route path="/series/:year/:serieHash/standings/team" element={<AdminSerieEdit/>}/>*/}
+            </Route>
+          </Route>
           <Route path="/data-processing" element={<AdminDataProcessing/>}/>
           <Route path="/settings" element={<Navigate to="/admin/settings/config-files" replace/>}/>
           <Route path="/settings/config-files" element={<AdminConfigurationFileEditor/>}/>

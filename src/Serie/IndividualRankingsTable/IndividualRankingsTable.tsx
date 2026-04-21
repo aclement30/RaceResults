@@ -1,30 +1,31 @@
 import { Anchor, Table, Text } from '@mantine/core'
-import React, { useContext, useMemo } from 'react'
-import { formatRacerPositionLabel, columns as sharedColumns } from '../../Event/Shared/columns'
-import { ResponsiveTable } from '../../Shared/ResponsiveTable'
-import { formatRaceDate } from '../utils'
-import { AppContext } from '../../AppContext'
 import keyBy from 'lodash/keyBy'
+import React, { useContext, useMemo } from 'react'
+import type { Serie } from '../../../shared/types'
+import { AppContext } from '../../AppContext'
+import { columns as sharedColumns, formatRacerPositionLabel } from '../../Event/Shared/columns'
+import { ResponsiveTable } from '../../Shared/ResponsiveTable'
+import { UserFavoriteContext } from '../../UserFavoriteContext'
 import { useHighlightedAthlete } from '../../utils/useHighlightedAthlete'
 import { useNavigator } from '../../utils/useNavigator'
-import { UserFavoriteContext } from '../../UserFavoriteContext'
-import type { ParticipantSerieResult, Serie } from '../../../shared/types'
+import type { AggregatedIndividualRanking } from '../Serie'
+import { formatRaceDate } from '../utils'
 
 type IndividualRankingsTableProps = {
   serie: Serie
   selectedCategory: string
-  results: ParticipantSerieResult[]
+  standings: AggregatedIndividualRanking[]
 }
 
 export const columns = {
   ...sharedColumns,
-  position: (row: Pick<ParticipantSerieResult, 'position'>) => formatRacerPositionLabel(row.position),
+  position: (row: Pick<AggregatedIndividualRanking, 'position'>) => formatRacerPositionLabel(row.position),
 }
 
 export const IndividualRankingsTable: React.FC<IndividualRankingsTableProps> = ({
   serie,
   selectedCategory,
-  results,
+  standings,
 }) => {
   const { navigateToAthlete, navigateToEvent } = useNavigator()
   const { events, findAthlete } = useContext(AppContext)
@@ -36,43 +37,43 @@ export const IndividualRankingsTable: React.FC<IndividualRankingsTableProps> = (
   }, [events, serie])
 
   const athleteColumns = ['name']
-  if (results.some(result => !!result.team?.length)) athleteColumns.push('team')
-  if (results.some(result => !!result.bibNumber)) athleteColumns.push('bibNumber')
+  if (standings.some(standing => !!standing.team?.length)) athleteColumns.push('team')
+  if (standings.some(standing => !!standing.bibNumber)) athleteColumns.push('bibNumber')
 
-  const racePointColumns = results?.[0] && Object.keys(results[0].racePoints).sort() || []
+  const racePointColumns = standings[0] ? Object.keys(standings[0].racePoints).sort() : []
 
   const { highlightedBibNumber, highlightAthlete } = useHighlightedAthlete()
 
-  const rows = useMemo(() => results.map((result) => {
-    const athleteProfile = findAthlete(result)
-    const team = result.team || athleteProfile?.teams?.[serie.year]?.name
+  const rows = useMemo(() => standings.map((standing) => {
+    const athleteProfile = findAthlete(standing)
+    const team = standing.team || athleteProfile?.teams?.[serie.year]?.name
     const isFavoriteRow = isFavorite({ athleteUciId: athleteProfile?.uciId, team })
 
     return (
-      <Table.Tr key={`ranking-${result.position}`} style={{ height: 42 }}
-                className={`result-row ${highlightedBibNumber && +highlightedBibNumber === result.bibNumber ? 'highlighted' : ''} ${isFavoriteRow ? 'favorite' : ''}`}>
-        <Table.Td>{columns.position(result)}</Table.Td>
+      <Table.Tr key={`ranking-${standing.position}`} style={{ height: 42 }}
+                className={`result-row ${highlightedBibNumber && +highlightedBibNumber === standing.bibNumber ? 'highlighted' : ''} ${isFavoriteRow ? 'favorite' : ''}`}>
+        <Table.Td>{columns.position(standing)}</Table.Td>
         <Table.Td>
-          {columns.name(athleteProfile || result, { onClick: athleteProfile ? navigateToAthlete : undefined })}
-          {athleteColumns.includes('team') && <Text size="sm" c="dimmed" hiddenFrom="sm">{result.team}</Text>}
+          {columns.name(athleteProfile || standing, { onClick: athleteProfile ? navigateToAthlete : undefined })}
+          {athleteColumns.includes('team') && <Text size="sm" c="dimmed" hiddenFrom="sm">{standing.team}</Text>}
         </Table.Td>
         <Table.Td visibleFrom="sm">{team}</Table.Td>
         {athleteColumns.includes('bibNumber') &&
-          <Table.Td>{columns.bibNumber(result, { onClick: highlightAthlete })}</Table.Td>}
+          <Table.Td>{columns.bibNumber(standing, { onClick: highlightAthlete })}</Table.Td>}
         <Table.Td
           style={{
             textAlign: 'center',
             fontWeight: 'bold',
             borderInlineStart: 'calc(0.0625rem * var(--mantine-scale)) solid var(--table-border-color)'
-          }}>{result.totalPoints}</Table.Td>
+          }}>{standing.totalPoints}</Table.Td>
         {racePointColumns.map((date) => (
           <Table.Td key={`race-points-${date}`}
                     style={{ textAlign: 'center' }}
-                    visibleFrom="sm">{result.racePoints[date] > 0 ? result.racePoints[date] : ''}</Table.Td>
+                    visibleFrom="sm">{standing.racePoints[date] > 0 ? standing.racePoints[date] : ''}</Table.Td>
         ))}
       </Table.Tr>
     )
-  }), [results, highlightedBibNumber])
+  }), [standings, highlightedBibNumber])
 
   const stickyColumnHeaders = <Table.Tr>
     <Table.Th>P<span className="mantine-visible-from-sm">osition</span></Table.Th>

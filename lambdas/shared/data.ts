@@ -33,7 +33,7 @@ import {
 } from './data/ingestion.ts'
 import { getOrganizers } from './data/organizers.ts'
 import { getRules } from './data/rules.ts'
-import { getSeries, updateSerieResults, updateSeries } from './data/series.ts'
+import { deleteSerie, deleteSerieStandingEvent, getSeries, getSerieStandings, updateSeries, updateSerieStandings } from './data/series.ts'
 import { deleteTeam, getTeamRosters, getTeams, restoreTeam, updateTeam, updateTeamRosters } from './data/teams.ts'
 import {
   getAthleteProfile,
@@ -89,6 +89,7 @@ export default {
     rawIngestionData: getRawIngestionData,
     rules: getRules,
     series: getSeries,
+    serieStandings: getSerieStandings,
     teams: getTeams,
     teamRosters: getTeamRosters,
   },
@@ -112,7 +113,7 @@ export default {
     rawIngestionData: updateRawIngestionData,
     viewRecentlyUpgradedAthletes: updateViewRecentlyUpgradedAthletes,
     series: updateSeries,
-    serieResults: updateSerieResults,
+    serieStandings: updateSerieStandings,
     team: updateTeam,
     teamRosters: updateTeamRosters,
   },
@@ -121,6 +122,8 @@ export default {
   },
   delete: {
     event: deleteEvent,
+    serie: deleteSerie,
+    serieStandingEvent: deleteSerieStandingEvent,
     team: deleteTeam,
   },
 }

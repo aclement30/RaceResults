@@ -1,41 +1,44 @@
 import { useMemo } from 'react'
-import type { ParticipantSerieResult, TeamSerieResult } from '../../shared/types'
+import type { AggregatedIndividualRanking, AggregatedTeamRanking } from './Serie'
 
-export const useCategoryResults = (results: Array<ParticipantSerieResult | TeamSerieResult>, searchValue?: string) => {
-  const sortedResults = useMemo(() => {
-    const resultsWithPosition = results.filter((result) => result.position > 0)
+export const useCategoryStandings = (
+  standings: Array<AggregatedIndividualRanking | AggregatedTeamRanking>,
+  searchValue?: string
+) => {
+  const sortedStandings = useMemo(() => {
+    const standingsWithPosition = standings.filter((result) => result.position > 0)
 
-    let sortedResults = [...resultsWithPosition].sort((a, b) => a.position - b.position)
+    let sortedStandings = [...standingsWithPosition].sort((a, b) => a.position - b.position)
 
-    const otherResults = results.filter((result) => result.position <= 0)
-    sortedResults = [...sortedResults, ...otherResults]
+    const otherStandings = standings.filter((result) => result.position <= 0)
+    sortedStandings = [...sortedStandings, ...otherStandings]
 
-    return sortedResults
-  }, [results])
+    return sortedStandings
+  }, [standings])
 
-  const filteredResults = useMemo(() => {
-    if (!searchValue) return sortedResults
+  const filteredStandings = useMemo(() => {
+    if (!searchValue) return sortedStandings
 
     const searchValueLower = searchValue.toLowerCase().trim()
 
-    return sortedResults.filter((seriesResult) => {
+    return sortedStandings.filter((standing) => {
       if (isNaN(+searchValueLower)) {
-        const { team } = seriesResult
-        const { firstName, lastName } = seriesResult as ParticipantSerieResult
+        const { team } = standing
+        const { firstName, lastName } = standing as AggregatedIndividualRanking
         const fullName = `${firstName} ${lastName}`.toLowerCase()
         const teamLower = team?.toLowerCase()
 
         return fullName.includes(searchValueLower) || teamLower?.includes(searchValueLower)
       } else {
         const bibNumber = +searchValueLower
-        return (seriesResult as ParticipantSerieResult).bibNumber?.toString().startsWith(bibNumber.toString())
+        return (standing as AggregatedIndividualRanking).bibNumber?.toString().startsWith(bibNumber.toString())
       }
     })
-  }, [sortedResults, searchValue])
+  }, [sortedStandings, searchValue])
 
-  const isFiltered = filteredResults.length !== sortedResults.length
+  const isFiltered = filteredStandings.length !== sortedStandings.length
 
-  return { filteredResults, sortedResults, isFiltered }
+  return { filteredStandings, sortedStandings, isFiltered }
 }
 
 const dateOptions = { month: 'short' as const, day: 'numeric' as const }

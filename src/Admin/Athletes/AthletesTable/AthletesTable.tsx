@@ -106,7 +106,7 @@ export const AthletesTable: React.FC<AthletesTableProps> = ({ athletes }) => {
             />
           </>
         ) : (
-          <EmptyState>No athletes matching the selected filters</EmptyState>
+          <EmptyState text="No athletes matching the selected filters"/>
         )}
       </div>
     </>

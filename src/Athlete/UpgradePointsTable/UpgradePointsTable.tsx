@@ -1,28 +1,18 @@
-import {
-  ActionIcon,
-  Alert,
-  Anchor,
-  Badge, Button,
-  Checkbox,
-  Group,
-  Table,
-  Text,
-  Tooltip
-} from '@mantine/core'
+import { ActionIcon, Alert, Anchor, Badge, Button, Checkbox, Group, Table, Text, Tooltip } from '@mantine/core'
+import { IconChevronDown, IconChevronUp, IconFileDownload } from '@tabler/icons-react'
+import * as React from 'react'
 import { useEffect, useMemo, useState } from 'react'
-import type { Athlete, AthleteUpgradePoint } from '../../../shared/types'
 import { useNavigate, useSearchParams } from 'react-router'
+import type { Athlete, AthleteUpgradePoint } from '../../../shared/types'
 import { columns } from '../../Event/Shared/columns'
+import { UpgradePointExplanation } from '../../Event/Shared/UpgradePointExplanation'
 import { getSanctionedEventTypeLabel, hasDoubleUpgradePoints } from '../../Event/utils'
 import { Dropdown } from '../../Shared/Dropdown'
-import { getActiveUpgradePointsTotal } from '../utils'
-import { ExplanationPopover } from './ExplanationPopover'
-import * as React from 'react'
-import { UpgradePointExplanation } from '../../Event/Shared/UpgradePointExplanation'
-import { IconChevronDown, IconChevronUp, IconFileDownload } from '@tabler/icons-react'
 import { EmptyState } from '../../Shared/EmptyState'
 import { exportCSV } from '../../utils/exportCSV'
 import { CONFIDENCE_LEVEL_THRESHOLD, isUpgradePointStale } from '../../utils/upgrade-points'
+import { getActiveUpgradePointsTotal } from '../utils'
+import { ExplanationPopover } from './ExplanationPopover'
 
 type ResultsTableProps = {
   skillLevel: Athlete['skillLevel']
@@ -307,7 +297,7 @@ export const UpgradePointsTable: React.FC<ResultsTableProps> = ({
           <Table.Tbody>{rows}</Table.Tbody>
         </Table>
       ) : (
-        <EmptyState>No points found</EmptyState>
+        <EmptyState text="No points found"/>
       )}
 
       {latestUpgrade?.[selectedDiscipline]?.date && oldestPointDate && latestUpgrade?.[selectedDiscipline]?.date > oldestPointDate && (

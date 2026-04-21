@@ -13,11 +13,11 @@ import type {
 } from '../../../../../shared/types'
 import { showErrorMessage } from '../../../../utils/showErrorMessage'
 import { showSuccessMessage } from '../../../../utils/showSuccessMessage'
+import { CategorySidebar } from '../../../Shared/CategorySidebar/CategorySidebar'
 import { adminApi } from '../../../utils/api'
 import { CategoryDetailPanel } from './CategoryDetailPanel/CategoryDetailPanel'
-import { CategorySidebar } from './CategorySidebar/CategorySidebar'
 import { openEditCategoryModal } from './EditCategoryModal/EditCategoryModal'
-import { type ColumnMapping, openFileUploadModal } from './FileUploadModal/FileUploadModal'
+import { openEventFileUploadModal } from './FileUploadModal/FileUploadModal'
 import { ResultsFormContext, type ResultsFormValues } from './ResultsFormContext'
 import { PrimesTable } from './ResultsTable/PrimesTable'
 import { type ColumnKey, detectColumns, ResultsTable } from './ResultsTable/ResultsTable'
@@ -34,7 +34,6 @@ export const EventResults: React.FC<EventResultsProps> = ({ results, year, event
   const [categories, setCategories] = useState<CreateEventCategory[]>(results.categories as CreateEventCategory[])
   const [activeCategory, setActiveCategory] = useState<string | null>(results.categories?.length ? results.categories[0].alias : null)
   const [dirtyCategories, setDirtyCategories] = useState<Set<string>>(new Set())
-  const [savedMapping, setSavedMapping] = useState<ColumnMapping | null>(null)
   const [saving, setSaving] = useState(false)
   const [importing, setImporting] = useState(false)
   const [activeTab, setActiveTab] = useState<'results' | 'primes'>('results')
@@ -126,8 +125,12 @@ export const EventResults: React.FC<EventResultsProps> = ({ results, year, event
   }, [activeCategory])
 
   const handleOpenFileUpload = () => {
-    openFileUploadModal({
-      savedMapping,
+    const activeCategoryLabel = currentCategory?.label ?? ''
+    const hasExistingResults = !!(activeCategory && currentCategory?.results.length)
+
+    openEventFileUploadModal({
+      activeCategoryLabel,
+      hasExistingResults,
       onImport: handleFileImport,
     })
   }
@@ -169,41 +172,31 @@ export const EventResults: React.FC<EventResultsProps> = ({ results, year, event
     })
   }
 
-  const handleFileImport = (catLabel: string, results: ParticipantResult[], mapping: ColumnMapping) => {
-    const catAlias = catLabel.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '')
-
+  const handleFileImport = (results: ParticipantResult[]) => {
     setCategories(prev => {
-      const exists = prev.find(c => c.alias === catAlias)
-      if (exists) return prev.map(c => c.alias === catAlias ? { ...c, results } : c)
-      const newCategory: CreateEventCategory = {
-        alias: catAlias,
-        label: catLabel,
-        gender: 'M',
-        results,
-        primes: [],
-        upgradePoints: null,
-        starters: 0,
-        finishers: 0,
-      }
-      setActiveCategory(newCategory.alias)
-      return [...prev, newCategory]
+      return prev.map(c => c.alias === activeCategory ? { ...c, results } : c)
     })
-
-    setSavedMapping(mapping)
   }
 
-  const doDeleteCategory = (alias: string) => {
-    setCategories(prev => {
-      const remaining = prev.filter(c => c.alias !== alias)
-      if (activeCategory === alias) setActiveCategory(remaining[0]?.alias ?? null)
-      return remaining
-    })
+  const doDeleteCategory = async (alias: string) => {
+    try {
+      await adminApi.delete.eventResultCategory(alias, { year, eventHash })
 
-    setDirtyCategories(prev => {
-      const next = new Set(prev)
-      next.delete(alias)
-      return next
-    })
+      setCategories(prev => {
+        const remaining = prev.filter(c => c.alias !== alias)
+        if (activeCategory === alias) setActiveCategory(remaining[0]?.alias ?? null)
+        return remaining
+      })
+
+      setDirtyCategories(prev => {
+        const next = new Set(prev)
+        next.delete(alias)
+        return next
+      })
+    } catch (error) {
+      showErrorMessage({ message: `Failed to delete category: ${(error as Error).message}`, title: 'Delete Error' })
+      return
+    }
   }
 
   const handleDeleteCategory = (alias: string) => {
@@ -211,7 +204,7 @@ export const EventResults: React.FC<EventResultsProps> = ({ results, year, event
     if (!cat) return
 
     if (cat.results.length > 0) {
-      modals.openConfirmModal({
+      const modalId = modals.openConfirmModal({
         title: 'Delete category',
         children: (
           <Text size="sm">
@@ -221,7 +214,16 @@ export const EventResults: React.FC<EventResultsProps> = ({ results, year, event
         ),
         labels: { confirm: 'Delete', cancel: 'Cancel' },
         confirmProps: { color: 'red' },
-        onConfirm: () => doDeleteCategory(alias),
+        closeOnConfirm: false,
+        onConfirm: async () => {
+          modals.updateModal({
+            modalId,
+            confirmProps: { color: 'red', loading: true },
+            cancelProps: { disabled: true }
+          })
+          await doDeleteCategory(alias)
+          modals.close(modalId)
+        },
       })
     } else {
       doDeleteCategory(alias)
@@ -297,6 +299,7 @@ export const EventResults: React.FC<EventResultsProps> = ({ results, year, event
       } = formRef.current.getValues()
       const categoryWithDetails: CreateEventCategory = {
         ...currentCategory,
+        userLocked: true,
         primes,
         startTime: startTime ?? undefined,
         starters: typeof starters === 'number' ? starters : 0,
@@ -377,10 +380,11 @@ export const EventResults: React.FC<EventResultsProps> = ({ results, year, event
     confirmIfDirty(() => setActiveCategory(alias))
   }
 
-  const handleReorderCategories = async (reordered: CreateEventCategory[]) => {
-    setCategories(reordered)
+  const handleReorderCategories = async (orderedCategories: CreateEventCategory[]) => {
+    setCategories(orderedCategories)
+
     try {
-      await adminApi.update.eventResultCategoriesOrder(reordered.map(c => c.alias), { year, eventHash })
+      await adminApi.update.eventResultCategoriesOrder(orderedCategories.map(c => c.alias), { year, eventHash })
     } catch (err) {
       setCategories(categories) // revert on failure
       showErrorMessage({ message: `Failed to save category order: ${(err as Error).message}`, title: 'Save Error' })

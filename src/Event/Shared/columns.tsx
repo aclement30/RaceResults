@@ -1,6 +1,6 @@
 import { Anchor, Badge, Tooltip } from '@mantine/core'
-import { formatTimeDuration, formatGapTime, formatSpeed } from '../../utils/race-results'
-import type { Athlete, ParticipantResult, ParticipantSerieResult } from '../../../shared/types'
+import type { Athlete, ParticipantResult, ParticipantSerieEventResult } from '../../../shared/types'
+import { formatGapTime, formatSpeed, formatTimeDuration } from '../../utils/race-results'
 
 export const formatRacerPositionLabel = (position: number, textOnly?: boolean) => {
   if (position > 3 || textOnly) return position
@@ -44,10 +44,12 @@ export const columns = {
   city: (row: Pick<Athlete, 'city' | 'province'>) => {
     return [row.city, row.province].filter(Boolean).join(', ')
   },
-  bibNumber: (row: Pick<ParticipantResult | ParticipantSerieResult, 'bibNumber'> | {
+  bibNumber: (row: Pick<ParticipantResult | ParticipantSerieEventResult, 'bibNumber'> | {
     bibNumber: number
   }, { text, onClick }: ColumnOptions & { onClick?: (bibNumber: number) => void } = {}) => {
     if (text) return row.bibNumber
+
+    if (!row.bibNumber) return null
 
     return <Badge
       size="lg"

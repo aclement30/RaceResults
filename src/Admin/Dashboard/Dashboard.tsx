@@ -69,7 +69,7 @@ export const AdminDashboard = () => {
           View all events
         </Button>
 
-        <AdminSerieList series={series} year={CURRENT_YEAR} loading={loadingData}/>
+        <AdminSerieList series={series} events={events} year={CURRENT_YEAR}/>
       </AppShell.Main>
     </>
   )

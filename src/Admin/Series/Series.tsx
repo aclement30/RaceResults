@@ -1,18 +1,26 @@
-import { AppShell } from '@mantine/core'
+import { AppShell, LoadingOverlay } from '@mantine/core'
 import { useContext, useEffect, useState } from 'react'
-import { useLocation, useParams, useSearchParams } from 'react-router'
-import type { Serie } from '../../../shared/types'
+import { Outlet, useLocation, useParams, useSearchParams } from 'react-router'
+import type { RaceEvent, Serie } from '../../../shared/types'
+import { Loader } from '../../Loader/Loader'
 import { showErrorMessage } from '../../utils/showErrorMessage'
 import { AdminNavbar } from '../Navbar/Navbar'
 import { AdminContext } from '../Shared/AdminContext'
 import { adminApi } from '../utils/api'
-import { AdminSerieList } from './List/List'
 
 const CURRENT_YEAR = new Date().getFullYear()
+
+export type AdminSerieOutletContext = {
+  series: Serie[]
+  events: RaceEvent[]
+  year: number
+  onSerieChange: () => void
+}
 
 export const AdminSeries = () => {
   const [loadingData, setLoadingData] = useState<boolean>(true)
   const [series, setSeries] = useState<Serie[]>([])
+  const [events, setEvents] = useState<RaceEvent[]>([])
   const params = useParams<{ year: string, serieHash: string, tab?: string }>()
   const [searchParams] = useSearchParams()
   const location = useLocation()
@@ -44,13 +52,13 @@ export const AdminSeries = () => {
     try {
       setLoadingData(true)
 
-      const [
-        yearSeries,
-      ] = await Promise.all([
+      const [yearSeries, yearEvents] = await Promise.all([
         adminApi.get.series({ year: +selectedYear }),
+        adminApi.get.events({ year: +selectedYear }),
       ])
 
       setSeries(yearSeries)
+      setEvents(yearEvents)
     } catch (error) {
       showErrorMessage({ title: 'Error', message: (error as any).message })
 
@@ -60,14 +68,9 @@ export const AdminSeries = () => {
     }
   }
 
-  // const selectedSerie = useMemo(() => {
-  //   if (!params.serieHash) return undefined
-  //   return series.find(s => s.year === selectedYear.toString() && s.hash === params.serieHash) || undefined
-  // }, [params.serieHash, selectedYear, series])
-  //
-  // const handleSerieChange = () => {
-  //   fetchData()
-  // }
+  const handleSerieChange = () => {
+    fetchData()
+  }
 
   useEffect(() => {
     fetchData()
@@ -86,18 +89,14 @@ export const AdminSeries = () => {
         display: 'flex',
         flexDirection: 'column',
       }}>
-        {/*{location.pathname === '/admin/series' ? (*/}
-        <AdminSerieList series={series} year={selectedYear} loading={loadingData}/>
-        {/*) : (*/}
-        {/*  <AdminSerieEdit*/}
-        {/*    serieHash={params.serieHash!}*/}
-        {/*    year={+selectedYear}*/}
-        {/*    serie={selectedSerie}*/}
-        {/*    series={series}*/}
-        {/*    tab={params.tab}*/}
-        {/*    loading={loadingData}*/}
-        {/*    onChange={handleSerieChange}*/}
-        {/*  />)}*/}
+        <LoadingOverlay
+          visible={loadingData}
+          overlayProps={{ radius: 'sm', blur: 2 }}
+          loaderProps={{ children: <Loader text="Loading..."/> }}
+        />
+
+        <Outlet
+          context={{ series, events, year: selectedYear, onSerieChange: handleSerieChange }}/>
       </AppShell.Main>
     </>
   )

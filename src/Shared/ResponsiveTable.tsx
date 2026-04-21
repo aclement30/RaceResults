@@ -1,28 +1,24 @@
 import { Table, useMatches } from '@mantine/core'
-import {
-  Children, cloneElement,
-  isValidElement, type ReactElement,
-  useMemo
-} from 'react'
+import { Children, cloneElement, isValidElement, type ReactElement, useMemo } from 'react'
 
 type ResponsiveTableProps = {
   stickyColumnHeaders: ReactElement<typeof Table.Tr>
-  scrollableColumnHeaders: ReactElement<typeof Table.Tr>
+  scrollableColumnHeaders?: ReactElement<typeof Table.Tr>
   children: ReactElement<typeof Table.Tr>[]
 }
 
 export const ResponsiveTable: React.FC<ResponsiveTableProps> = ({
-                                                                  stickyColumnHeaders: leftColumns,
-                                                                  scrollableColumnHeaders: rightColumns,
-                                                                  children
-                                                                }) => {
+  stickyColumnHeaders: leftColumns,
+  scrollableColumnHeaders: rightColumns,
+  children
+}) => {
   const tableWrapperStyles = useMatches({
     base: { width: '100%' },
     sm: { width: 'auto' },
   })
 
-  const stickyColumnsCount = ( leftColumns.props.children as ReactElement<typeof Table.Th>[] ).filter(e => isValidElement(e)).length
-  const scrollableColumnsCount = ( rightColumns.props.children as ReactElement<typeof Table.Th>[] ).filter(e => isValidElement(e)).length
+  const stickyColumnsCount = (leftColumns.props.children as ReactElement<typeof Table.Th>[]).filter(e => isValidElement(e)).length
+  const scrollableColumnsCount = (rightColumns && (rightColumns?.props.children as ReactElement<typeof Table.Th>[]).filter(e => isValidElement(e)).length) || 0
 
   const [leftTableRows, rightTableRows] = useMemo(() => {
     const leftTableRows: ReactElement[] = []
@@ -33,7 +29,7 @@ export const ResponsiveTable: React.FC<ResponsiveTableProps> = ({
         const leftChildren: ReactElement[] = []
         const rightChildren: ReactElement[] = []
 
-        Children.toArray(( tr.props as any ).children).forEach((td, index) => {
+        Children.toArray((tr.props as any).children).forEach((td, index) => {
           if (index < stickyColumnsCount) {
             leftChildren.push(cloneElement(td as ReactElement))
           } else {
@@ -41,8 +37,8 @@ export const ResponsiveTable: React.FC<ResponsiveTableProps> = ({
           }
         })
 
-        const leftRow = cloneElement(tr, ( tr.props as any ), ...leftChildren)
-        const rightRow = cloneElement(tr, { ...( tr.props as any ), children: rightChildren })
+        const leftRow = cloneElement(tr, (tr.props as any), ...leftChildren)
+        const rightRow = cloneElement(tr, { ...(tr.props as any), children: rightChildren })
 
         leftTableRows.push(leftRow)
         rightTableRows.push(rightRow)

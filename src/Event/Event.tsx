@@ -156,7 +156,7 @@ export const Event: React.FC = () => {
           />
 
           {selectedEvent && !selectedEventCategory && !loadingResults && (
-            <EmptyState>Unknown Category</EmptyState>
+            <EmptyState text="Unknown Category"/>
           )}
 
           {eventResults && selectedEventCategory && !loadingResults && (

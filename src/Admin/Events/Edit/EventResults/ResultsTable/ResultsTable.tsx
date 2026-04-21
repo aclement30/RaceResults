@@ -152,7 +152,7 @@ export const ResultsTable: React.FC<ResultsTableProps> = ({
             <Table.Tr>
               <Table.Th>Pos</Table.Th>
               {visibleColumns.has('bib') && <Table.Th>Bib</Table.Th>}
-              <Table.Th>Athlete</Table.Th>
+              <Table.Th>Name</Table.Th>
               {visibleColumns.has('uciId') && <Table.Th>UCI ID</Table.Th>}
               {visibleColumns.has('team') && <Table.Th>Team</Table.Th>}
               {visibleColumns.has('city') && <Table.Th>City</Table.Th>}

@@ -12,13 +12,13 @@ export const PrimesTable: React.FC = () => {
   const results = formRef.current.getValues().results
 
   const athleteOptions = results
-    .filter(r => r.firstName || r.lastName)
-    .map(r => ({
-      value: r.participantId,
-      label: [r.bibNumber != null ? String(r.bibNumber) : null, participantName(r)]
-        .filter(Boolean)
-        .join(' - '),
-    }))
+  .filter(r => r.firstName || r.lastName)
+  .map(r => ({
+    value: r.participantId,
+    label: [r.bibNumber != null ? String(r.bibNumber) : null, participantName(r)]
+    .filter(Boolean)
+    .join(' - '),
+  }))
 
   const update = (nextPrimes: PrimeResult[]) => {
     setPrimes(nextPrimes)
@@ -46,7 +46,7 @@ export const PrimesTable: React.FC = () => {
           <Table.Thead>
             <Table.Tr>
               <Table.Th w={90}>Prime #</Table.Th>
-              <Table.Th>Athlete</Table.Th>
+              <Table.Th>Name</Table.Th>
               <Table.Th w={90}>Position</Table.Th>
               <Table.Th w={40}/>
             </Table.Tr>

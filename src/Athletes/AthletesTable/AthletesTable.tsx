@@ -1,16 +1,13 @@
-import {
-  Anchor, Group,
-  Table,
-} from '@mantine/core'
-import { useContext, useMemo, useState } from 'react'
-import { columns } from '../../Event/Shared/columns'
+import { Anchor, Group, Table, } from '@mantine/core'
 import * as React from 'react'
-import { EmptyState } from '../../Shared/EmptyState'
+import { useContext, useMemo, useState } from 'react'
+import type { Athlete } from '../../../shared/types'
 import { AppContext } from '../../AppContext'
 import { renderSkillLevelWithAgeCategory } from '../../Athlete/utils'
-import { useNavigator } from '../../utils/useNavigator'
-import type { Athlete } from '../../../shared/types/athletes'
+import { columns } from '../../Event/Shared/columns'
+import { EmptyState } from '../../Shared/EmptyState'
 import { SearchField } from '../../Shared/SearchField'
+import { useNavigator } from '../../utils/useNavigator'
 
 const currentYear = new Date().getFullYear()
 
@@ -98,7 +95,7 @@ export const AthletesTable: React.FC<AthletesTableProps> = ({}) => {
             <Table.Tbody>{rows}</Table.Tbody>
           </Table>
         ) : (
-          <EmptyState>No athletes matching the selected filters</EmptyState>
+          <EmptyState text="No athletes matching the selected filters"/>
         )}
       </div>
     </>

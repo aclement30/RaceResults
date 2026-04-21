@@ -11,9 +11,10 @@ import { parseRawSerie } from './serie-parser.ts'
 
 const logger = defaultLogger.child({ provider: PROVIDER_NAME })
 
-export default async ({ year, sourceHashes }: {
+export default async ({ year, sourceHashes, forceOverwrite = false }: {
   year: number,
   sourceHashes: string[],
+  forceOverwrite?: boolean,
 }) => {
   await TeamParser.init()
   await RuleEngine.init()
@@ -36,7 +37,7 @@ export default async ({ year, sourceHashes }: {
     const { type } = bundleWithPayloads
     if (type === 'event') {
       const subBundles = splitMixedEventBundles(bundleWithPayloads)
-      const results = await Promise.allSettled(subBundles.map(b => cleanEvent(b, year)))
+      const results = await Promise.allSettled(subBundles.map(b => cleanEvent(b, year, forceOverwrite)))
 
       const events = results.flatMap((result, i) => {
         if (result.status === 'rejected') {
@@ -52,7 +53,7 @@ export default async ({ year, sourceHashes }: {
 
       return { events }
     } else if (type === 'serie') {
-      const serie = await cleanSerie(bundleWithPayloads, year)
+      const serie = await cleanSerie(bundleWithPayloads, year, forceOverwrite)
       return { serie }
     } else {
       logger.error(`Unsupported bundle type: ${type} for ${year}/${hash}`, {
@@ -157,9 +158,13 @@ const splitMixedEventBundles = (bundleWithPayloads: CrossMgrEventRawData): Cross
 const cleanEvent = async (
   bundleWithPayloads: CrossMgrEventRawData,
   year: number,
+  forceOverwrite = false
 ): Promise<UpdateEvent> => {
   const { payloads, ...bundle } = bundleWithPayloads
   const { event, eventResults } = await parseRawEvent(bundle, payloads)
+
+  // If forceOverwrite is true, delete existing event and results to ensure clean state before update
+  if (forceOverwrite) await data.delete.event(event.hash, year)
 
   await data.update.eventResults(eventResults, {
     year,
@@ -173,19 +178,23 @@ const cleanEvent = async (
 const cleanSerie = async (
   bundleWithPayloads: CrossMgrSerieRawData,
   year: number,
+  forceOverwrite = false
 ): Promise<UpdateSerie> => {
   const { payloads, ...bundle } = bundleWithPayloads
 
   const {
     serie,
-    serieResults
+    serieStandings
   } = await parseRawSerie(bundle, payloads as CrossMgrSerieRawData['payloads'])
 
-  await data.update.serieResults(serieResults, {
+  // If forceOverwrite is true, delete existing serie and results to ensure clean state before update
+  if (forceOverwrite) await data.delete.serie(serie.hash, year)
+
+  const { standingsUpdatedAt, hasPublishedEvents } = await data.update.serieStandings(serieStandings, {
     year,
     updateSource: 'ingest',
     userId: 'system-ingest-lambda'
   })
 
-  return serie
+  return { ...serie, standingsUpdatedAt, hasPublishedEvents }
 }

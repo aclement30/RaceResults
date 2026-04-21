@@ -1,15 +1,10 @@
-import {
-  Anchor,
-  Group,
-  Table,
-  Text,
-} from '@mantine/core'
+import { Anchor, Group, Table, Text, } from '@mantine/core'
+import * as React from 'react'
 import { useMemo } from 'react'
-import type { AthleteRace } from '../../../shared/types'
 import { useNavigate, useSearchParams } from 'react-router'
+import type { AthleteRace } from '../../../shared/types'
 import { columns } from '../../Event/Shared/columns'
 import { Dropdown } from '../../Shared/Dropdown'
-import * as React from 'react'
 import { EmptyState } from '../../Shared/EmptyState'
 
 type RacesTableProps = {
@@ -120,7 +115,7 @@ export const RacesTable: React.FC<RacesTableProps> = ({
           <Table.Tbody>{rows}</Table.Tbody>
         </Table>
       ) : (
-        <EmptyState>No races {races && races.length > 0 ? 'matching the selected filters' : ''}</EmptyState>
+        <EmptyState text={`No races ${races && races.length > 0 ? 'matching the selected filters' : ''}`}/>
       )}
     </div>
   )

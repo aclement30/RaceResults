@@ -1,16 +1,12 @@
-import {
-  Alert,
-  Anchor, Badge, Group,
-  Table, Text, Tooltip,
-} from '@mantine/core'
-import { useContext, useMemo } from 'react'
+import { Alert, Anchor, Badge, Group, Table, Text, Tooltip, } from '@mantine/core'
+import { IconCircleCheck } from '@tabler/icons-react'
 import * as React from 'react'
-import { EmptyState } from '../../Shared/EmptyState'
+import { useContext, useMemo } from 'react'
+import type { Athlete, TDiscipline } from '../../../shared/types'
 import { AppContext } from '../../AppContext'
 import { renderSkillLevelWithAgeCategory } from '../../Athlete/utils'
+import { EmptyState } from '../../Shared/EmptyState'
 import { useNavigator } from '../../utils/useNavigator'
-import type { Athlete, TDiscipline } from '../../../shared/types'
-import { IconCircleCheck } from '@tabler/icons-react'
 
 const currentYear = new Date().getFullYear()
 
@@ -111,7 +107,7 @@ export const PointsCollectorsTable: React.FC<PointsCollectorsTableProps> = ({
             <Table.Tbody>{rows}</Table.Tbody>
           </Table>
         ) : (
-          <EmptyState>No points collectors found</EmptyState>
+          <EmptyState text="No points collectors found"/>
         )}
       </div>
 

@@ -176,7 +176,7 @@ export const AdminEventList: React.FC<AdminEventListProps> = ({
             )}
           </>
         ) : (
-          <EmptyState>No events matching the selected filters</EmptyState>
+          <EmptyState text="No events matching the selected filters"/>
         )}
       </div>
     </>
