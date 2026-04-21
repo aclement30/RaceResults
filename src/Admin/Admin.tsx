@@ -10,6 +10,7 @@ import { AdminDashboard } from './Dashboard/Dashboard'
 import { AdminDataProcessing } from './DataProcessing/DataProcessing'
 import { AdminEvents } from './Events/Events'
 import { AdminHeader } from './Header/Header'
+import { AdminAuthError } from './Login/AuthError'
 import { AdminLogin } from './Login/Login'
 import { AdminSerieEdit } from './Series/Edit/Edit'
 import {
@@ -26,6 +27,7 @@ import { AdminContext, AdminContextProvider } from './Shared/AdminContext'
 import { AdminTeams } from './Teams/Teams'
 import { COGNITO_AUTH_CONFIG } from './utils/config'
 import { loadAdminStartupData } from './utils/loadAdminStartupData'
+import { useProfile } from './utils/useProfile'
 
 export const Admin = () => {
   return (
@@ -43,6 +45,7 @@ export const Admin = () => {
 const AdminRouter = () => {
   const { isNavbarOpened } = useContext(UIContext)
   const auth = useAuth()
+  const { isOrganizer, isAdmin } = useProfile()
 
   const {
     loadingStartupData,
@@ -50,20 +53,25 @@ const AdminRouter = () => {
     setOrganizers,
     setYears,
     setAdminUsers,
+    setAthleteOverrides,
   } = useContext(AdminContext)
 
   useEffect(() => {
-    if (!auth.isAuthenticated) return
+    if (!auth.isAuthenticated && (!isOrganizer && !isAdmin)) {
+      setLoadingStartupData(false)
+      return
+    }
 
     const fetchData = async () => {
       try {
         setLoadingStartupData(true)
 
-        const { organizers, years, adminUsers } = await loadAdminStartupData()
+        const { organizers, years, adminUsers, athletesOverrides } = await loadAdminStartupData()
 
         setOrganizers(organizers)
         setYears(years)
         setAdminUsers(adminUsers)
+        setAthleteOverrides(athletesOverrides)
 
         setLoadingStartupData(false)
       } catch (error) {
@@ -74,8 +82,12 @@ const AdminRouter = () => {
     fetchData()
   }, [auth.isAuthenticated])
 
-  if (!auth.isAuthenticated) {
+  if (!auth.isAuthenticated && !auth.error) {
     return <AdminLogin/>
+  } else if (auth.error || (auth.isAuthenticated && !isOrganizer && !isAdmin)) {
+    return (
+      <AdminAuthError/>
+    )
   }
 
   return (
@@ -96,12 +108,6 @@ const AdminRouter = () => {
           children: <Loader text="Loading..."/>,
         }}
       />
-
-      {auth.error && (
-        <div style={{ color: 'red' }}>
-          Authentication error: {auth.error.message}
-        </div>
-      )}
 
       {!auth.isLoading && auth.isAuthenticated && (
         <Routes>

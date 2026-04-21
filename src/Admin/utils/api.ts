@@ -23,7 +23,7 @@ import type {
 import { COGNITO_AUTH_CONFIG, ENV } from './config'
 
 function getUser() {
-  const oidcStorage = sessionStorage.getItem(`oidc.user:${COGNITO_AUTH_CONFIG.authority}:${COGNITO_AUTH_CONFIG.client_id}`)
+  const oidcStorage = localStorage.getItem(`oidc.user:${COGNITO_AUTH_CONFIG.authority}:${COGNITO_AUTH_CONFIG.client_id}`)
 
   if (!oidcStorage) return null
 

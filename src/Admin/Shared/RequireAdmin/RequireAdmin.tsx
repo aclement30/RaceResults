@@ -14,3 +14,13 @@ export const RequireAdmin: React.FC<RequireAdminProps> = ({ children }) => {
 
   return children
 }
+
+export const RequireOrganizer: React.FC<RequireAdminProps> = ({ children }) => {
+  const { isAdmin, isOrganizer } = useProfile()
+
+  if (!isAdmin && !isOrganizer) {
+    return null
+  }
+
+  return children
+}
