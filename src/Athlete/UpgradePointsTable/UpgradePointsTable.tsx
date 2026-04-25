@@ -248,10 +248,46 @@ export const UpgradePointsTable: React.FC<ResultsTableProps> = ({
           {!!selectedRows.length && (
             <Group justify="flex-end" gap="sm">
               {(selectedPointType === 'ALL' || selectedPointType === 'UPGRADE') &&
-                <Tooltip label="Upgrade Points"><Badge size="xl">{totalActivePoints.UPGRADE}</Badge></Tooltip>}
+                <Tooltip label="Upgrade Points">
+                  <Badge size="xl">
+                    <Group gap="10">
+                      <div
+                        style={{
+                          fontSize: 'smaller',
+                          fontWeight: 'lighter',
+                          borderRight: '1px solid white',
+                          paddingRight: 10
+                        }}>
+                        {selectedPointType === 'ALL' ? 'Upgrade' : 'Total'}
+                      </div>
+                      <div>{totalActivePoints.UPGRADE}</div>
+                    </Group>
+                  </Badge>
+                </Tooltip>
+              }
+
               {(selectedPointType === 'ALL' || selectedPointType === 'SUBJECTIVE') &&
-                <Tooltip label="Subjective Points"><Badge size="xl"
-                                                          variant="light">{totalActivePoints.SUBJECTIVE}</Badge></Tooltip>}
+                <Tooltip label="Subjective Points">
+                  <Badge size="xl" variant="light">
+                    <Group gap="10">
+                      <div
+                        style={{
+                          fontSize: 'smaller',
+                          fontWeight: 'lighter',
+                          borderRight: '1px solid white',
+                          paddingRight: 10
+                        }}>
+                        <span className="mantine-visible-from-sm">
+                          {selectedPointType === 'ALL' ? 'Subjective' : 'Total'}
+                        </span>
+                        <span className="mantine-hidden-from-sm">
+                          {selectedPointType === 'ALL' ? 'Subj.' : 'Total'}
+                        </span>
+                      </div>
+                      <div>{totalActivePoints.SUBJECTIVE}</div>
+                    </Group>
+                  </Badge>
+                </Tooltip>}
             </Group>
           )}
         </Group>
