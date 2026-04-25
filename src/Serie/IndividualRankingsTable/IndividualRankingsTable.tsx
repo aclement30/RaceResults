@@ -15,6 +15,7 @@ type IndividualRankingsTableProps = {
   serie: Serie
   selectedCategory: string
   standings: AggregatedIndividualRanking[]
+  eventDates: string[]
 }
 
 export const columns = {
@@ -26,6 +27,7 @@ export const IndividualRankingsTable: React.FC<IndividualRankingsTableProps> = (
   serie,
   selectedCategory,
   standings,
+  eventDates,
 }) => {
   const { navigateToAthlete, navigateToEvent } = useNavigator()
   const { events, findAthlete } = useContext(AppContext)
@@ -40,7 +42,7 @@ export const IndividualRankingsTable: React.FC<IndividualRankingsTableProps> = (
   if (standings.some(standing => !!standing.team?.length)) athleteColumns.push('team')
   if (standings.some(standing => !!standing.bibNumber)) athleteColumns.push('bibNumber')
 
-  const racePointColumns = standings[0] ? Object.keys(standings[0].racePoints).sort() : []
+  const racePointColumns = eventDates.sort()
 
   const { highlightedBibNumber, highlightAthlete } = useHighlightedAthlete()
 

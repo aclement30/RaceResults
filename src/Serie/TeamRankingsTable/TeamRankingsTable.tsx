@@ -14,6 +14,7 @@ type TeamRankingsTableProps = {
   serie: Serie
   selectedCategory: string
   standings: AggregatedTeamRanking[]
+  eventDates: string[]
   onlyShowAggregatedPoints?: boolean
 }
 
@@ -28,6 +29,7 @@ export const TeamRankingsTable: React.FC<TeamRankingsTableProps> = ({
   serie,
   selectedCategory,
   standings,
+  eventDates,
   onlyShowAggregatedPoints,
 }) => {
   const { navigateToEvent, navigateToSerie } = useNavigator()
@@ -41,7 +43,7 @@ export const TeamRankingsTable: React.FC<TeamRankingsTableProps> = ({
     return keyBy(yearEvents.filter((e) => e.serie === serie.alias), 'date')
   }, [events, serie, onlyShowAggregatedPoints])
 
-  const racePointColumns = standings?.[0]?.racePoints && Object.keys(standings?.[0].racePoints).sort() || []
+  const racePointColumns = eventDates.sort()
 
   const rows = useMemo(() => standings.map((standing) => {
     const isFavoriteRow = isFavorite({ team: standing.team })

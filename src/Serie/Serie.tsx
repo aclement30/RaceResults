@@ -184,6 +184,20 @@ export const Serie: React.FC = () => {
     filteredStandings,
   } = useCategoryStandings(computedStandings, searchValue)
 
+  const eventDates = useMemo(() => {
+    if (!serieStandings) return []
+
+    const dates = new Set<string>()
+
+    serieStandings[resultType!]?.events.forEach(event => {
+      if (selectedCategory && event.categories[selectedCategory]) {
+        dates.add(event.date || '')
+      }
+    })
+
+    return Array.from(dates).sort()
+  }, [serieStandings, resultType, selectedCategory])
+
   const corrections = useMemo(() => {
     if (!selectedSerieCategory) return ''
 
@@ -370,12 +384,14 @@ export const Serie: React.FC = () => {
                     serie={serie}
                     selectedCategory={selectedCategory}
                     standings={filteredStandings as AggregatedIndividualRanking[]}
+                    eventDates={eventDates}
                   />
                 ) : (
                   <TeamRankingsTable
                     serie={serie}
                     selectedCategory={selectedCategory}
                     standings={filteredStandings as AggregatedTeamRanking[]}
+                    eventDates={eventDates}
                     onlyShowAggregatedPoints={serieStandings.team?.events.length === 1 && serieStandings.team.events[0].combinedPoints}
                   />
                 )}
