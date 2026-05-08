@@ -15,7 +15,7 @@ import {
   updateBaseAthletes
 } from './data/athletes.ts'
 import { getRawBCMembershipDates, getRawBCMembershipsForDate, updateRawBCMemberships } from './data/bc-memberships.ts'
-import { deleteEvent, getEventResults, getEvents, updateEventResults, updateEvents } from './data/events.ts'
+import { deleteEvent, deletePendingEventResultCategory, getEventResults, getEvents, getPendingEventResults, updateEventResults, updateEvents } from './data/events.ts'
 import {
   getEventDays,
   getLastCheckDate,
@@ -78,6 +78,7 @@ export default {
     events: getEvents,
     eventDays: getEventDays,
     eventResults: getEventResults,
+    pendingEventResults: getPendingEventResults,
     lastCheckDate: getLastCheckDate,
     organizers: getOrganizers,
     rawBCMemberships: getRawBCMembershipsForDate,
@@ -122,6 +123,7 @@ export default {
   },
   delete: {
     event: deleteEvent,
+    pendingEventResultCategory: deletePendingEventResultCategory,
     serie: deleteSerie,
     serieStandingEvent: deleteSerieStandingEvent,
     team: deleteTeam,

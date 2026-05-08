@@ -25,6 +25,7 @@ export const RR_S3_BUCKET = ENV === 'prod' ? 'cycling-race-results' : 'cycling-r
 
 export const DRAFT_EVENTS_PATH = 'draft_events/'
 export const EVENTS_RESULTS_SNAPSHOTS_PATH = 'events_results_snapshots/'
+export const PENDING_EVENTS_RESULTS_PATH = 'pending_event_results/'
 export const DRAFT_SERIES_STANDINGS_PATH = 'draft_series_standings/'
 export const SERIES_STANDINGS_SNAPSHOTS_PATH = 'series_standings_snapshots/'
 export const RAW_INGESTION_DATA_PATH = 'raw_ingestion_data/'

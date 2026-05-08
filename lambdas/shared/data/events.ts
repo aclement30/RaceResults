@@ -2,9 +2,10 @@ import { isEqual, omit, pick, sortBy } from 'lodash-es'
 import { nanoid } from 'nanoid'
 import { EventResultsSchema, RaceEventSchema } from '../../../shared/schemas/events.ts'
 import { PUBLIC_BUCKET_PATHS } from '../../../src/config/s3.ts'
-import { DRAFT_EVENTS_PATH, EVENTS_RESULTS_SNAPSHOTS_PATH } from '../config.ts'
+import { DRAFT_EVENTS_PATH, EVENTS_RESULTS_SNAPSHOTS_PATH, PENDING_EVENTS_RESULTS_PATH } from '../config.ts'
 import type {
   CreateEvent,
+  CreateEventCategory,
   CreateEventResults,
   EventCategory,
   EventResults,
@@ -129,6 +130,53 @@ export const getEventResults = async (eventHash: string, year: number) => {
   return JSON.parse(fileContent) as EventResults
 }
 
+export const getPendingEventResults = async (eventHash: string, year: number): Promise<CreateEventResults | undefined> => {
+  const filename = `${PENDING_EVENTS_RESULTS_PATH}${year}/${eventHash}.json`
+  const fileContent = await RRS3.fetchFile(filename, true)
+  if (!fileContent) return undefined
+  return JSON.parse(fileContent) as CreateEventResults
+}
+
+export const updatePendingEventResults = async (
+  incomingCategories: CreateEventCategory[],
+  eventHash: string,
+  year: number,
+): Promise<void> => {
+  const filename = `${PENDING_EVENTS_RESULTS_PATH}${year}/${eventHash}.json`
+  const existing = await getPendingEventResults(eventHash, year)
+
+  const mergedCategories: CreateEventCategory[] = existing ? [...existing.categories] : []
+
+  for (const incoming of incomingCategories) {
+    const idx = mergedCategories.findIndex(c => c.alias === incoming.alias)
+    if (idx >= 0) {
+      mergedCategories[idx] = incoming
+    } else {
+      mergedCategories.push(incoming)
+    }
+  }
+
+  await RRS3.writeFile(filename, JSON.stringify({ hash: eventHash, categories: mergedCategories }))
+}
+
+export const deletePendingEventResultCategory = async (
+  categoryAlias: string,
+  eventHash: string,
+  year: number,
+): Promise<void> => {
+  const filename = `${PENDING_EVENTS_RESULTS_PATH}${year}/${eventHash}.json`
+  const pending = await getPendingEventResults(eventHash, year)
+  if (!pending) return
+
+  const remainingCategories = pending.categories.filter(c => c.alias !== categoryAlias)
+
+  if (remainingCategories.length === 0) {
+    await RRS3.deleteFile(filename)
+  } else {
+    await RRS3.writeFile(filename, JSON.stringify({ hash: eventHash, categories: remainingCategories }))
+  }
+}
+
 export const updateEventResults = async (
   eventResults: CreateEventResults,
   { year, updateSource, userId, skipSnapshot }: {
@@ -160,6 +208,22 @@ export const updateEventResults = async (
   const categoriesToWrite = changedCategories.filter(c =>
     updateSource === 'manual' || !existingEventResults?.categories.find(e => e.alias === c.alias)?.userLocked
   )
+
+  // Step 2b: Store skipped locked categories as pending updates (ingest only)
+  // Only write to pending if the incoming data is more recent than the last manual save
+  if (updateSource !== 'manual') {
+    const lockedSkippedCategories = changedCategories.filter(c => {
+      const existingCategory = existingEventResults?.categories.find(e => e.alias === c.alias)
+      if (!existingCategory?.userLocked) return false
+      if (c.updatedAt && existingCategory.updatedAt) {
+        return c.updatedAt > existingCategory.updatedAt
+      }
+      return true
+    })
+    if (lockedSkippedCategories.length > 0) {
+      await updatePendingEventResults(lockedSkippedCategories, eventHash, year)
+    }
+  }
 
   // Step 3: Add metadata and userLocked flag
   const categoriesWithMetadata: EventCategory[] = categoriesToWrite.map(c => {
@@ -214,7 +278,14 @@ export const updateEventResults = async (
 
   await RRS3.writeFile(filename, JSON.stringify(updatedEventResults))
 
-  // Step 5: Create snapshots of the previous state of changed categories on manual saves
+  // Step 5: Clear pending updates for categories that were just manually saved
+  if (updateSource === 'manual' && categoriesToWrite.length > 0) {
+    await Promise.all(
+      categoriesToWrite.map(c => deletePendingEventResultCategory(c.alias, eventHash, year))
+    )
+  }
+
+  // Step 6: Create snapshots of the previous state of changed categories on manual saves
   if (!skipSnapshot && updateSource === 'manual' && categoriesWithMetadata.length > 0) {
     const previousCategories = categoriesWithMetadata
     .map(c => existingEventResults?.categories.find(e => e.alias === c.alias))
