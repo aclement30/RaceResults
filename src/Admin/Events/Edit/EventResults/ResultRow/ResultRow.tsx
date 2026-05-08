@@ -43,7 +43,10 @@ export const ResultRow = React.memo<ResultRowProps>(({
   const formRef = useContext(ResultsFormContext)!
   const form = formRef.current
   const { findAthlete } = useContext(AdminContext)
-  const { getFieldStyles, onFormValuesChange } = useFormChanges(form.getInitialValues().results[index])
+  const { getFieldStyles, onFormValuesChange } = useFormChanges(
+    form.getInitialValues().results[index],
+    form.getValues().results[index],
+  )
 
   const onValueChange = () => {
     onFormValuesChange(form.getValues().results[index])

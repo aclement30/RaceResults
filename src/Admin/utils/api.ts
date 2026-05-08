@@ -123,6 +123,10 @@ export const adminApi = {
       year: number,
       eventHash: string
     ): Promise<EventResults> => adminApiFetch(`/admin/events/${year}/${eventHash}/results`),
+    pendingEventResults: async (
+      year: number,
+      eventHash: string
+    ): Promise<EventResults> => adminApiFetch(`/admin/events/${year}/${eventHash}/results/pending`),
     series: async ({ year }: {
       year?: number;
     }): Promise<Serie[]> => adminApiFetch(`/admin/series?year=${year}`),
@@ -330,6 +334,14 @@ export const adminApi = {
       { year, eventHash }: { year: number, eventHash: string }
     ): Promise<EventCategory> => {
       return adminApiFetch(`/admin/events/${year}/${eventHash}/results/category/${categoryAlias}`, {
+        method: 'DELETE',
+      })
+    },
+    pendingEventResultCategory: async (
+      categoryAlias: string,
+      { year, eventHash }: { year: number, eventHash: string }
+    ): Promise<void> => {
+      await adminApiFetch(`/admin/events/${year}/${eventHash}/results/pending/${categoryAlias}`, {
         method: 'DELETE',
       })
     },

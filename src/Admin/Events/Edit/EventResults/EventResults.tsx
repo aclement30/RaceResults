@@ -1,7 +1,7 @@
-import { Box, Button, Collapse, Divider, Flex, Group, Paper, SegmentedControl, Text, } from '@mantine/core'
+import { Alert, Box, Button, Collapse, Divider, Flex, Group, Paper, SegmentedControl, Text, } from '@mantine/core'
 import { useForm } from '@mantine/form'
 import { modals } from '@mantine/modals'
-import { IconChevronDown, IconChevronUp, IconDatabaseImport, IconRotate, IconUpload, } from '@tabler/icons-react'
+import { IconChevronDown, IconChevronUp, IconDatabaseImport, IconInfoCircle, IconRotate, IconUpload, } from '@tabler/icons-react'
 import React, { useEffect, useRef, useState } from 'react'
 import type {
   BaseCategory,
@@ -34,6 +34,7 @@ export const EventResults: React.FC<EventResultsProps> = ({ results, year, event
   const [categories, setCategories] = useState<CreateEventCategory[]>(results.categories as CreateEventCategory[])
   const [activeCategory, setActiveCategory] = useState<string | null>(results.categories?.length ? results.categories[0].alias : null)
   const [dirtyCategories, setDirtyCategories] = useState<Set<string>>(new Set())
+  const [pendingResults, setPendingResults] = useState<Record<string, CreateEventCategory>>({})
   const [saving, setSaving] = useState(false)
   const [importing, setImporting] = useState(false)
   const [activeTab, setActiveTab] = useState<'results' | 'primes'>('results')
@@ -41,6 +42,7 @@ export const EventResults: React.FC<EventResultsProps> = ({ results, year, event
   const [primesTabDirty, setPrimesTabDirty] = useState(false)
   const [detailsOpen, setDetailsOpen] = useState(false)
   const [detailPanelResetKey, setDetailPanelResetKey] = useState(0)
+  const [resultsTableKey, setResultsTableKey] = useState(0)
 
   const currentCategory = categories.find(c => c.alias === activeCategory)
 
@@ -109,6 +111,41 @@ export const EventResults: React.FC<EventResultsProps> = ({ results, year, event
     })
   }
 
+  // Fetch pending results on mount
+  useEffect(() => {
+    adminApi.get.pendingEventResults(year, eventHash).then(pending => {
+      if (pending.categories.length === 0) return
+      const byAlias: Record<string, CreateEventCategory> = {}
+      pending.categories.forEach(c => { byAlias[c.alias] = c as CreateEventCategory })
+      setPendingResults(byAlias)
+    }).catch(() => {})
+  }, [])
+
+  const handleUseProviderVersion = () => {
+    if (!activeCategory || !pendingResults[activeCategory]) return
+    const pendingCategory = pendingResults[activeCategory]
+    const newValues = {
+      results: pendingCategory.results as ParticipantResult[],
+      ...categoryDetailValues(pendingCategory),
+    }
+    formRef.current.setValues(newValues)
+    setResultsTableKey(k => k + 1)
+  }
+
+  const handleDismissPendingUpdate = async () => {
+    if (!activeCategory) return
+    try {
+      await adminApi.delete.pendingEventResultCategory(activeCategory, { year, eventHash })
+      setPendingResults(prev => {
+        const next = { ...prev }
+        delete next[activeCategory]
+        return next
+      })
+    } catch (error) {
+      showErrorMessage({ message: `Failed to dismiss pending update: ${(error as Error).message}`, title: 'Error' })
+    }
+  }
+
   // Sync form when active category changes
   useEffect(() => {
     const newResults = (currentCategory?.results ?? []) as ParticipantResult[]
@@ -122,6 +159,7 @@ export const EventResults: React.FC<EventResultsProps> = ({ results, year, event
     setDetailsOpen(false)
     setResultsTabDirty(false)
     setPrimesTabDirty(false)
+    setResultsTableKey(0)
   }, [activeCategory])
 
   const handleOpenFileUpload = () => {
@@ -323,6 +361,15 @@ export const EventResults: React.FC<EventResultsProps> = ({ results, year, event
         next.delete(currentCategory.alias)
         return next
       })
+
+      // Clear pending update for this category (backend already cleared it on save)
+      if (pendingResults[currentCategory.alias]) {
+        setPendingResults(prev => {
+          const next = { ...prev }
+          delete next[currentCategory.alias]
+          return next
+        })
+      }
     } catch (err) {
       // Error handling is done in handleSaveCategory, so we don't need to do anything here
     } finally {
@@ -421,6 +468,7 @@ export const EventResults: React.FC<EventResultsProps> = ({ results, year, event
             categories={categories}
             activeCategory={activeCategory}
             dirtyCategories={dirtyCategories}
+            pendingCategories={new Set(Object.keys(pendingResults))}
             onSelectCategory={handleSelectCategory}
             onEditCategory={handleOpenEditCategoryModal}
             onDeleteCategory={handleDeleteCategory}
@@ -431,6 +479,27 @@ export const EventResults: React.FC<EventResultsProps> = ({ results, year, event
           <Divider orientation="vertical"/>
 
           <Box style={{ flex: 1 }}>
+            {currentCategory && activeCategory && pendingResults[activeCategory] && (
+              <Alert
+                icon={<IconInfoCircle size={16}/>}
+                color="blue"
+                mb="md"
+                title="Provider update available"
+              >
+                <Group justify="space-between" align="center">
+                  <Text size="sm">A newer version from the provider is available for this category.</Text>
+                  <Group gap="xs">
+                    <Button size="xs" variant="light" color="blue" onClick={handleUseProviderVersion}>
+                      Use provider version
+                    </Button>
+                    <Button size="xs" variant="subtle" color="gray" onClick={handleDismissPendingUpdate}>
+                      Dismiss
+                    </Button>
+                  </Group>
+                </Group>
+              </Alert>
+            )}
+
             {currentCategory && (
               <Group mb="md" justify="space-between">
                 <Group>
@@ -522,6 +591,7 @@ export const EventResults: React.FC<EventResultsProps> = ({ results, year, event
             {/* Always mounted to preserve form dirty state; hidden when on primes tab */}
             <div style={{ display: activeTab === 'results' ? 'block' : 'none' }}>
               <ResultsTable
+                key={resultsTableKey}
                 category={currentCategory}
                 sourceUrls={event.sourceUrls}
                 visibleColumns={visibleColumns}

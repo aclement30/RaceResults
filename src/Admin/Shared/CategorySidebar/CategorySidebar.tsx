@@ -8,6 +8,7 @@ type CategorySidebarProps<T extends BaseCategory> = {
   categories: T[]
   activeCategory: string | null
   dirtyCategories?: Set<string>
+  pendingCategories?: Set<string>
   onSelectCategory: (alias: string) => void
   onEditCategory: (alias: string) => void
   onDeleteCategory: (alias: string) => void
@@ -20,6 +21,7 @@ export const CategorySidebar = <T extends BaseCategory>(
     categories,
     activeCategory,
     dirtyCategories,
+    pendingCategories,
     onSelectCategory,
     onEditCategory,
     onDeleteCategory,
@@ -82,6 +84,7 @@ export const CategorySidebar = <T extends BaseCategory>(
               category={category}
               isActive={activeCategory === category.alias}
               isDirty={dirtyCategories?.has(category.alias) ?? false}
+              hasPendingUpdate={pendingCategories?.has(category.alias) ?? false}
               canMoveUp={idx > 0}
               canMoveDown={idx < topLevel.length - 1}
               onSelect={onSelectCategory}
@@ -97,6 +100,7 @@ export const CategorySidebar = <T extends BaseCategory>(
                 category={sub}
                 isActive={activeCategory === category.alias}
                 isDirty={dirtyCategories?.has(category.alias) ?? false}
+                hasPendingUpdate={pendingCategories?.has(sub.alias) ?? false}
                 indent
                 canMoveUp={subIdx > 0}
                 canMoveDown={subIdx < siblings.length - 1}

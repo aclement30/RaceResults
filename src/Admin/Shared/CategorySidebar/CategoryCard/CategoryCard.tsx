@@ -1,4 +1,4 @@
-import { ActionIcon, Group, Indicator, Paper, Stack, Text } from '@mantine/core'
+import { ActionIcon, Box, Group, Paper, Stack, Text } from '@mantine/core'
 import { IconChevronDown, IconChevronUp, IconPencil, IconTrash } from '@tabler/icons-react'
 import React from 'react'
 import type { BaseCategory } from '../../../../../shared/types'
@@ -7,6 +7,7 @@ type CategoryCardProps = {
   category: BaseCategory
   isActive: boolean
   isDirty: boolean
+  hasPendingUpdate?: boolean
   indent?: boolean
   canMoveUp: boolean
   canMoveDown: boolean
@@ -21,6 +22,7 @@ export const CategoryCard: React.FC<CategoryCardProps> = ({
   category,
   isActive,
   isDirty,
+  hasPendingUpdate,
   indent,
   canMoveUp,
   canMoveDown,
@@ -42,17 +44,15 @@ export const CategoryCard: React.FC<CategoryCardProps> = ({
   >
     <Group justify="space-between" wrap="nowrap">
       <div>
-        <Indicator
-          disabled={!isDirty}
-          size={8}
-          color="#fece02"
-          position="middle-end"
-          offset={-4}
-        >
-          <Group gap={4} wrap="nowrap" pr={8}>
-            <Text size="sm" fw={500}>{category.label}</Text>
-          </Group>
-        </Indicator>
+        <Group gap={4} wrap="nowrap">
+          <Text size="sm" fw={500}>{category.label}</Text>
+          {isDirty
+            ? <Box w={8} h={8} style={{ borderRadius: '50%', backgroundColor: '#fece02', flexShrink: 0 }}/>
+            : hasPendingUpdate
+              ? <Box w={8} h={8} style={{ borderRadius: '50%', backgroundColor: 'var(--mantine-color-blue-6)', flexShrink: 0 }}/>
+              : null
+          }
+        </Group>
         <Text size="xs" c="dimmed">
           {category.gender === 'M' ? 'Men' : category.gender === 'F' ? 'Women' : 'Mixed'}
         </Text>
