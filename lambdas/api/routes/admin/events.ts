@@ -18,6 +18,7 @@ import z from 'zod'
 import {
   BaseCategorySchema,
   CreateEventCategorySchema,
+  CreateEventResultsSchema,
   CreateEventSchema,
   EventCategorySchema,
   EventResultsSchema,
@@ -122,6 +123,70 @@ export const eventRoutes: FastifyPluginAsync = async (fastify) => {
     }
 
     return eventResults
+  })
+
+  fastify.withTypeProvider<ZodTypeProvider>().get('/events/:year/:eventHash/results/pending', {
+    preHandler: [fastify.requireRaceDirector, requireOrganizerAccess],
+    schema: {
+      params: z.object({
+        year: z.string(),
+        eventHash: z.string(),
+      }),
+      response: {
+        200: CreateEventResultsSchema,
+        403: ResponseErrorSchema,
+        404: ResponseErrorSchema,
+      },
+    },
+  }, async (request, response) => {
+    const { year, eventHash } = request.params
+
+    const filters: { year: number, eventHash: string, organizerAlias?: string } = { year: +year, eventHash }
+    if (request.organizerAlias) filters.organizerAlias = request.organizerAlias
+
+    const [event, pendingResults] = await Promise.all([
+      data.get.events(filters, { summary: true }),
+      data.get.pendingEventResults(eventHash, +year),
+    ])
+
+    if (!event) {
+      response.status(404).send({ error: 'Event not found' })
+      return
+    }
+
+    return pendingResults ?? { hash: eventHash, categories: [] }
+  })
+
+  fastify.withTypeProvider<ZodTypeProvider>().delete('/events/:year/:eventHash/results/pending/:categoryAlias', {
+    preHandler: [fastify.requireRaceDirector, requireOrganizerAccess],
+    schema: {
+      params: z.object({
+        year: z.string(),
+        eventHash: z.string(),
+        categoryAlias: z.string(),
+      }),
+      response: {
+        204: z.undefined(),
+        403: ResponseErrorSchema,
+        404: ResponseErrorSchema,
+      },
+    },
+  }, async (request, response) => {
+    const { year, eventHash, categoryAlias } = request.params
+
+    const filters: { year: number, eventHash: string, organizerAlias?: string } = { year: +year, eventHash }
+    if (request.organizerAlias) filters.organizerAlias = request.organizerAlias
+
+    const [event] = await data.get.events(filters, { summary: true })
+
+    if (!event) {
+      response.status(404).send({ error: 'Event not found' })
+      return
+    }
+
+    await data.delete.pendingEventResultCategory(categoryAlias, eventHash, +year)
+
+    response.status(204).send()
   })
 
   fastify.withTypeProvider<ZodTypeProvider>().post('/events/:year/:eventHash/results/category', {
