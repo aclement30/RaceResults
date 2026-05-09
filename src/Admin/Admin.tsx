@@ -53,7 +53,6 @@ const AdminRouter = () => {
     setOrganizers,
     setYears,
     setAdminUsers,
-    setAthleteOverrides,
   } = useContext(AdminContext)
 
   useEffect(() => {
@@ -66,12 +65,11 @@ const AdminRouter = () => {
       try {
         setLoadingStartupData(true)
 
-        const { organizers, years, adminUsers, athletesOverrides } = await loadAdminStartupData()
+        const { organizers, years, adminUsers } = await loadAdminStartupData()
 
         setOrganizers(organizers)
         setYears(years)
         setAdminUsers(adminUsers)
-        setAthleteOverrides(athletesOverrides)
 
         setLoadingStartupData(false)
       } catch (error) {

@@ -5,6 +5,7 @@ export const BaseAthleteSchema = z.object({
   uciId: z.string(),
   firstName: z.string(),
   lastName: z.string(),
+  alternateNames: z.array(z.string()).optional(),
   gender: z.enum(['M', 'F', 'X']).optional(),
   city: z.string().nullable().optional(),
   province: z.string().nullable().optional(),

@@ -1,4 +1,4 @@
-import { Autocomplete, type AutocompleteProps } from '@mantine/core'
+import { Autocomplete, type AutocompleteProps, type OptionsFilter } from '@mantine/core'
 import { IconUserCheck } from '@tabler/icons-react'
 import React, { useCallback, useContext, useEffect, useState } from 'react'
 import { AdminContext } from '../AdminContext'
@@ -17,8 +17,21 @@ export const AthleteAutocomplete = React.memo<AthleteSelectProps>(({
   onOptionSubmit,
   ...restOfProps
 }) => {
-  const { athleteOptions, findAthlete } = useContext(AdminContext)
+  const { athletes, athleteOptions, findAthlete } = useContext(AdminContext)
   const [isAthleteMatched, setIsAthleteMatched] = useState(false)
+
+  const filter = useCallback<OptionsFilter>(({ options, search }) => {
+    const searchLower = search.toLowerCase().trim()
+    if (!searchLower) return options
+
+    return options.filter((option) => {
+      const comboboxOption = option as { value: string; label: string }
+      if (comboboxOption.label.toLowerCase().includes(searchLower)) return true
+
+      const athlete = athletes.get(comboboxOption.value)
+      return (athlete?.alternateNames || []).some(name => name.toLowerCase().includes(searchLower))
+    })
+  }, [athletes])
 
   let rightSection = restOfProps.rightSection
 
@@ -45,7 +58,10 @@ export const AthleteAutocomplete = React.memo<AthleteSelectProps>(({
 
     // Check if matching athlete's name matches the input value
     // Sometimes the UCI ID passed from props may not match the name in the input, so we want to ensure the name also matches before showing the checkmark
-    const isNameMatching = `${matchingAthlete?.firstName} ${matchingAthlete?.lastName}`.toLowerCase().trim() === value.toLowerCase().trim()
+    const valueLower = value.toLowerCase().trim()
+    const isPrimaryNameMatching = `${matchingAthlete?.firstName} ${matchingAthlete?.lastName}`.toLowerCase().trim() === valueLower
+    const isAlternateNameMatching = (matchingAthlete?.alternateNames || []).some(name => name.toLowerCase().trim() === valueLower)
+    const isNameMatching = isPrimaryNameMatching || isAlternateNameMatching
 
     setIsAthleteMatched(isNameMatching)
   }, [value, uciId, athleteOptions])
@@ -54,6 +70,7 @@ export const AthleteAutocomplete = React.memo<AthleteSelectProps>(({
     <Autocomplete
       value={value}
       data={athleteOptions}
+      filter={filter}
       onChange={onChange}
       onOptionSubmit={handleOptionSubmit}
       placeholder="Name or search..."

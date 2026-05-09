@@ -7,6 +7,7 @@ import type { Athlete, TDiscipline, Team } from '../../../../shared/types'
 import { Loader } from '../../../Loader/Loader'
 import { showErrorMessage } from '../../../utils/showErrorMessage'
 import { showSuccessMessage } from '../../../utils/showSuccessMessage'
+import { TagInput } from '../../Shared/TagInput/TagInput'
 import { adminApi } from '../../utils/api'
 import { useFormChanges } from '../../utils/useFormChanges'
 
@@ -30,6 +31,7 @@ const BIRTH_YEAR_OPTIONS = Array.from(
 
 type FormValues = Omit<Partial<Athlete>, 'birthYear' | 'latestUpgrade'> & {
   birthYear?: string
+  alternateNames: string[]
   latestUpgrade?: {
     ROAD?: {
       date?: string | null
@@ -83,6 +85,7 @@ export const AdminAthleteEdit: React.FC<AdminAthleteEditProps> = ({ teams, loadi
       province: athlete?.province || '',
       nationality: athlete?.nationality || '',
       birthYear: athlete?.birthYear?.toString() ?? '',
+      alternateNames: athlete?.alternateNames || [],
       licenses: athlete?.licenses || {},
       teams: athlete?.teams || {},
       skillLevel: athlete?.skillLevel || { ROAD: undefined, CX: undefined },
@@ -296,6 +299,17 @@ export const AdminAthleteEdit: React.FC<AdminAthleteEditProps> = ({ teams, loadi
                   placeholder="Enter nationality (e.g., CAN)"
                   {...form.getInputProps('nationality')}
                   styles={getFieldStyles('nationality')}
+                />
+              </Grid.Col>
+            </Grid>
+            <Grid>
+              <Grid.Col span={12}>
+                <TagInput
+                  label="Alternate Names"
+                  placeholder="Enter alternate names, separated by a comma"
+                  value={form.values.alternateNames}
+                  onChange={(values) => form.setFieldValue('alternateNames', values)}
+                  styles={getFieldStyles('alternateNames')}
                 />
               </Grid.Col>
             </Grid>

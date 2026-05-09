@@ -65,7 +65,8 @@ export const AthleteSearchField: React.FC<AthleteSearchFieldProps> = ({
       if (!isNaN(+searchValueLower) && searchValueLower.length === 11) {
         return uciId === searchValueLower
       } else {
-        return fullName.includes(searchValueLower)
+        return fullName.includes(searchValueLower) ||
+          (athlete.alternateNames || []).some(name => name.toLowerCase().includes(searchValueLower))
       }
     })
 

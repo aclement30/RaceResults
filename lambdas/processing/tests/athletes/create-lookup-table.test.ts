@@ -28,17 +28,10 @@ describe('createAthleteLookupTable', () => {
     lastUpdated: '2023-06-15'
   }
 
-  const baseMockOverrides = {
-    alternateNames: {},
-    replacedUciIds: {},
-    levelUpgradeDates: {},
-    athleteData: {},
-    ignoredTeams: []
-  }
-
   beforeEach(() => {
     clearLoggerMocks()
     jest.clearAllMocks()
+    ;(mockData.get.athleteManualEdits as jest.Mock).mockResolvedValue([])
   })
 
   afterEach(() => {
@@ -53,7 +46,6 @@ describe('createAthleteLookupTable', () => {
       { ...baseMockAthlete, uciId: '12345678903', firstName: 'Bob', lastName: 'Wilson' }
     ];
     (mockData.get.baseAthletes as jest.Mock).mockResolvedValue(athletes);
-    (mockData.get.athletesOverrides as jest.Mock).mockResolvedValue(baseMockOverrides);
     (mockData.update.athletesLookup as jest.Mock).mockResolvedValue(undefined)
 
     // Act
@@ -61,7 +53,7 @@ describe('createAthleteLookupTable', () => {
 
     // Assert
     expect(mockData.get.baseAthletes).toHaveBeenCalledTimes(1)
-    expect(mockData.get.athletesOverrides).toHaveBeenCalledTimes(1)
+    expect(mockData.get.athleteManualEdits).toHaveBeenCalledTimes(1)
     expect(mockData.update.athletesLookup).toHaveBeenCalledTimes(1)
 
     const [lookupTable, duplicates] = (mockData.update.athletesLookup as jest.Mock).mock.calls[0]
@@ -82,7 +74,6 @@ describe('createAthleteLookupTable', () => {
       { ...baseMockAthlete, uciId: '12345678903', firstName: undefined, lastName: undefined }
     ];
     (mockData.get.baseAthletes as jest.Mock).mockResolvedValue(athletes);
-    (mockData.get.athletesOverrides as jest.Mock).mockResolvedValue(baseMockOverrides);
     (mockData.update.athletesLookup as jest.Mock).mockResolvedValue(undefined)
 
     // Act
@@ -106,7 +97,6 @@ describe('createAthleteLookupTable', () => {
       { ...baseMockAthlete, uciId: '12345678903', firstName: 'Jane', lastName: 'Smith' }
     ];
     (mockData.get.baseAthletes as jest.Mock).mockResolvedValue(athletes);
-    (mockData.get.athletesOverrides as jest.Mock).mockResolvedValue(baseMockOverrides);
     (mockData.update.athletesLookup as jest.Mock).mockResolvedValue(undefined)
 
     // Act
@@ -126,95 +116,12 @@ describe('createAthleteLookupTable', () => {
     })
   })
 
-  it('should add alternate names from overrides', async () => {
-    // Arrange
-    const athletes = [
-      { ...baseMockAthlete, firstName: 'John', lastName: 'Doe' }
-    ]
-    const overrides = {
-      ...baseMockOverrides,
-      alternateNames: {
-        'johnny|doe': '12345678901',
-        'j|doe': '12345678901',
-        'jane|smith': '12345678902'
-      }
-    };
-    (mockData.get.baseAthletes as jest.Mock).mockResolvedValue(athletes);
-    (mockData.get.athletesOverrides as jest.Mock).mockResolvedValue(overrides);
-    (mockData.update.athletesLookup as jest.Mock).mockResolvedValue(undefined)
-
-    // Act
-    await createAthleteLookupTable()
-
-    // Assert
-    const [lookupTable] = (mockData.update.athletesLookup as jest.Mock).mock.calls[0]
-
-    expect(lookupTable).toEqual({
-      'john|doe': '12345678901',
-      'johnny|doe': '12345678901',
-      'j|doe': '12345678901',
-      'jane|smith': '12345678902'
-    })
-  })
-
-  it('should skip duplicate alternate names and warn', async () => {
-    // Arrange
-    const athletes = [
-      { ...baseMockAthlete, firstName: 'John', lastName: 'Doe' }
-    ]
-    const overrides = {
-      ...baseMockOverrides,
-      alternateNames: {
-        'john|doe': '12345678902' // Conflicts with existing entry
-      }
-    };
-    (mockData.get.baseAthletes as jest.Mock).mockResolvedValue(athletes);
-    (mockData.get.athletesOverrides as jest.Mock).mockResolvedValue(overrides);
-    (mockData.update.athletesLookup as jest.Mock).mockResolvedValue(undefined)
-
-    // Act
-    await createAthleteLookupTable()
-
-    // Assert
-    const [lookupTable] = (mockData.update.athletesLookup as jest.Mock).mock.calls[0]
-
-    // The alternate name should be skipped, original entry remains (new behavior)
-    expect(lookupTable).toEqual({
-      'john|doe': '12345678901' // Original UCI ID remains, alternate name is skipped
-    })
-  })
-
-  it('should handle overrides without alternate names', async () => {
-    // Arrange
-    const athletes = [
-      { ...baseMockAthlete, firstName: 'John', lastName: 'Doe' }
-    ]
-    const overrides = {
-      ...baseMockOverrides,
-      alternateNames: undefined
-    };
-    (mockData.get.baseAthletes as jest.Mock).mockResolvedValue(athletes);
-    (mockData.get.athletesOverrides as jest.Mock).mockResolvedValue(overrides);
-    (mockData.update.athletesLookup as jest.Mock).mockResolvedValue(undefined)
-
-    // Act
-    await createAthleteLookupTable()
-
-    // Assert - Should not crash and work normally
-    const [lookupTable] = (mockData.update.athletesLookup as jest.Mock).mock.calls[0]
-
-    expect(lookupTable).toEqual({
-      'john|doe': '12345678901'
-    })
-  })
-
   it('should handle save errors gracefully', async () => {
     // Arrange
     const athletes = [
       { ...baseMockAthlete, firstName: 'John', lastName: 'Doe' }
     ];
     (mockData.get.baseAthletes as jest.Mock).mockResolvedValue(athletes);
-    (mockData.get.athletesOverrides as jest.Mock).mockResolvedValue(baseMockOverrides);
     (mockData.update.athletesLookup as jest.Mock).mockRejectedValue(new Error('Database save failed'))
 
     // Act
@@ -233,7 +140,6 @@ describe('createAthleteLookupTable', () => {
       { ...baseMockAthlete, uciId: '12345678904', firstName: 'Jane', lastName: 'Smith' }
     ];
     (mockData.get.baseAthletes as jest.Mock).mockResolvedValue(athletes);
-    (mockData.get.athletesOverrides as jest.Mock).mockResolvedValue(baseMockOverrides);
     (mockData.update.athletesLookup as jest.Mock).mockResolvedValue(undefined)
 
     // Act
@@ -262,7 +168,6 @@ describe('createAthleteLookupTable', () => {
       { ...baseMockAthlete, uciId: '12345678904', firstName: 'Jane', lastName: 'Smith' }
     ];
     (mockData.get.baseAthletes as jest.Mock).mockResolvedValue(athletes);
-    (mockData.get.athletesOverrides as jest.Mock).mockResolvedValue(baseMockOverrides);
     (mockData.update.athletesLookup as jest.Mock).mockResolvedValue(undefined)
 
     // Act
@@ -273,7 +178,7 @@ describe('createAthleteLookupTable', () => {
 
     expect(lookupTable).toEqual({
       '|doe': '12345678901',      // Empty first name
-      'john|': '12345678902',     // Empty last name  
+      'john|': '12345678902',     // Empty last name
       '|': '12345678903',         // Both empty
       'jane|smith': '12345678904' // Normal case
     })
@@ -287,7 +192,6 @@ describe('createAthleteLookupTable', () => {
       { ...baseMockAthlete, uciId: '12345678903', firstName: '  \t  ', lastName: '  \n  ' }
     ];
     (mockData.get.baseAthletes as jest.Mock).mockResolvedValue(athletes);
-    (mockData.get.athletesOverrides as jest.Mock).mockResolvedValue(baseMockOverrides);
     (mockData.update.athletesLookup as jest.Mock).mockResolvedValue(undefined)
 
     // Act
@@ -299,7 +203,7 @@ describe('createAthleteLookupTable', () => {
     // .trim() is applied to the whole key after concatenation
     expect(lookupTable).toEqual({
       '|doe': '12345678901',      // "  |doe".trim() = "|doe"
-      'john|': '12345678902',     // "john|   ".trim() = "john|"  
+      'john|': '12345678902',     // "john|   ".trim() = "john|"
       '|': '12345678903'          // "  \t  |  \n  ".trim() = "|"
     })
   })
@@ -312,7 +216,6 @@ describe('createAthleteLookupTable', () => {
       { ...baseMockAthlete, uciId: '12345678903', firstName: 'John', lastName: 'Doe' }
     ];
     (mockData.get.baseAthletes as jest.Mock).mockResolvedValue(athletes);
-    (mockData.get.athletesOverrides as jest.Mock).mockResolvedValue(baseMockOverrides);
     (mockData.update.athletesLookup as jest.Mock).mockResolvedValue(undefined)
 
     // Act
@@ -330,21 +233,16 @@ describe('createAthleteLookupTable', () => {
     })
   })
 
-  it('should handle alternate names when no conflicts exist', async () => {
+  it('should add alternate names from manual edits', async () => {
     // Arrange
     const athletes = [
       { ...baseMockAthlete, uciId: '12345678901', firstName: 'John', lastName: 'Doe' }
-    ]
-    const overrides = {
-      ...baseMockOverrides,
-      alternateNames: {
-        'johnny|doe': '12345678901',
-        'j|doe': '12345678901',
-        'jane|smith': '12345678902'  // Different athlete not in main list
-      }
-    };
+    ];
     (mockData.get.baseAthletes as jest.Mock).mockResolvedValue(athletes);
-    (mockData.get.athletesOverrides as jest.Mock).mockResolvedValue(overrides);
+    (mockData.get.athleteManualEdits as jest.Mock).mockResolvedValue([
+      { uciId: '12345678901', alternateNames: ['Johnny Doe', 'J Doe'], meta: { createdAt: '', updatedAt: '' } },
+      { uciId: '12345678902', alternateNames: ['Jane Smith'], meta: { createdAt: '', updatedAt: '' } },
+    ]);
     (mockData.update.athletesLookup as jest.Mock).mockResolvedValue(undefined)
 
     // Act
@@ -354,10 +252,32 @@ describe('createAthleteLookupTable', () => {
     const [lookupTable] = (mockData.update.athletesLookup as jest.Mock).mock.calls[0]
 
     expect(lookupTable).toEqual({
-      'john|doe': '12345678901',     // Original athlete
-      'johnny|doe': '12345678901',   // Alternate name for same athlete
-      'j|doe': '12345678901',        // Another alternate name
-      'jane|smith': '12345678902'    // Alternate name for different athlete
+      'john|doe': '12345678901',
+      'johnny|doe': '12345678901',
+      'j|doe': '12345678901',
+      'jane|smith': '12345678902',
+    })
+  })
+
+  it('should skip duplicate alternate names from manual edits and warn', async () => {
+    // Arrange
+    const athletes = [
+      { ...baseMockAthlete, uciId: '12345678901', firstName: 'John', lastName: 'Doe' }
+    ];
+    (mockData.get.baseAthletes as jest.Mock).mockResolvedValue(athletes);
+    (mockData.get.athleteManualEdits as jest.Mock).mockResolvedValue([
+      { uciId: '12345678902', alternateNames: ['John Doe'], meta: { createdAt: '', updatedAt: '' } }, // Conflicts with existing entry
+    ]);
+    (mockData.update.athletesLookup as jest.Mock).mockResolvedValue(undefined)
+
+    // Act
+    await createAthleteLookupTable()
+
+    // Assert
+    const [lookupTable] = (mockData.update.athletesLookup as jest.Mock).mock.calls[0]
+
+    expect(lookupTable).toEqual({
+      'john|doe': '12345678901', // Original UCI ID remains, alternate name is skipped
     })
   })
 
@@ -366,12 +286,11 @@ describe('createAthleteLookupTable', () => {
     const athletes = [
       { ...baseMockAthlete, uciId: '11111111111', firstName: 'Alice', lastName: 'Smith' },
       { ...baseMockAthlete, uciId: '22222222222', firstName: 'Alice', lastName: 'Smith' }, // First duplicate
-      { ...baseMockAthlete, uciId: '33333333333', firstName: 'Alice', lastName: 'Smith' }, // Second duplicate  
+      { ...baseMockAthlete, uciId: '33333333333', firstName: 'Alice', lastName: 'Smith' }, // Second duplicate
       { ...baseMockAthlete, uciId: '44444444444', firstName: 'Alice', lastName: 'Smith' }, // Third duplicate
       { ...baseMockAthlete, uciId: '55555555555', firstName: 'Bob', lastName: 'Jones' }
     ];
     (mockData.get.baseAthletes as jest.Mock).mockResolvedValue(athletes);
-    (mockData.get.athletesOverrides as jest.Mock).mockResolvedValue(baseMockOverrides);
     (mockData.update.athletesLookup as jest.Mock).mockResolvedValue(undefined)
 
     // Act

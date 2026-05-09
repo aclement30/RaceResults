@@ -9,8 +9,6 @@ import type {
 export type AthleteOverrides = {
   replacedUciIds?: Record<string, { old: string, new: string, name: string }>
   levelUpgradeDates?: Record<string, { level: string, date: string, discipline: TDiscipline }[]>
-  // Alternate names for athletes (firstName|lastName: uciId)
-  alternateNames?: Record<string, string>
   ignoredTeams?: string[]
 }
 

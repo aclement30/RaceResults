@@ -103,9 +103,6 @@ export const adminApi = {
     athletes: async (): Promise<Athlete[]> => adminApiFetch('/admin/athletes'),
     athlete: async (athleteUciId: string): Promise<Athlete> => adminApiFetch(`/admin/athletes/${athleteUciId}`),
     athleteLookupTable: async (): Promise<Record<string, string>> => adminApiFetch('/admin/athletes/lookup-table'),
-    athletesOverrides: async (): Promise<{
-      alternateNames?: Record<string, string>
-    }> => adminApiFetch('/admin/athletes/overrides'),
     adminUsers: async (): Promise<AdminUser[]> => adminApiFetch('/admin/users'),
     organizers: async (): Promise<Organizer[]> => adminApiFetch('/admin/organizers'),
     teams: async (): Promise<Team[]> => adminApiFetch('/admin/teams'),

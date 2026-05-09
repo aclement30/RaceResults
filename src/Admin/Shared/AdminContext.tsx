@@ -31,8 +31,6 @@ export const AdminContext = createContext({
   },
   setAthleteLookupTable: (_: Map<string, string>) => {
   },
-  setAthleteOverrides: (_: Record<string, any>) => {
-  },
   teams: new Map<number, Team>(),
   teamOptions: {
     id: [] as TeamOption[],
@@ -54,7 +52,6 @@ export const AdminContextProvider: React.FC<{ children: ReactNode }> = ({ childr
   const [athletes, setAthletes] = useState<Map<string, Athlete>>(new Map<string, Athlete>())
   const [teams, setTeams] = useState<Map<number, Team>>(new Map<number, Team>())
   const [athleteLookupTable, setAthleteLookupTable] = useState<Map<string, string>>(new Map<string, string>())
-  const [athleteOverrides, setAthleteOverrides] = useState<Record<string, any>>({})
   const [loadingStartupData, setLoadingStartupData] = useState<boolean>(true)
   const [adminUsers, setAdminUsers] = useState<AdminUser[]>([])
 
@@ -83,7 +80,7 @@ export const AdminContextProvider: React.FC<{ children: ReactNode }> = ({ childr
 
     const nameKey = `${params.firstName?.toLowerCase()}|${params.lastName?.toLowerCase()}`
 
-    const uciId: string | undefined = athleteLookupTable.get(nameKey) || athleteOverrides?.alternateNames?.[nameKey]
+    const uciId: string | undefined = athleteLookupTable.get(nameKey)
 
     if (uciId) return athletes.get(uciId) || null
 
@@ -142,7 +139,6 @@ export const AdminContextProvider: React.FC<{ children: ReactNode }> = ({ childr
     findAthlete,
     setAthletes,
     setAthleteLookupTable,
-    setAthleteOverrides,
     teams,
     teamOptions: {
       id: teamOptionByIds,

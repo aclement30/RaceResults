@@ -114,7 +114,6 @@ const baseMockUpgradeDate2: AthleteUpgradeDate = {
 }
 
 const baseMockAthletesOverrides: AthleteOverrides = {
-  alternateNames: {},
   replacedUciIds: {},
   levelUpgradeDates: {
     '12345678901': [

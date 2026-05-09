@@ -9,10 +9,10 @@ export const createAthleteLookupTable = async () => {
 
   const [
     athletes,
-    allAthleteOverrides,
+    allManualEdits,
   ] = await Promise.all([
     data.get.baseAthletes(),
-    data.get.athletesOverrides(),
+    data.get.athleteManualEdits(),
   ])
 
   logger.info(`Processing ${athletes.length} athletes to create lookup table`)
@@ -42,16 +42,22 @@ export const createAthleteLookupTable = async () => {
     lookupTable[key] = athlete.uciId
   }
 
-  if (allAthleteOverrides.alternateNames) {
-    logger.info(`Adding ${Object.keys(allAthleteOverrides.alternateNames).length} alternate names to the lookup table`)
+  const athleteWithAlternateNames = allManualEdits.filter(edit => edit.alternateNames?.length)
+  if (athleteWithAlternateNames.length > 0) {
+    logger.info(`Adding alternate names from ${athleteWithAlternateNames.length} athletes to the lookup table`)
 
-    Object.entries(allAthleteOverrides.alternateNames).forEach(([key, uciId]) => {
-      if (lookupTable[key]) {
-        logger.warn(`Duplicate key found in lookup table: ${key} for UCI ID ${uciId}, existing UCI ID: ${lookupTable[key]}, skipping`)
-      } else {
-        lookupTable[key] = uciId
+    for (const partialAthlete of athleteWithAlternateNames) {
+      for (const alternateName of partialAthlete.alternateNames!) {
+        const [firstName, ...lastNameParts] = alternateName.trim().split(' ')
+        const key = `${firstName?.toLowerCase() || ''}|${lastNameParts.join(' ').toLowerCase()}`.trim()
+
+        if (lookupTable[key]) {
+          logger.warn(`Duplicate key found in lookup table: ${key} for UCI ID ${partialAthlete.uciId}, existing UCI ID: ${lookupTable[key]}, skipping`)
+        } else {
+          lookupTable[key] = partialAthlete.uciId
+        }
       }
-    })
+    }
   }
 
   logger.info(`Saving athletes lookup table`)
